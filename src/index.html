@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harzer Wandernadel – Routenabgleich</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div class="eyebrow">Harzer Wandernadel · 222 Stempelstellen</div>
+        <h1>Liegt dein Weg an einer <em>Stempelstelle</em>?</h1>
+        <div class="sub">GPX-Track aus Komoot einfügen oder hochladen – der Abgleich läuft direkt im Browser gegen die offiziellen Koordinaten der HWN.</div>
+    </header>
+
+    <div class="card">
+        <label class="field-label" for="gpxInput">GPX-Daten (Track/Route)</label>
+        <textarea id="gpxInput" placeholder="Hier den Inhalt der .gpx-Datei einfügen oder rechts hochladen."></textarea>
+
+        <div class="row">
+            <label class="file-btn">
+                📁 .gpx-Datei hochladen
+                <input type="file" id="fileInput" accept=".gpx,application/gpx+xml,text/xml,application/xml">
+            </label>
+            <span class="file-name" id="fileName"></span>
+        </div>
+
+        <div class="threshold">
+            <label class="field-label" style="margin:0;" for="thresh">Suchradius</label>
+            <input type="range" id="thresh" min="50" max="1000" step="10" value="300">
+            <span class="val" id="threshVal">300 m</span>
+        </div>
+
+        <button class="go" id="goBtn">Route abgleichen</button>
+        <div class="status" id="status"></div>
+        <div class="stats" id="stats"></div>
+    </div>
+
+    <div id="resultsSection" style="display:none;">
+        <div class="results-head">
+            <h2>Treffer</h2>
+            <span class="count" id="resultCount"></span>
+        </div>
+        <div class="grid" id="grid"></div>
+    </div>
+
+    <footer>
+        Referenzkoordinaten: Offizielle Zusammenstellung der 222 Stempelstellen (+ Sonderstempel) auf Basis der Daten der Harzer Wandernadel, geladen von https://www.harzer-wandernadel.de/stempelstellen/gps-download/.
+        Abweichungen zur tatsächlichen Lage einzelner Stempelkästen sind möglich – bei Versetzungen ggf. veraltet.
+        Letzter Aktualitätscheck: 22.08.2026 - Up to date
+        Letzte Aktualisierung seitens HWN: 23.04.2025
+    </footer>
+</div>
+<script>
+    const el = id => document.getElementById(id);
+    const threshInput = el('thresh');
+    const threshVal = el('threshVal');
+    threshInput.addEventListener('input', () => { threshVal.textContent = threshInput.value + ' m'; });
+</script>
+</body>
+</html>
