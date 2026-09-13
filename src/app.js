@@ -1,6 +1,7 @@
 import { parseGPX } from "./utils/gpx.js";
 import { findNearbyStamps } from "./utils/geo.js";
 import { loadStamps } from "./utils/stamps.js";
+import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, panToStamp } from "./components/map.js";
 
 const el = id => document.getElementById(id);
 
@@ -16,6 +17,9 @@ const stats = el('stats');
 const resultsSection = el('resultsSection');
 const resultCount = el('resultCount');
 const grid = el('grid');
+
+// Map state
+let mapInitialized = false;
 
 // Threshold slider update
 threshInput.addEventListener('input', () => {
@@ -69,6 +73,7 @@ function render(results, routeLen, threshold) {
         const card = document.createElement('div');
         card.className = 'stamp';
         card.style.setProperty('--rot', rotation + 'deg');
+        card.dataset.stampId = stamp.id;
 
         const showDesc = stamp.description && stamp.description !== stamp.name;
 
@@ -77,8 +82,19 @@ function render(results, routeLen, threshold) {
             <h3>${escapeHtml(stamp.name)}</h3>
             <span class="dist ${distClass}">${Math.round(stamp.distance)} m entfernt</span>
             ${showDesc ? `<div class="desc">${escapeHtml(stamp.description)}</div>` : ''}
-            <a href="https://www.google.com/maps?q=${stamp.lat},${stamp.lon}" target="_blank" rel="noopener">Auf Karte öffnen →</a>
+            <div class="card-actions">
+                <button class="show-on-map" title="Auf Karte zeigen">📍 Karte</button>
+                <a href="https://www.google.com/maps?q=${stamp.lat},${stamp.lon}" target="_blank" rel="noopener">Google Maps →</a>
+            </div>
         `;
+
+        // Click handler for "show on map" button
+        const mapBtn = card.querySelector('.show-on-map');
+        mapBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            panToStamp(stamp);
+        });
+
         grid.appendChild(card);
     });
 }
@@ -133,7 +149,22 @@ goBtn.addEventListener('click', async () => {
 
         setStatus('Fertig.');
         stats.innerHTML = `<span><b>${routePoints.length}</b> Routenpunkte</span><span><b>${stamps.length}</b> bekannte Stempelstellen</span>`;
+
+        // Render results
         render(results, routePoints.length, threshold);
+
+        // Initialize map if needed (after results section is visible)
+        if (!mapInitialized) {
+            await new Promise(r => setTimeout(r, 50)); // Wait for DOM update
+            initMap();
+            mapInitialized = true;
+        }
+
+        // Update map
+        clearMap();
+        displayRoute(routePoints);
+        displayAllStamps(stamps);
+        displayMatchedStamps(results);
 
     } catch (e) {
         setStatus(e.message || 'Unbekannter Fehler beim Verarbeiten.', true);
