@@ -1,3 +1,5 @@
+import { routeToGeoJSON } from './geojson.js';
+
 // Parse GPX track/route points (e.g., from Komoot)
 function parseTrackPoint(trackPoint) {
     const lat = parseFloat(trackPoint.getAttribute("lat"));
@@ -76,4 +78,15 @@ function getElementText(parent, selector) {
 function getElementNumber(parent, selector) {
     const text = getElementText(parent, selector);
     return text === null ? null : parseFloat(text);
+}
+
+/**
+ * Parse GPX and return as GeoJSON LineString Feature
+ * @param {string} gpxText - GPX file content
+ * @param {Object} metadata - Optional metadata {name, source}
+ * @returns {Object} - GeoJSON Feature with LineString geometry
+ */
+export function gpxToGeoJSON(gpxText, metadata = {}) {
+    const points = parseGPX(gpxText);
+    return routeToGeoJSON(points, metadata);
 }

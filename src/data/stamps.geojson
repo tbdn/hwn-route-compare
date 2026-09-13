@@ -1,0 +1,3779 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5799757,
+          51.841649,
+          555
+        ]
+      },
+      "properties": {
+        "id": "HWN001",
+        "number": 1,
+        "name": "Eckertalsperre",
+        "description": "Eckertalsperre (Staumauer)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6027742,
+          51.8301677,
+          635
+        ]
+      },
+      "properties": {
+        "id": "HWN002",
+        "number": 2,
+        "name": "Scharfenstein",
+        "description": "Scharfenstein (Rangerstation)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.61161,
+          51.84415,
+          567
+        ]
+      },
+      "properties": {
+        "id": "HWN003",
+        "number": 3,
+        "name": "Am Kruzifix",
+        "description": "Am Kruzifix (Schutzhütte)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.618166,
+          51.862558,
+          555
+        ]
+      },
+      "properties": {
+        "id": "HWN004",
+        "number": 4,
+        "name": "Taubenklippe",
+        "description": "Taubenklippe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6545704,
+          51.8519155,
+          523
+        ]
+      },
+      "properties": {
+        "id": "HWN005",
+        "number": 5,
+        "name": "Froschfelsen",
+        "description": "Froschfelsen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.63485,
+          51.8286834,
+          556
+        ]
+      },
+      "properties": {
+        "id": "HWN006",
+        "number": 6,
+        "name": "Obere Ilsefälle",
+        "description": "Obere Ilsefälle (Bremer Hütte)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.66819,
+          51.83187,
+          551
+        ]
+      },
+      "properties": {
+        "id": "HWN007",
+        "number": 7,
+        "name": "Gasthaus Plessenburg",
+        "description": "Gasthaus Plessenburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6279167,
+          51.8193666,
+          650
+        ]
+      },
+      "properties": {
+        "id": "HWN008",
+        "number": 8,
+        "name": "Stempelsbuche",
+        "description": "Stempelsbuche"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6157828,
+          51.8005385,
+          1124
+        ]
+      },
+      "properties": {
+        "id": "HWN009",
+        "number": 9,
+        "name": "Brockenhaus",
+        "description": "Brockenhaus"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6433484,
+          51.8026431,
+          922
+        ]
+      },
+      "properties": {
+        "id": "HWN010",
+        "number": 10,
+        "name": "Große Zeterklippe",
+        "description": "Große Zeterklippe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6179225,
+          51.7849852,
+          922
+        ]
+      },
+      "properties": {
+        "id": "HWN011",
+        "number": 11,
+        "name": "Eckerloch",
+        "description": "Eckerloch"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5691333,
+          51.76145,
+          896
+        ]
+      },
+      "properties": {
+        "id": "HWN012",
+        "number": 12,
+        "name": "Achtermannshöhe",
+        "description": "Achtermannshöhe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6671864,
+          51.7735635,
+          806
+        ]
+      },
+      "properties": {
+        "id": "HWN013",
+        "number": 13,
+        "name": "Ahrentsklint",
+        "description": "Ahrentsklint"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.66585,
+          51.75425,
+          671
+        ]
+      },
+      "properties": {
+        "id": "HWN014",
+        "number": 14,
+        "name": "Schnarcherklippe",
+        "description": "Schnarcherklippe (Schutzhütte)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6937767,
+          51.7815216,
+          879
+        ]
+      },
+      "properties": {
+        "id": "HWN015",
+        "number": 15,
+        "name": "Leistenklippe",
+        "description": "Leistenklippe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6521028,
+          51.8234967,
+          650
+        ]
+      },
+      "properties": {
+        "id": "HWN016",
+        "number": 16,
+        "name": "Ferdinands Stein",
+        "description": "Ferdinands Stein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6965632,
+          51.7721776,
+          750
+        ]
+      },
+      "properties": {
+        "id": "HWN017",
+        "number": 17,
+        "name": "Trudenstein",
+        "description": "Trudenstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6324505,
+          51.7518251,
+          739
+        ]
+      },
+      "properties": {
+        "id": "HWN018",
+        "number": 18,
+        "name": "Grenzweg am Kaffeehorst",
+        "description": "Grenzweg am Kaffeehorst"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5729833,
+          51.8203667,
+          655
+        ]
+      },
+      "properties": {
+        "id": "HWN019",
+        "number": 19,
+        "name": "Skidenkmal",
+        "description": "Skidenkmal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6750453,
+          51.7503211,
+          612
+        ]
+      },
+      "properties": {
+        "id": "HWN020",
+        "number": 20,
+        "name": "Barrenberg",
+        "description": "Barrenberg (Aussichtspunkt)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6809074,
+          51.7540669,
+          623
+        ]
+      },
+      "properties": {
+        "id": "HWN021",
+        "number": 21,
+        "name": "Heleneruh",
+        "description": "Heleneruh - Elend"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6448051,
+          51.7910164,
+          911
+        ]
+      },
+      "properties": {
+        "id": "HWN022",
+        "number": 22,
+        "name": "Gelber Brink",
+        "description": "Gelber Brink"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6577926,
+          51.8077069,
+          747
+        ]
+      },
+      "properties": {
+        "id": "HWN023",
+        "number": 23,
+        "name": "Molkenhausstern",
+        "description": "Molkenhausstern"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.670517,
+          51.8194709,
+          699
+        ]
+      },
+      "properties": {
+        "id": "HWN024",
+        "number": 24,
+        "name": "Wolfsklippe",
+        "description": "Wolfsklippe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6883964,
+          51.8252754,
+          522
+        ]
+      },
+      "properties": {
+        "id": "HWN025",
+        "number": 25,
+        "name": "Oberförster-Koch-Denkmal",
+        "description": "Oberförster-Koch-Denkmal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7078852,
+          51.8178253,
+          508
+        ]
+      },
+      "properties": {
+        "id": "HWN026",
+        "number": 26,
+        "name": "Mönchsbuche",
+        "description": "Mönchsbuche"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7119521,
+          51.796689,
+          602
+        ]
+      },
+      "properties": {
+        "id": "HWN027",
+        "number": 27,
+        "name": "Ottofelsen",
+        "description": "Ottofelsen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6997721,
+          51.8049419,
+          533
+        ]
+      },
+      "properties": {
+        "id": "HWN028",
+        "number": 28,
+        "name": "Gasthaus Steinerne Renne",
+        "description": "Gasthaus Steinerne Renne"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7347223,
+          51.8044443,
+          471
+        ]
+      },
+      "properties": {
+        "id": "HWN029",
+        "number": 29,
+        "name": "Elversstein",
+        "description": "Elversstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6631266,
+          51.8463368,
+          444
+        ]
+      },
+      "properties": {
+        "id": "HWN030",
+        "number": 30,
+        "name": "Ilsestein",
+        "description": "Ilsestein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7979608,
+          51.8300303,
+          366
+        ]
+      },
+      "properties": {
+        "id": "HWN031",
+        "number": 31,
+        "name": "Agnesberg",
+        "description": "Agnesberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.81259,
+          51.827537,
+          316
+        ]
+      },
+      "properties": {
+        "id": "HWN032",
+        "number": 32,
+        "name": "Gasthaus Christianental",
+        "description": "Gasthaus Christianental"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.84825,
+          51.8261332,
+          437
+        ]
+      },
+      "properties": {
+        "id": "HWN033",
+        "number": 33,
+        "name": "Stapenberg",
+        "description": "Stapenberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7984,
+          51.8100167,
+          463
+        ]
+      },
+      "properties": {
+        "id": "HWN034",
+        "number": 34,
+        "name": "Scharfenstein",
+        "description": "Scharfenstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7766306,
+          51.8154458,
+          444
+        ]
+      },
+      "properties": {
+        "id": "HWN035",
+        "number": 35,
+        "name": "Gasthaus Armeleuteberg",
+        "description": "Gasthaus Armeleuteberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7802778,
+          51.7922222,
+          476
+        ]
+      },
+      "properties": {
+        "id": "HWN036",
+        "number": 36,
+        "name": "Peterstein",
+        "description": "Peterstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.818419,
+          51.791039,
+          480
+        ]
+      },
+      "properties": {
+        "id": "HWN037",
+        "number": 37,
+        "name": "Büchenberg",
+        "description": "Büchenberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8167666,
+          51.7737968,
+          496
+        ]
+      },
+      "properties": {
+        "id": "HWN038",
+        "number": 38,
+        "name": "Galgenberg",
+        "description": "Galgenberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8018373,
+          51.7599656,
+          483
+        ]
+      },
+      "properties": {
+        "id": "HWN039",
+        "number": 39,
+        "name": "Tagebau Felswerke",
+        "description": "Tagebau Felswerke"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.753066,
+          51.751006,
+          448
+        ]
+      },
+      "properties": {
+        "id": "HWN040",
+        "number": 40,
+        "name": "Königshütter Wasserfall",
+        "description": "Königshütter Wasserfall"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7671901,
+          51.7384135,
+          463
+        ]
+      },
+      "properties": {
+        "id": "HWN041",
+        "number": 41,
+        "name": "Ruine Königsburg",
+        "description": "Ruine Königsburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8050534,
+          51.7355836,
+          425
+        ]
+      },
+      "properties": {
+        "id": "HWN042",
+        "number": 42,
+        "name": "Trogfurter Brücke",
+        "description": "Trogfurter Brücke"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.50431,
+          51.61864,
+          430
+        ]
+      },
+      "properties": {
+        "id": "HWN043",
+        "number": 43,
+        "name": "Hohe Tür - Wasserscheide Weser-Elbe",
+        "description": "Wasserscheide Weser-Elbe\r\n„Hohe Tür“"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7408945,
+          51.7055931,
+          525
+        ]
+      },
+      "properties": {
+        "id": "HWN044",
+        "number": 44,
+        "name": "Kapitelsberg",
+        "description": "Kapitelsberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6480667,
+          51.65725,
+          430
+        ]
+      },
+      "properties": {
+        "id": "HWN045",
+        "number": 45,
+        "name": "Dicke Tannen",
+        "description": "Dicke Tannen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6667,
+          51.6936,
+          553
+        ]
+      },
+      "properties": {
+        "id": "HWN046",
+        "number": 46,
+        "name": "Grenzmuseum (Ring der Erinnerung)",
+        "description": "Grenzmuseum (Ring der Erinnerung)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.74871,
+          51.65288,
+          581
+        ]
+      },
+      "properties": {
+        "id": "HWN047",
+        "number": 47,
+        "name": "Oberharzblick am Buchenberg",
+        "description": "Oberharzblick am Buchenberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.757109,
+          51.641085,
+          556
+        ]
+      },
+      "properties": {
+        "id": "HWN048",
+        "number": 48,
+        "name": "Stierbergsteich",
+        "description": "Stierbergsteich"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7553331,
+          51.6766016,
+          525
+        ]
+      },
+      "properties": {
+        "id": "HWN049",
+        "number": 49,
+        "name": "Grüntal",
+        "description": "Grüntal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.767211,
+          51.661033,
+          525
+        ]
+      },
+      "properties": {
+        "id": "HWN050",
+        "number": 50,
+        "name": "Walzenhütte",
+        "description": "Walzenhütte"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7970617,
+          51.6564075,
+          626
+        ]
+      },
+      "properties": {
+        "id": "HWN051",
+        "number": 51,
+        "name": "Carlsturm",
+        "description": "Carlsturm"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7912051,
+          51.7027527,
+          443
+        ]
+      },
+      "properties": {
+        "id": "HWN052",
+        "number": 52,
+        "name": "Trageburg",
+        "description": "Trageburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8311333,
+          51.7096833,
+          400
+        ]
+      },
+      "properties": {
+        "id": "HWN053",
+        "number": 53,
+        "name": "Hassel-Vorsperre",
+        "description": "Hassel-Vorsperre"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8809109,
+          51.729124,
+          486
+        ]
+      },
+      "properties": {
+        "id": "HWN054",
+        "number": 54,
+        "name": "Rotestein",
+        "description": "Rotestein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9188551,
+          51.6504421,
+          506
+        ]
+      },
+      "properties": {
+        "id": "HWN055",
+        "number": 55,
+        "name": "Wüstung Sellkenfelde/Kirche",
+        "description": "Wüstung Sellkenfelde/Kirche"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.80097,
+          51.71153,
+          445
+        ]
+      },
+      "properties": {
+        "id": "HWN056",
+        "number": 56,
+        "name": "Rappbodeblick Trautenstein",
+        "description": "Rappbodeblick\r\nTrautenstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.98933,
+          51.6902,
+          455
+        ]
+      },
+      "properties": {
+        "id": "HWN057",
+        "number": 57,
+        "name": "Echowiese Allrode",
+        "description": "Echowiese Allrode"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6305328,
+          51.6384098,
+          460
+        ]
+      },
+      "properties": {
+        "id": "HWN058",
+        "number": 58,
+        "name": "Pferdchen",
+        "description": "Pferdchen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.90977,
+          51.80498,
+          270
+        ]
+      },
+      "properties": {
+        "id": "HWN059",
+        "number": 59,
+        "name": "Klostergrund Michaelstein",
+        "description": "Klostergrund Michaelstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8961803,
+          51.7219526,
+          481
+        ]
+      },
+      "properties": {
+        "id": "HWN060",
+        "number": 60,
+        "name": "Stemberghaus-Köhlerei",
+        "description": "Stemberghaus-Köhlerei"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.17952,
+          51.71355,
+          328
+        ]
+      },
+      "properties": {
+        "id": "HWN061",
+        "number": 61,
+        "name": "Harzer Grauwacke Riede",
+        "description": "Harzer Grauwacke\r\nRiede"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9192999,
+          51.7432165,
+          366
+        ]
+      },
+      "properties": {
+        "id": "HWN062",
+        "number": 62,
+        "name": "Talsperre Wendefurth",
+        "description": "Talsperre Wendefurth (Bergseite)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9230879,
+          51.7297752,
+          415
+        ]
+      },
+      "properties": {
+        "id": "HWN063",
+        "number": 63,
+        "name": "Schöneburg",
+        "description": "Schöneburg (Aussichtspunkt)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9495696,
+          51.7300325,
+          406
+        ]
+      },
+      "properties": {
+        "id": "HWN064",
+        "number": 64,
+        "name": "Böser Kleef",
+        "description": "Böser Kleef (Aussichtspunkt)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9556708,
+          51.7370295,
+          431
+        ]
+      },
+      "properties": {
+        "id": "HWN065",
+        "number": 65,
+        "name": "Gasthaus Todtenrode",
+        "description": "Gasthaus Todtenrode"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9661334,
+          51.7231,
+          301
+        ]
+      },
+      "properties": {
+        "id": "HWN066",
+        "number": 66,
+        "name": "Wilhelmsblick",
+        "description": "Wilhelmsblick (Aussichtspunkt)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9780534,
+          51.7169165,
+          400
+        ]
+      },
+      "properties": {
+        "id": "HWN067",
+        "number": 67,
+        "name": "Weisser Hirsch",
+        "description": "Weisser Hirsch (Aussichtspunkt)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0022257,
+          51.7173198,
+          470
+        ]
+      },
+      "properties": {
+        "id": "HWN068",
+        "number": 68,
+        "name": "\"Pfeil\"-Denkmal",
+        "description": "\"Pfeil\"-Denkmal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9701334,
+          51.722,
+          277
+        ]
+      },
+      "properties": {
+        "id": "HWN069",
+        "number": 69,
+        "name": "Sonnenklippe",
+        "description": "Sonnenklippe (Bodetal)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0074,
+          51.7337167,
+          380
+        ]
+      },
+      "properties": {
+        "id": "HWN070",
+        "number": 70,
+        "name": "Prinzensicht",
+        "description": "Prinzensicht (Aussichtspunkt)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0186548,
+          51.7372421,
+          394
+        ]
+      },
+      "properties": {
+        "id": "HWN071",
+        "number": 71,
+        "name": "Rosstrappe",
+        "description": "Rosstrappe (Abzweig Schurre)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0168333,
+          51.7305833,
+          400
+        ]
+      },
+      "properties": {
+        "id": "HWN072",
+        "number": 72,
+        "name": "La Viershöhe",
+        "description": "La Viershöhe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0571325,
+          51.7291176,
+          408
+        ]
+      },
+      "properties": {
+        "id": "HWN073",
+        "number": 73,
+        "name": "Glockenstein",
+        "description": "Glockenstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0011348,
+          51.7769018,
+          220
+        ]
+      },
+      "properties": {
+        "id": "HWN074",
+        "number": 74,
+        "name": "Hamburger Wappen",
+        "description": "Hamburger Wappen (Teufelsmauer)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5658869,
+          51.7373876,
+          751
+        ]
+      },
+      "properties": {
+        "id": "HWN075",
+        "number": 75,
+        "name": "Hahnenkleeklippen",
+        "description": "Hahnenkleeklippen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9671674,
+          51.7859791,
+          297
+        ]
+      },
+      "properties": {
+        "id": "HWN076",
+        "number": 76,
+        "name": "Großvaterfelsen",
+        "description": "Großvaterfelsen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9542049,
+          51.7827469,
+          334
+        ]
+      },
+      "properties": {
+        "id": "HWN077",
+        "number": 77,
+        "name": "Ruine Luisenburg",
+        "description": "Ruine Luisenburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.95635,
+          51.7874667,
+          250
+        ]
+      },
+      "properties": {
+        "id": "HWN078",
+        "number": 78,
+        "name": "Barocke Gärten",
+        "description": "Barocke Gärten"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9230167,
+          51.78495,
+          417
+        ]
+      },
+      "properties": {
+        "id": "HWN079",
+        "number": 79,
+        "name": "Otto-Ebert-Brücke",
+        "description": "Otto-Ebert-Brücke"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9583552,
+          51.8138622,
+          262
+        ]
+      },
+      "properties": {
+        "id": "HWN080",
+        "number": 80,
+        "name": "Burgruine Regenstein",
+        "description": "Burgruine Regenstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9658359,
+          51.8172055,
+          181
+        ]
+      },
+      "properties": {
+        "id": "HWN081",
+        "number": 81,
+        "name": "Sandhöhlen im Heers",
+        "description": "Sandhöhlen im Heers"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9488334,
+          51.8165332,
+          219
+        ]
+      },
+      "properties": {
+        "id": "HWN082",
+        "number": 82,
+        "name": "Regenstein-Mühle",
+        "description": "Regenstein-Mühle"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.85929,
+          51.83771,
+          287
+        ]
+      },
+      "properties": {
+        "id": "HWN083",
+        "number": 83,
+        "name": "Austbergturm",
+        "description": "Austbergturm"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9113007,
+          51.8269262,
+          257
+        ]
+      },
+      "properties": {
+        "id": "HWN084",
+        "number": 84,
+        "name": "Altenburg",
+        "description": "Altenburg (bei Heimburg)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.728537,
+          51.80851,
+          355
+        ]
+      },
+      "properties": {
+        "id": "HWN085",
+        "number": 85,
+        "name": "Wasserkunst Thumkuhlental",
+        "description": "Wasserkunst Thumkuhlental"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.3416,
+          51.662,
+          261
+        ]
+      },
+      "properties": {
+        "id": "HWN086",
+        "number": 86,
+        "name": "Bisonhehege Stangerode",
+        "description": "Bisonhehege Stangerode"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8733167,
+          51.7873333,
+          435
+        ]
+      },
+      "properties": {
+        "id": "HWN087",
+        "number": 87,
+        "name": "Volkmars Keller",
+        "description": "Volkmars Keller"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8462167,
+          51.7537,
+          422
+        ]
+      },
+      "properties": {
+        "id": "HWN088",
+        "number": 88,
+        "name": "Hoher Kleef",
+        "description": "Aussichtspavillon Hoher Kleef"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8504667,
+          51.7597333,
+          455
+        ]
+      },
+      "properties": {
+        "id": "HWN089",
+        "number": 89,
+        "name": "Schornsteinberg",
+        "description": "Schornsteinberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6516832,
+          51.6171399,
+          463
+        ]
+      },
+      "properties": {
+        "id": "HWN090",
+        "number": 90,
+        "name": "Roter Schuss",
+        "description": "Roter Schuss"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.41905,
+          51.8900833,
+          354
+        ]
+      },
+      "properties": {
+        "id": "HWN091",
+        "number": 91,
+        "name": "Rammelsberg",
+        "description": "Rammelsberg Goslar"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8269626,
+          51.5881087,
+          590
+        ]
+      },
+      "properties": {
+        "id": "HWN092",
+        "number": 92,
+        "name": "Poppenberg",
+        "description": "Poppenberg mit Aussichtsturm"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7925667,
+          51.6012666,
+          430
+        ]
+      },
+      "properties": {
+        "id": "HWN093",
+        "number": 93,
+        "name": "Dreitälerblick",
+        "description": "Dreitälerblick"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8919333,
+          51.6063832,
+          555
+        ]
+      },
+      "properties": {
+        "id": "HWN094",
+        "number": 94,
+        "name": "Dreiherrenstein",
+        "description": "Dreiherrenstein (am Brandhai 48A)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7915833,
+          51.5874166,
+          460
+        ]
+      },
+      "properties": {
+        "id": "HWN095",
+        "number": 95,
+        "name": "Ilfelder Wetterfahne",
+        "description": "Ilfelder Wetterfahne"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.72845,
+          51.6077,
+          396
+        ]
+      },
+      "properties": {
+        "id": "HWN096",
+        "number": 96,
+        "name": "ehemalige Steinmühle",
+        "description": "ehemalige Steinmühle"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.7909633,
+          51.6325883,
+          526
+        ]
+      },
+      "properties": {
+        "id": "HWN097",
+        "number": 97,
+        "name": "Ziegenalm Sophienhof",
+        "description": "Ziegenalm Sophienhof"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8374832,
+          51.5697999,
+          352
+        ]
+      },
+      "properties": {
+        "id": "HWN098",
+        "number": 98,
+        "name": "Ruine Hohnstein",
+        "description": "Ruine Hohnstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.82546,
+          51.5566,
+          275
+        ]
+      },
+      "properties": {
+        "id": "HWN099",
+        "number": 99,
+        "name": "Harzer Holzdampflok",
+        "description": "Harzer Holzdampflok"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8797167,
+          51.5538166,
+          374
+        ]
+      },
+      "properties": {
+        "id": "HWN100",
+        "number": 100,
+        "name": "Ebersburg",
+        "description": "Ebersburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4044,
+          51.6350165,
+          370
+        ]
+      },
+      "properties": {
+        "id": "HWN101",
+        "number": 101,
+        "name": "Einhornhöhle",
+        "description": "Einhornhöhle"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.25144,
+          51.91484,
+          565
+        ]
+      },
+      "properties": {
+        "id": "HWN102",
+        "number": 102,
+        "name": "Lageswarte",
+        "description": "Lageswarte"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.25558,
+          51.88032,
+          540
+        ]
+      },
+      "properties": {
+        "id": "HWN103",
+        "number": 103,
+        "name": "Luchsstein",
+        "description": "Luchsstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.2385666,
+          51.8849,
+          537
+        ]
+      },
+      "properties": {
+        "id": "HWN104",
+        "number": 104,
+        "name": "Tränkebachhütte",
+        "description": "Tränkebachhütte"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.2885832,
+          51.8258,
+          536
+        ]
+      },
+      "properties": {
+        "id": "HWN105",
+        "number": 105,
+        "name": "Prinzenlaube",
+        "description": "Prinzenlaube"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.292047,
+          51.876832,
+          400
+        ]
+      },
+      "properties": {
+        "id": "HWN106",
+        "number": 106,
+        "name": "Schöne Aussicht Bielstein",
+        "description": "Schöne Aussicht, Bielstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.2902365,
+          51.8635985,
+          415
+        ]
+      },
+      "properties": {
+        "id": "HWN107",
+        "number": 107,
+        "name": "Maaßener Gaipel",
+        "description": "Maaßener Gaipel"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.46775,
+          51.91484,
+          342
+        ]
+      },
+      "properties": {
+        "id": "HWN108",
+        "number": 108,
+        "name": "Sudmerberger Warte",
+        "description": "Sudmerberger Warte"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3357167,
+          51.9126333,
+          315
+        ]
+      },
+      "properties": {
+        "id": "HWN109",
+        "number": 109,
+        "name": "Heimberg",
+        "description": "Heimberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3822248,
+          51.9005822,
+          300
+        ]
+      },
+      "properties": {
+        "id": "HWN110",
+        "number": 110,
+        "name": "Granstausee",
+        "description": "Granstausee"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.40525,
+          51.90652,
+          456
+        ]
+      },
+      "properties": {
+        "id": "HWN111",
+        "number": 111,
+        "name": "Steinbergturm",
+        "description": "Steinbergturm\r\nSteinbergalm"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3573171,
+          51.8606487,
+          630
+        ]
+      },
+      "properties": {
+        "id": "HWN112",
+        "number": 112,
+        "name": "Liebesbank",
+        "description": "Liebesbank"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.300115,
+          51.849451,
+          477
+        ]
+      },
+      "properties": {
+        "id": "HWN113",
+        "number": 113,
+        "name": "Grumbacher Teich",
+        "description": "Grumbacher Teich"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.42668,
+          51.88848,
+          635
+        ]
+      },
+      "properties": {
+        "id": "HWN114",
+        "number": 114,
+        "name": "Ramseck",
+        "description": "Ramseck"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.472213,
+          51.6408008,
+          523
+        ]
+      },
+      "properties": {
+        "id": "HWN115",
+        "number": 115,
+        "name": "Bismarck-Turm",
+        "description": "Bismarck-Turm"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4740782,
+          51.8672478,
+          342
+        ]
+      },
+      "properties": {
+        "id": "HWN116",
+        "number": 116,
+        "name": "Verlobungsinsel",
+        "description": "Verlobungsinsel in der Oker"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.48139,
+          51.8718329,
+          479
+        ]
+      },
+      "properties": {
+        "id": "HWN117",
+        "number": 117,
+        "name": "Treppenstein",
+        "description": "Treppenstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.485786,
+          51.868798,
+          595
+        ]
+      },
+      "properties": {
+        "id": "HWN118",
+        "number": 118,
+        "name": "Kästehaus",
+        "description": "Kästehaus"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4678667,
+          51.8541166,
+          533
+        ]
+      },
+      "properties": {
+        "id": "HWN119",
+        "number": 119,
+        "name": "Hallesche Hütte",
+        "description": "Hallesche Hütte an den Ahrensberger Klippen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5272334,
+          51.8791,
+          444
+        ]
+      },
+      "properties": {
+        "id": "HWN120",
+        "number": 120,
+        "name": "Elfenstein",
+        "description": "Elfenstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.56647,
+          51.87167,
+          461
+        ]
+      },
+      "properties": {
+        "id": "HWN121",
+        "number": 121,
+        "name": "Aussichtsreich Burgberg",
+        "description": "Aussichtsreich\r\nBurgberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5925833,
+          51.8753167,
+          545
+        ]
+      },
+      "properties": {
+        "id": "HWN122",
+        "number": 122,
+        "name": "Kreuz des deutschen Ostens",
+        "description": "Kreuz des deutschen Ostens"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5624,
+          51.7162666,
+          488
+        ]
+      },
+      "properties": {
+        "id": "HWN123",
+        "number": 123,
+        "name": "Gasttätte  Rinderstall",
+        "description": "Gasttätte  Rinderstall"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4234715,
+          51.8409096,
+          526
+        ]
+      },
+      "properties": {
+        "id": "HWN124",
+        "number": 124,
+        "name": "Köte am Heidenstieg",
+        "description": "Köte am Heidenstieg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3822879,
+          51.8488211,
+          750
+        ]
+      },
+      "properties": {
+        "id": "HWN125",
+        "number": 125,
+        "name": "Schalker Turm",
+        "description": "Schalker Turm"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.37981,
+          51.83702,
+          609
+        ]
+      },
+      "properties": {
+        "id": "HWN126",
+        "number": 126,
+        "name": "Lochstein",
+        "description": "Lochstein, Oberer\r\nSchalker Graben"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3888812,
+          51.7979115,
+          592
+        ]
+      },
+      "properties": {
+        "id": "HWN127",
+        "number": 127,
+        "name": "Weppner Hütte",
+        "description": "Weppner Hütte, Jägersbleeker Teich"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.37743,
+          51.78573,
+          598
+        ]
+      },
+      "properties": {
+        "id": "HWN128",
+        "number": 128,
+        "name": "Huttaler Widerwaage",
+        "description": "Huttaler Widerwaage"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.22503,
+          51.81926,
+          392
+        ]
+      },
+      "properties": {
+        "id": "HWN129",
+        "number": 129,
+        "name": "Weltwald",
+        "description": "Hütte im Weltwald"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.2452016,
+          51.8198705,
+          555
+        ]
+      },
+      "properties": {
+        "id": "HWN130",
+        "number": 130,
+        "name": "Iberger Albert-Turm",
+        "description": "Iberger Albert-Turm"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.2757333,
+          51.7920833,
+          570
+        ]
+      },
+      "properties": {
+        "id": "HWN131",
+        "number": 131,
+        "name": "Kaysereiche",
+        "description": "Kaysereiche (Schutzhütte)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4455833,
+          51.8059444,
+          542
+        ]
+      },
+      "properties": {
+        "id": "HWN132",
+        "number": 132,
+        "name": "Schwarzenberg",
+        "description": "Schwarzenberg, Hütte Brockenblick"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4878333,
+          51.8034667,
+          621
+        ]
+      },
+      "properties": {
+        "id": "HWN133",
+        "number": 133,
+        "name": "Förster-Ludwig-Platz",
+        "description": "Förster-Ludwig-Platz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.46754,
+          51.78544,
+          715
+        ]
+      },
+      "properties": {
+        "id": "HWN134",
+        "number": 134,
+        "name": "Gustav-Baumann-Weg",
+        "description": "Gustav-Baumann-Weg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.503696,
+          51.79044,
+          895
+        ]
+      },
+      "properties": {
+        "id": "HWN135",
+        "number": 135,
+        "name": "Wolfswarte",
+        "description": "Wolfswarte"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5864166,
+          51.7877167,
+          899
+        ]
+      },
+      "properties": {
+        "id": "HWN136",
+        "number": 136,
+        "name": "Eckersprung",
+        "description": "Eckersprung"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.351,
+          51.77606,
+          561
+        ]
+      },
+      "properties": {
+        "id": "HWN137",
+        "number": 137,
+        "name": "Bärenbruchner Teich",
+        "description": "Bärenbruchner Teich"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3552333,
+          51.7667667,
+          611
+        ]
+      },
+      "properties": {
+        "id": "HWN138",
+        "number": 138,
+        "name": "Braunseck",
+        "description": "Braunseck"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3138334,
+          51.7663166,
+          561
+        ]
+      },
+      "properties": {
+        "id": "HWN139",
+        "number": 139,
+        "name": "Kuckholzklippe",
+        "description": "Kuckholzklippe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3014774,
+          51.7462044,
+          470
+        ]
+      },
+      "properties": {
+        "id": "HWN140",
+        "number": 140,
+        "name": "Eselplatz",
+        "description": "Eselplatz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.286183,
+          51.78475,
+          561
+        ]
+      },
+      "properties": {
+        "id": "HWN141",
+        "number": 141,
+        "name": "Oberen Hahnebalzer Teich",
+        "description": "Oberen Hahnebalzer Teich"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.27904,
+          51.89504,
+          350
+        ]
+      },
+      "properties": {
+        "id": "HWN142",
+        "number": 142,
+        "name": "Mandolinenhütte",
+        "description": "Mandolinenhütte"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.336262,
+          51.7232203,
+          540
+        ]
+      },
+      "properties": {
+        "id": "HWN143",
+        "number": 143,
+        "name": "Köte Schindelkopf",
+        "description": "Köte Schindelkopf"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4033611,
+          51.7281389,
+          801
+        ]
+      },
+      "properties": {
+        "id": "HWN144",
+        "number": 144,
+        "name": "Hanskühnenburg",
+        "description": "Hanskühnenburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.3878333,
+          51.7771,
+          600
+        ]
+      },
+      "properties": {
+        "id": "HWN145",
+        "number": 145,
+        "name": "Schmidts-Denkmal",
+        "description": "Schmidts-Denkmal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4457333,
+          51.7626,
+          610
+        ]
+      },
+      "properties": {
+        "id": "HWN146",
+        "number": 146,
+        "name": "Großes Wehr Morgenbrodstal",
+        "description": "Großes Wehr\r\nMorgenbrodstal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.39834,
+          51.75382,
+          530
+        ]
+      },
+      "properties": {
+        "id": "HWN147",
+        "number": 147,
+        "name": "Eleonorenblick",
+        "description": "Eleonorenblick"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.58188,
+          51.72311,
+          620
+        ]
+      },
+      "properties": {
+        "id": "HWN148",
+        "number": 148,
+        "name": "Naturmythenpfad",
+        "description": "Naturmythenpfad"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.450144,
+          51.803286,
+          490
+        ]
+      },
+      "properties": {
+        "id": "HWN149",
+        "number": 149,
+        "name": "Mühlenberg Altenauer Herzweg",
+        "description": "Mühlenberg Altenauer Herzweg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4301166,
+          51.6673999,
+          668
+        ]
+      },
+      "properties": {
+        "id": "HWN150",
+        "number": 150,
+        "name": "Großer Knollen",
+        "description": "Großer Knollen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4089332,
+          51.62885,
+          372
+        ]
+      },
+      "properties": {
+        "id": "HWN151",
+        "number": 151,
+        "name": "Ruine Scharzfels",
+        "description": "Ruine Scharzfels"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.4425999,
+          51.6434167,
+          479
+        ]
+      },
+      "properties": {
+        "id": "HWN152",
+        "number": 152,
+        "name": "Knollenkreuz",
+        "description": "Knollenkreuz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.47205,
+          51.6884,
+          600
+        ]
+      },
+      "properties": {
+        "id": "HWN153",
+        "number": 153,
+        "name": "Goedeckenplatz",
+        "description": "Goedeckenplatz"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5113626,
+          51.7322373,
+          670
+        ]
+      },
+      "properties": {
+        "id": "HWN154",
+        "number": 154,
+        "name": "Dreibrodesteine",
+        "description": "Dreibrodesteine"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5380666,
+          51.72925,
+          684
+        ]
+      },
+      "properties": {
+        "id": "HWN155",
+        "number": 155,
+        "name": "Rehberger Grabenhaus",
+        "description": "Rehberger Grabenhaus"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6186834,
+          51.7564333,
+          972
+        ]
+      },
+      "properties": {
+        "id": "HWN156",
+        "number": 156,
+        "name": "Wurmberg-Baude",
+        "description": "Wurmberg-Baude"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5957357,
+          51.6907139,
+          590
+        ]
+      },
+      "properties": {
+        "id": "HWN157",
+        "number": 157,
+        "name": "Kapellenfleck",
+        "description": "Kapellenfleck"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5249516,
+          51.6382863,
+          560
+        ]
+      },
+      "properties": {
+        "id": "HWN158",
+        "number": 158,
+        "name": "Hassenstein",
+        "description": "Hassenstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5540825,
+          51.6565319,
+          705
+        ]
+      },
+      "properties": {
+        "id": "HWN159",
+        "number": 159,
+        "name": "Stöberhai",
+        "description": "Stöberhai"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.610767,
+          51.6422562,
+          549
+        ]
+      },
+      "properties": {
+        "id": "HWN160",
+        "number": 160,
+        "name": "Helenenruh",
+        "description": "Helenenruh"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5427079,
+          51.6309197,
+          625
+        ]
+      },
+      "properties": {
+        "id": "HWN161",
+        "number": 161,
+        "name": "Stefanshütte",
+        "description": "Stefanshütte"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.58487,
+          51.62819,
+          380
+        ]
+      },
+      "properties": {
+        "id": "HWN162",
+        "number": 162,
+        "name": "Kreuztalsklippe",
+        "description": "Kreuztalsklippe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6008834,
+          51.6532667,
+          612
+        ]
+      },
+      "properties": {
+        "id": "HWN163",
+        "number": 163,
+        "name": "Gipfelblick am Kaiserweg",
+        "description": "Gipfelblick am Kaiserweg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6432576,
+          51.623099,
+          456
+        ]
+      },
+      "properties": {
+        "id": "HWN164",
+        "number": 164,
+        "name": "Stiefmutter",
+        "description": "Stiefmutter"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6570889,
+          51.6245435,
+          561
+        ]
+      },
+      "properties": {
+        "id": "HWN165",
+        "number": 165,
+        "name": "Wendel-Eiche",
+        "description": "Wendel-Eiche"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.58385,
+          51.58073,
+          326
+        ]
+      },
+      "properties": {
+        "id": "HWN166",
+        "number": 166,
+        "name": "Sachsensteinhütte",
+        "description": "Sachsensteinhütte"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.64591,
+          51.58107,
+          303
+        ]
+      },
+      "properties": {
+        "id": "HWN167",
+        "number": 167,
+        "name": "Hexentanzplatz Walkenried",
+        "description": "Hexentanzplatz Walkenried, Ellricher Blick"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.58055,
+          51.7813333,
+          878
+        ]
+      },
+      "properties": {
+        "id": "HWN168",
+        "number": 168,
+        "name": "Dreieckiger Pfahl",
+        "description": "Dreieckiger Pfahl"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5730999,
+          51.8556833,
+          532
+        ]
+      },
+      "properties": {
+        "id": "HWN169",
+        "number": 169,
+        "name": "Molkenhaus",
+        "description": "Molkenhaus"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6053166,
+          51.8650167,
+          531
+        ]
+      },
+      "properties": {
+        "id": "HWN170",
+        "number": 170,
+        "name": "Rabenklippe",
+        "description": "Rabenklippe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.33152,
+          51.88803,
+          490
+        ]
+      },
+      "properties": {
+        "id": "HWN171",
+        "number": 171,
+        "name": "Altarklippe",
+        "description": "Altarklippe (oberhalb d. Granestausees)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.9683833,
+          51.6370333,
+          432
+        ]
+      },
+      "properties": {
+        "id": "HWN172",
+        "number": 172,
+        "name": "Katzsohlteich",
+        "description": "Katzsohlteich"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.02274,
+          51.63769,
+          416
+        ]
+      },
+      "properties": {
+        "id": "HWN173",
+        "number": 173,
+        "name": "Hirschbüchenkopf",
+        "description": "Waldwiese Hirschbüchenkopf"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.719201,
+          51.775363,
+          418
+        ]
+      },
+      "properties": {
+        "id": "HWN174",
+        "number": 174,
+        "name": "Hohnehof",
+        "description": "Hohnehof"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0651,
+          51.61185,
+          371
+        ]
+      },
+      "properties": {
+        "id": "HWN175",
+        "number": 175,
+        "name": "Schaubergwerk Glasebach Stollen",
+        "description": "Schaubergwerk Glasebach Stollen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.082955,
+          51.632179,
+          361
+        ]
+      },
+      "properties": {
+        "id": "HWN176",
+        "number": 176,
+        "name": "Uhlenköpfe Hänichen",
+        "description": "Uhlenköpfe Hänichen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.1147833,
+          51.64635,
+          333
+        ]
+      },
+      "properties": {
+        "id": "HWN177",
+        "number": 177,
+        "name": "Verlobungsurne Alexisbad",
+        "description": "Verlobungsurne Alexisbad"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.01775,
+          51.7336333,
+          272
+        ]
+      },
+      "properties": {
+        "id": "HWN178",
+        "number": 178,
+        "name": "Hirschgrund",
+        "description": "Hirschgrund (am Gasthaus Königsruh)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.1658099,
+          51.668571,
+          258
+        ]
+      },
+      "properties": {
+        "id": "HWN179",
+        "number": 179,
+        "name": "IV. Friedrichshammer",
+        "description": "IV. Friedrichshammer"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.25546,
+          51.70738,
+          245
+        ]
+      },
+      "properties": {
+        "id": "HWN180",
+        "number": 180,
+        "name": "Alter Kohlenschacht",
+        "description": "Alter Kohlenschacht"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.21,
+          51.71611,
+          254
+        ]
+      },
+      "properties": {
+        "id": "HWN181",
+        "number": 181,
+        "name": "Forstmeister Tannen",
+        "description": "Forstmeister\r\nTannen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.18253,
+          51.69141,
+          370
+        ]
+      },
+      "properties": {
+        "id": "HWN182",
+        "number": 182,
+        "name": "Schirm Ballenstedt",
+        "description": "Schirm Ballenstedt"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.1308999,
+          51.717686,
+          295
+        ]
+      },
+      "properties": {
+        "id": "HWN183",
+        "number": 183,
+        "name": "Försterblick Gernrode",
+        "description": "Försterblick Gernrode"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0958856,
+          51.6822186,
+          466
+        ]
+      },
+      "properties": {
+        "id": "HWN184",
+        "number": 184,
+        "name": "Bärendenkmal",
+        "description": "Bärendenkmal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.11917,
+          51.72378,
+          268
+        ]
+      },
+      "properties": {
+        "id": "HWN185",
+        "number": 185,
+        "name": "Preußenturm",
+        "description": "Preußenturm"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.1055779,
+          51.7163429,
+          367
+        ]
+      },
+      "properties": {
+        "id": "HWN186",
+        "number": 186,
+        "name": "Anhaltinischer Saalstein",
+        "description": "Anhaltinischer Saalstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.080713,
+          51.726318,
+          330
+        ]
+      },
+      "properties": {
+        "id": "HWN187",
+        "number": 187,
+        "name": "Lauenburg",
+        "description": "Lauenburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0873374,
+          51.7560306,
+          141
+        ]
+      },
+      "properties": {
+        "id": "HWN188",
+        "number": 188,
+        "name": "Teufelsmauer Weddersleben",
+        "description": "Teufelsmauer Weddersleben"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0792833,
+          51.6848834,
+          556
+        ]
+      },
+      "properties": {
+        "id": "HWN189",
+        "number": 189,
+        "name": "Große Teufelsmühle",
+        "description": "Große Teufelsmühle"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.065,
+          51.6794833,
+          490
+        ]
+      },
+      "properties": {
+        "id": "HWN190",
+        "number": 190,
+        "name": "Bergrat-Müller-Teich",
+        "description": "Bergrat-Müller-Teich"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0364999,
+          51.6723832,
+          431
+        ]
+      },
+      "properties": {
+        "id": "HWN191",
+        "number": 191,
+        "name": "Laubtalblick",
+        "description": "Laubtalblick"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.575238,
+          51.5768857,
+          272
+        ]
+      },
+      "properties": {
+        "id": "HWN192",
+        "number": 192,
+        "name": "Historischer Gipsbrennofen",
+        "description": "Historischer Gipsbrennofen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.1367167,
+          51.60795,
+          417
+        ]
+      },
+      "properties": {
+        "id": "HWN193",
+        "number": 193,
+        "name": "Stahlquelle",
+        "description": "Stahlquelle"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0813299,
+          51.6179146,
+          350
+        ]
+      },
+      "properties": {
+        "id": "HWN194",
+        "number": 194,
+        "name": "Hellergrund",
+        "description": "Hellergrund"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.126267,
+          51.6609,
+          380
+        ]
+      },
+      "properties": {
+        "id": "HWN195",
+        "number": 195,
+        "name": "Köthener Hütte",
+        "description": "Köthener Hütte"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.1123166,
+          51.6849332,
+          416
+        ]
+      },
+      "properties": {
+        "id": "HWN196",
+        "number": 196,
+        "name": "Bremer Teich",
+        "description": "Bremer Teich"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.1931794,
+          51.6680675,
+          378
+        ]
+      },
+      "properties": {
+        "id": "HWN197",
+        "number": 197,
+        "name": "Burgruine Anhalt",
+        "description": "Burgruine Anhalt"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.85805,
+          51.5176833,
+          306
+        ]
+      },
+      "properties": {
+        "id": "HWN198",
+        "number": 198,
+        "name": "Glockensteine",
+        "description": "Glockensteine"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.258793,
+          51.7142489,
+          245
+        ]
+      },
+      "properties": {
+        "id": "HWN199",
+        "number": 199,
+        "name": "Bismarckturm",
+        "description": "Bismarckturm"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.2659499,
+          51.6817999,
+          296
+        ]
+      },
+      "properties": {
+        "id": "HWN200",
+        "number": 200,
+        "name": "Burg Falkenstein",
+        "description": "Burg Falkenstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.3477999,
+          51.7140166,
+          225
+        ]
+      },
+      "properties": {
+        "id": "HWN201",
+        "number": 201,
+        "name": "Konradsburg",
+        "description": "Konradsburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.30768,
+          51.6854,
+          310
+        ]
+      },
+      "properties": {
+        "id": "HWN202",
+        "number": 202,
+        "name": "Landschaftspark Degenerhausen",
+        "description": "Landschaftspark Degenerhausen"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.2325665,
+          51.6791166,
+          216
+        ]
+      },
+      "properties": {
+        "id": "HWN203",
+        "number": 203,
+        "name": "Mettenberg",
+        "description": "Schutzhütte am Mettenberg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.2544334,
+          51.6854667,
+          297
+        ]
+      },
+      "properties": {
+        "id": "HWN204",
+        "number": 204,
+        "name": "Selkesicht an der Ackeburg",
+        "description": "Selkesicht an der Ackeburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.3063072,
+          51.6634242,
+          260
+        ]
+      },
+      "properties": {
+        "id": "HWN205",
+        "number": 205,
+        "name": "Cluesberg",
+        "description": "Rastplatz unterhalb des Cluesberges"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.6415832,
+          51.6753833,
+          600
+        ]
+      },
+      "properties": {
+        "id": "HWN206",
+        "number": 206,
+        "name": "Hahnstein",
+        "description": "Hahnstein"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.2833799,
+          51.7006999,
+          199
+        ]
+      },
+      "properties": {
+        "id": "HWN207",
+        "number": 207,
+        "name": "Mausoleum",
+        "description": "Mausoleum"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.3144333,
+          51.5345,
+          307
+        ]
+      },
+      "properties": {
+        "id": "HWN208",
+        "number": 208,
+        "name": "Burgruine Grillenburg",
+        "description": "Burgruine Grillenburg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.2709999,
+          51.4930834,
+          294
+        ]
+      },
+      "properties": {
+        "id": "HWN209",
+        "number": 209,
+        "name": "Moltkewarte",
+        "description": "Moltkewarte (Aussichtsturm)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.14183,
+          51.50133,
+          325
+        ]
+      },
+      "properties": {
+        "id": "HWN210",
+        "number": 210,
+        "name": "Schöne Aussicht Hainrode",
+        "description": "Schöne Aussicht Hainrode"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.01495,
+          51.60758,
+          450
+        ]
+      },
+      "properties": {
+        "id": "HWN211",
+        "number": 211,
+        "name": "Kiliansteiche",
+        "description": "Kiliansteiche"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.1172,
+          51.4932666,
+          244
+        ]
+      },
+      "properties": {
+        "id": "HWN212",
+        "number": 212,
+        "name": "An der Queste",
+        "description": "An der Queste"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07794,
+          51.48897,
+          258
+        ]
+      },
+      "properties": {
+        "id": "HWN213",
+        "number": 213,
+        "name": "Bauerngraben",
+        "description": "Bauerngraben\r\nSchautafel RVH"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.94777,
+          51.49778,
+          270
+        ]
+      },
+      "properties": {
+        "id": "HWN214",
+        "number": 214,
+        "name": "Reesbergdoline",
+        "description": "Reesbergdoline"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0055309,
+          51.5806143,
+          564
+        ]
+      },
+      "properties": {
+        "id": "HWN215",
+        "number": 215,
+        "name": "Josephshöhe",
+        "description": "Josephshöhe (Auerberg)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.95271,
+          51.5718,
+          330
+        ]
+      },
+      "properties": {
+        "id": "HWN216",
+        "number": 216,
+        "name": "Lutherbuche",
+        "description": "Lutherbuche"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.53248,
+          51.77944,
+          740
+        ]
+      },
+      "properties": {
+        "id": "HWN217",
+        "number": 217,
+        "name": "Sonnenkappe",
+        "description": "Sonnenkappe\r\nOderteich (NPH)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.8633333,
+          51.5788833,
+          460
+        ]
+      },
+      "properties": {
+        "id": "HWN218",
+        "number": 218,
+        "name": "Neustädter Talsperre",
+        "description": "Neustädter Talsperre"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.19266,
+          51.56972,
+          300
+        ]
+      },
+      "properties": {
+        "id": "HWN219",
+        "number": 219,
+        "name": "Wippertalsperre",
+        "description": "Wippertalsperre Bank am Rundweg"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.531842,
+          51.6095037,
+          464
+        ]
+      },
+      "properties": {
+        "id": "HWN220",
+        "number": 220,
+        "name": "Phillippsgruß",
+        "description": "Phillippsgruß"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.5138167,
+          51.8042,
+          650
+        ]
+      },
+      "properties": {
+        "id": "HWN221",
+        "number": 221,
+        "name": "Jungfernklippe",
+        "description": "Jungfernklippe"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.27694,
+          51.52038,
+          343
+        ]
+      },
+      "properties": {
+        "id": "HWN222",
+        "number": 222,
+        "name": "Bergbaulehrpfad Wettelrode",
+        "description": "Bergbaulehrpfad Wettelrode"
+      }
+    }
+  ]
+}
