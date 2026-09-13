@@ -10,6 +10,7 @@ let stampsLayer = null;
 let matchedLayer = null;
 let detourLayer = null;
 let routingLayer = null;
+let extendedRouteLayer = null;
 
 // Custom marker icons
 const defaultStampIcon = L.divIcon({
@@ -48,6 +49,7 @@ export function initMap(containerId = 'map') {
 
     // Initialize layer groups (order matters for z-index)
     routeLayer = L.layerGroup().addTo(map);
+    extendedRouteLayer = L.layerGroup().addTo(map);
     detourLayer = L.layerGroup().addTo(map);
     routingLayer = L.layerGroup().addTo(map);
     stampsLayer = L.layerGroup().addTo(map);
@@ -62,6 +64,7 @@ export function clearMap() {
     if (matchedLayer) matchedLayer.clearLayers();
     if (detourLayer) detourLayer.clearLayers();
     if (routingLayer) routingLayer.clearLayers();
+    if (extendedRouteLayer) extendedRouteLayer.clearLayers();
 }
 
 export function displayRoute(routePoints) {
@@ -292,4 +295,66 @@ export function displayRoutingResult(stamp, geometry) {
  */
 export function clearRoutingLayer() {
     if (routingLayer) routingLayer.clearLayers();
+}
+
+/**
+ * Display an extended route on the map (route through selected stamps)
+ * @param {string} geometry - Encoded polyline geometry from ORS
+ * @param {Array} stamps - Array of stamps included in the route
+ */
+export function displayExtendedRoute(geometry, stamps) {
+    if (!map || !extendedRouteLayer || !geometry) return;
+
+    // Clear previous extended route
+    extendedRouteLayer.clearLayers();
+
+    // Decode the polyline
+    const points = decodePolyline(geometry);
+    if (!points.length) return;
+
+    // Draw the extended route as a distinct color
+    const routeLine = L.polyline(points, {
+        color: '#8B5CF6',  // Purple - distinct from original route
+        weight: 5,
+        opacity: 0.9,
+        lineCap: 'round',
+        lineJoin: 'round'
+    });
+
+    routeLine.bindPopup(`
+        <strong>Erweiterte Route</strong>
+        <div style="margin-top:4px;">Route mit ${stamps.length} Stempelstelle${stamps.length > 1 ? 'n' : ''}</div>
+    `);
+
+    extendedRouteLayer.addLayer(routeLine);
+
+    // Add numbered markers for each stamp stop
+    stamps.forEach((stamp, i) => {
+        const marker = L.marker([stamp.lat, stamp.lon], {
+            icon: L.divIcon({
+                className: 'stop-marker',
+                html: `<div class="stop-marker-inner">${i + 1}</div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            }),
+            zIndexOffset: 2000
+        });
+
+        marker.bindPopup(`
+            <strong>${i + 1}. ${stamp.name}</strong>
+            <div style="margin-top:4px;">${stamp.id}</div>
+        `);
+
+        extendedRouteLayer.addLayer(marker);
+    });
+
+    // Fit map to show the extended route
+    map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
+}
+
+/**
+ * Clear only the extended route layer
+ */
+export function clearExtendedRoute() {
+    if (extendedRouteLayer) extendedRouteLayer.clearLayers();
 }

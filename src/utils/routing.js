@@ -200,3 +200,70 @@ export function clearCache() {
         // ignore
     }
 }
+
+/**
+ * Calculate a route through multiple waypoints
+ * @param {Array} waypoints - Array of {lat, lon} points (start, stamps..., end)
+ * @returns {Promise<Object>} - { distance, duration, geometry, error }
+ */
+export async function calculateMultiWaypointRoute(waypoints) {
+    if (!apiKey) {
+        return { error: 'API-Schlüssel nicht konfiguriert' };
+    }
+
+    if (waypoints.length < 2) {
+        return { error: 'Mindestens 2 Wegpunkte erforderlich' };
+    }
+
+    try {
+        // Convert to [lon, lat] format for ORS
+        const coordinates = waypoints.map(p => [p.lon, p.lat]);
+
+        const response = await fetch(ORS_BASE_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                coordinates,
+                elevation: true,
+                instructions: false
+            })
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                return { error: 'Ungültiger API-Schlüssel' };
+            }
+            if (response.status === 429) {
+                return { error: 'API-Limit erreicht (max. 2000/Tag)' };
+            }
+            if (response.status === 404) {
+                return { error: 'Keine Route gefunden' };
+            }
+            return { error: `API-Fehler: ${response.status}` };
+        }
+
+        const data = await response.json();
+        const route = data.routes?.[0];
+
+        if (!route) {
+            return { error: 'Keine Route gefunden' };
+        }
+
+        return {
+            distance: Math.round(route.summary.distance),
+            duration: Math.round(route.summary.duration),
+            ascent: Math.round(route.summary.ascent || 0),
+            descent: Math.round(route.summary.descent || 0),
+            geometry: route.geometry
+        };
+
+    } catch (err) {
+        if (err.name === 'TypeError' && err.message.includes('fetch')) {
+            return { error: 'Netzwerkfehler - keine Verbindung zur API' };
+        }
+        return { error: err.message || 'Unbekannter Fehler' };
+    }
+}

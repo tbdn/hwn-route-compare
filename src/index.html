@@ -15,25 +15,24 @@
     <header>
         <div class="eyebrow">Harzer Wandernadel · 222 Stempelstellen</div>
         <h1>Liegt dein Weg an einer <em>Stempelstelle</em>?</h1>
-        <div class="sub">GPX-Track aus Komoot einfügen oder hochladen – der Abgleich läuft direkt im Browser gegen die offiziellen Koordinaten der HWN.</div>
+        <div class="sub">GPX-Track aus Komoot hochladen – der Abgleich läuft direkt im Browser gegen die offiziellen Koordinaten der HWN.</div>
     </header>
 
     <div class="card">
-        <label class="field-label" for="gpxInput">GPX-Daten (Track/Route)</label>
-        <textarea id="gpxInput" placeholder="Hier den Inhalt der .gpx-Datei einfügen oder rechts hochladen."></textarea>
-
-        <div class="row">
-            <label class="file-btn">
-                📁 .gpx-Datei hochladen
+        <div class="file-upload-area">
+            <label class="file-btn large">
+                📁 GPX-Datei auswählen
                 <input type="file" id="fileInput" accept=".gpx,application/gpx+xml,text/xml,application/xml">
             </label>
-            <span class="file-name" id="fileName"></span>
+            <span class="file-name" id="fileName">Keine Datei ausgewählt</span>
         </div>
 
         <div class="threshold">
-            <label class="field-label" style="margin:0;" for="thresh">Suchradius</label>
-            <input type="range" id="thresh" min="50" max="1000" step="10" value="300">
-            <span class="val" id="threshVal">300 m</span>
+            <div class="threshold-row">
+                <label class="field-label" style="margin:0;" for="thresh">Suchradius</label>
+                <span class="val" id="threshVal">500 m</span>
+            </div>
+            <input type="range" id="thresh" min="100" max="20000" step="100" value="500">
         </div>
 
         <details class="api-config" id="apiConfig">
@@ -49,7 +48,7 @@
             </div>
         </details>
 
-        <button class="go" id="goBtn">Route abgleichen</button>
+        <button class="go" id="goBtn" disabled>Route abgleichen</button>
         <div class="status" id="status"></div>
         <div class="stats" id="stats"></div>
     </div>
@@ -60,7 +59,22 @@
             <span class="count" id="resultCount"></span>
         </div>
         <div id="map"></div>
-        <div class="grid" id="grid"></div>
+
+        <div id="onRouteSection" class="stamp-section" style="display:none;">
+            <div class="section-head">
+                <h3>Direkt an der Route</h3>
+                <span class="section-hint">Diese Stempel liegen bereits auf deinem Weg</span>
+            </div>
+            <div class="grid" id="onRouteGrid"></div>
+        </div>
+
+        <div id="nearbySection" class="stamp-section" style="display:none;">
+            <div class="section-head">
+                <h3>In der Nähe</h3>
+                <span class="section-hint">Kurzer Abstecher erforderlich</span>
+            </div>
+            <div class="grid" id="nearbyGrid"></div>
+        </div>
     </div>
 
     <div class="selection-bar" id="selectionBar" style="display:none;">
@@ -69,17 +83,19 @@
         </div>
         <div class="selection-actions">
             <button class="selection-btn secondary" id="clearSelection">Auswahl aufheben</button>
-            <button class="selection-btn primary" id="optimizeRoute" disabled>Route optimieren</button>
+            <button class="selection-btn primary" id="addToRoute" disabled>Zur Route hinzufügen</button>
         </div>
     </div>
 
     <div class="modal" id="optimizedRouteModal" style="display:none;">
         <div class="modal-content">
             <button class="modal-close" id="closeModal">&times;</button>
-            <h2>Optimierte Route</h2>
+            <h2>Erweiterte Route</h2>
             <div class="route-comparison" id="routeComparison"></div>
             <div class="optimized-stops" id="optimizedStops"></div>
+            <div class="route-status" id="routeStatus"></div>
             <div class="modal-actions">
+                <button class="selection-btn secondary" id="showOnMap">Auf Karte zeigen</button>
                 <button class="selection-btn primary" id="exportGpx">Als GPX exportieren</button>
             </div>
         </div>
