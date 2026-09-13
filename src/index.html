@@ -63,6 +63,28 @@
         <div class="grid" id="grid"></div>
     </div>
 
+    <div class="selection-bar" id="selectionBar" style="display:none;">
+        <div class="selection-info">
+            <span class="selection-count" id="selectionCount">0 Stempel ausgewählt</span>
+        </div>
+        <div class="selection-actions">
+            <button class="selection-btn secondary" id="clearSelection">Auswahl aufheben</button>
+            <button class="selection-btn primary" id="optimizeRoute" disabled>Route optimieren</button>
+        </div>
+    </div>
+
+    <div class="modal" id="optimizedRouteModal" style="display:none;">
+        <div class="modal-content">
+            <button class="modal-close" id="closeModal">&times;</button>
+            <h2>Optimierte Route</h2>
+            <div class="route-comparison" id="routeComparison"></div>
+            <div class="optimized-stops" id="optimizedStops"></div>
+            <div class="modal-actions">
+                <button class="selection-btn primary" id="exportGpx">Als GPX exportieren</button>
+            </div>
+        </div>
+    </div>
+
     <footer>
         Referenzkoordinaten: Offizielle Zusammenstellung der 222 Stempelstellen (+ Sonderstempel) auf Basis der Daten der Harzer Wandernadel, geladen von https://www.harzer-wandernadel.de/stempelstellen/gps-download/.
         Abweichungen zur tatsächlichen Lage einzelner Stempelkästen sind möglich – bei Versetzungen ggf. veraltet.

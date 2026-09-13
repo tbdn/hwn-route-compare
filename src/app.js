@@ -4,6 +4,7 @@ import { loadStamps } from "./utils/stamps.js";
 import { analyzeDetours, getDetourEffort } from "./utils/detour.js";
 import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, displayRoutingResult, panToStamp } from "./components/map.js";
 import { setApiKey, hasApiKey, calculateDetourRoute, formatDuration, formatDistance } from "./utils/routing.js";
+import { optimizeStampOrder, calculateTotalDetour, generateGPX, downloadGPX } from "./utils/optimize.js";
 
 const el = id => document.getElementById(id);
 
@@ -23,11 +24,30 @@ const apiKeyInput = el('apiKeyInput');
 const saveApiKeyBtn = el('saveApiKey');
 const apiStatus = el('apiStatus');
 
+// Selection bar elements
+const selectionBar = el('selectionBar');
+const selectionCount = el('selectionCount');
+const clearSelectionBtn = el('clearSelection');
+const optimizeRouteBtn = el('optimizeRoute');
+
+// Modal elements
+const modal = el('optimizedRouteModal');
+const closeModalBtn = el('closeModal');
+const routeComparison = el('routeComparison');
+const optimizedStops = el('optimizedStops');
+const exportGpxBtn = el('exportGpx');
+
 // Map state
 let mapInitialized = false;
 
 // Store current results for routing
 let currentResults = [];
+
+// Store selected stamps for route optimization
+let selectedStamps = new Set();
+
+// Store optimized route for export
+let optimizedRoute = null;
 
 // API key persistence
 const API_KEY_STORAGE = 'hwn-ors-api-key';
@@ -76,6 +96,115 @@ saveApiKeyBtn.addEventListener('click', () => {
 // Load saved API key on page load
 loadSavedApiKey();
 
+// Selection bar functions
+function updateSelectionBar() {
+    const count = selectedStamps.size;
+
+    if (count === 0) {
+        selectionBar.style.display = 'none';
+        return;
+    }
+
+    selectionBar.style.display = 'flex';
+    selectionCount.textContent = count === 1
+        ? '1 Stempel ausgewählt'
+        : `${count} Stempel ausgewählt`;
+
+    // Enable optimize button only if we have at least 2 stamps
+    optimizeRouteBtn.disabled = count < 2;
+}
+
+function clearSelection() {
+    selectedStamps.clear();
+
+    // Uncheck all checkboxes and remove selected class
+    document.querySelectorAll('.stamp-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+    document.querySelectorAll('.stamp.selected').forEach(card => {
+        card.classList.remove('selected');
+    });
+
+    updateSelectionBar();
+}
+
+function getSelectedStamps() {
+    return currentResults.filter(stamp => selectedStamps.has(stamp.id));
+}
+
+// Selection bar event handlers
+clearSelectionBtn.addEventListener('click', clearSelection);
+
+optimizeRouteBtn.addEventListener('click', () => {
+    const selected = getSelectedStamps();
+    if (selected.length < 2) return;
+
+    // Optimize the route
+    optimizedRoute = optimizeStampOrder(selected);
+
+    // Calculate distances
+    const originalDetour = calculateTotalDetour(selected);
+    const optimizedDetour = calculateTotalDetour(optimizedRoute);
+
+    // Show modal with results
+    showOptimizedRouteModal(optimizedRoute, originalDetour, optimizedDetour);
+});
+
+function showOptimizedRouteModal(stamps, originalDetour, optimizedDetour) {
+    // Format distances
+    const formatDist = (m) => m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
+
+    // Show comparison
+    routeComparison.innerHTML = `
+        <div class="route-stat">
+            <div class="label">Stempel</div>
+            <div class="value">${stamps.length}</div>
+        </div>
+        <div class="route-stat">
+            <div class="label">Geschätzter Umweg</div>
+            <div class="value highlight">${formatDist(optimizedDetour)}</div>
+        </div>
+    `;
+
+    // Show optimized order
+    optimizedStops.innerHTML = `
+        <h3>Optimierte Reihenfolge</h3>
+        <div class="stop-list">
+            ${stamps.map((stamp, i) => `
+                <div class="stop-item">
+                    <span class="stop-number">${i + 1}</span>
+                    <span class="stop-name">${stamp.name}</span>
+                    <span class="stop-id">${stamp.id}</span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    modal.style.display = 'none';
+}
+
+// Modal event handlers
+closeModalBtn.addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+});
+
+// GPX export handler
+exportGpxBtn.addEventListener('click', () => {
+    if (!optimizedRoute || optimizedRoute.length === 0) return;
+
+    const gpxContent = generateGPX(optimizedRoute, {
+        name: 'HWN Stempelroute',
+        description: `Optimierte Route mit ${optimizedRoute.length} Stempelstellen`
+    });
+
+    downloadGPX(gpxContent, 'hwn-stempelroute');
+});
+
 // Threshold slider update
 threshInput.addEventListener('input', () => {
     threshVal.textContent = threshInput.value + ' m';
@@ -119,6 +248,10 @@ function render(results, routeLen, threshold) {
     // Store results for routing
     currentResults = results;
 
+    // Clear selection when new results
+    selectedStamps.clear();
+    updateSelectionBar();
+
     if (!results.length) {
         grid.innerHTML = '<div class="empty">Keine Stempelstelle im gewählten Radius gefunden. Radius vergrößern oder Route prüfen.</div>';
         return;
@@ -158,6 +291,10 @@ function render(results, routeLen, threshold) {
                 : '');
 
         card.innerHTML = `
+            <label class="stamp-select">
+                <input type="checkbox" class="stamp-checkbox" data-stamp-id="${stamp.id}">
+                <span class="checkmark"></span>
+            </label>
             <div class="badge">${stamp.id || '#'}</div>
             <h3>${escapeHtml(stamp.name)}</h3>
             <div class="stamp-meta">
@@ -172,6 +309,19 @@ function render(results, routeLen, threshold) {
                 <a href="https://www.google.com/maps?q=${stamp.lat},${stamp.lon}" target="_blank" rel="noopener">Google Maps →</a>
             </div>
         `;
+
+        // Click handler for checkbox
+        const checkbox = card.querySelector('.stamp-checkbox');
+        checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                selectedStamps.add(stamp.id);
+                card.classList.add('selected');
+            } else {
+                selectedStamps.delete(stamp.id);
+                card.classList.remove('selected');
+            }
+            updateSelectionBar();
+        });
 
         // Click handler for "show on map" button
         const mapBtn = card.querySelector('.show-on-map');
