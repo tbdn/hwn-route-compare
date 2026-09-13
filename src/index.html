@@ -54,11 +54,6 @@
         Letzte Aktualisierung seitens HWN: 23.04.2025
     </footer>
 </div>
-<script>
-    const el = id => document.getElementById(id);
-    const threshInput = el('thresh');
-    const threshVal = el('threshVal');
-    threshInput.addEventListener('input', () => { threshVal.textContent = threshInput.value + ' m'; });
-</script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

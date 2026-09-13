@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const gpxPath = path.join(__dirname, '../data/raw/HWN2025.gpx');
-const jsonPath = path.join(__dirname, '../data/stampingpoints.json');
+const jsonPath = path.join(__dirname, '../src/data/stampingpoints.json');
 
 const gpxContent = fs.readFileSync(gpxPath, 'utf-8');
 
