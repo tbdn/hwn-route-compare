@@ -1,7 +1,8 @@
 import { parseGPX } from "./utils/gpx.js";
 import { findNearbyStamps } from "./utils/geo.js";
 import { loadStamps } from "./utils/stamps.js";
-import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, panToStamp } from "./components/map.js";
+import { analyzeDetours, getDetourEffort } from "./utils/detour.js";
+import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, panToStamp } from "./components/map.js";
 
 const el = id => document.getElementById(id);
 
@@ -68,7 +69,10 @@ function render(results, routeLen, threshold) {
 
     results.forEach((stamp, i) => {
         const rotation = ((i * 37) % 11) - 5;
-        const distClass = stamp.distance < 100 ? 'close' : (stamp.distance < 300 ? 'mid' : 'far');
+
+        // Color-code by detour effort instead of just distance
+        const effort = getDetourEffort(stamp.detourDistance || stamp.distance * 2);
+        const effortClass = effort === 'easy' ? 'close' : (effort === 'moderate' ? 'mid' : 'far');
 
         const card = document.createElement('div');
         card.className = 'stamp';
@@ -77,10 +81,25 @@ function render(results, routeLen, threshold) {
 
         const showDesc = stamp.description && stamp.description !== stamp.name;
 
+        // Format detour distance
+        const detourMeters = Math.round(stamp.detourDistance || stamp.distance * 2);
+        const detourText = detourMeters < 1000
+            ? `+${detourMeters} m`
+            : `+${(detourMeters / 1000).toFixed(1)} km`;
+
+        // Position along route (percentage)
+        const positionPct = stamp.routePosition !== undefined
+            ? Math.round(stamp.routePosition * 100)
+            : null;
+
         card.innerHTML = `
             <div class="badge">${stamp.id || '#'}</div>
             <h3>${escapeHtml(stamp.name)}</h3>
-            <span class="dist ${distClass}">${Math.round(stamp.distance)} m entfernt</span>
+            <div class="stamp-meta">
+                <span class="dist ${effortClass}">${Math.round(stamp.distance)} m entfernt</span>
+                <span class="detour ${effortClass}" title="Geschätzter Umweg (hin und zurück)">${detourText} Umweg</span>
+            </div>
+            ${positionPct !== null ? `<div class="route-pos">Bei ${positionPct}% der Route</div>` : ''}
             ${showDesc ? `<div class="desc">${escapeHtml(stamp.description)}</div>` : ''}
             <div class="card-actions">
                 <button class="show-on-map" title="Auf Karte zeigen">📍 Karte</button>
@@ -145,12 +164,20 @@ goBtn.addEventListener('click', async () => {
 
         const threshold = parseInt(threshInput.value, 10);
         const sampledRoute = decimate(routePoints, 3000);
-        const results = findNearbyStamps(sampledRoute, stamps, threshold);
+
+        // Find nearby stamps
+        const nearbyStamps = findNearbyStamps(sampledRoute, stamps, threshold);
+
+        // Analyze detours (find exit points, calculate detour distances)
+        setStatus('Analysiere Umwege …');
+        await new Promise(r => setTimeout(r, 10));
+
+        const results = analyzeDetours(nearbyStamps, routePoints);
 
         setStatus('Fertig.');
         stats.innerHTML = `<span><b>${routePoints.length}</b> Routenpunkte</span><span><b>${stamps.length}</b> bekannte Stempelstellen</span>`;
 
-        // Render results
+        // Render results (now sorted by position along route)
         render(results, routePoints.length, threshold);
 
         // Initialize map if needed (after results section is visible)
@@ -165,6 +192,7 @@ goBtn.addEventListener('click', async () => {
         displayRoute(routePoints);
         displayAllStamps(stamps);
         displayMatchedStamps(results);
+        displayDetourLines(results);
 
     } catch (e) {
         setStatus(e.message || 'Unbekannter Fehler beim Verarbeiten.', true);

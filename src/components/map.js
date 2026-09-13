@@ -8,6 +8,7 @@ let map = null;
 let routeLayer = null;
 let stampsLayer = null;
 let matchedLayer = null;
+let detourLayer = null;
 
 // Custom marker icons
 const defaultStampIcon = L.divIcon({
@@ -24,6 +25,13 @@ const matchedStampIcon = L.divIcon({
     iconAnchor: [9, 9]
 });
 
+const exitPointIcon = L.divIcon({
+    className: 'exit-point-marker',
+    html: '<div class="exit-dot"></div>',
+    iconSize: [10, 10],
+    iconAnchor: [5, 5]
+});
+
 export function initMap(containerId = 'map') {
     if (map) {
         return map;
@@ -37,8 +45,9 @@ export function initMap(containerId = 'map') {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
-    // Initialize layer groups
+    // Initialize layer groups (order matters for z-index)
     routeLayer = L.layerGroup().addTo(map);
+    detourLayer = L.layerGroup().addTo(map);
     stampsLayer = L.layerGroup().addTo(map);
     matchedLayer = L.layerGroup().addTo(map);
 
@@ -49,6 +58,7 @@ export function clearMap() {
     if (routeLayer) routeLayer.clearLayers();
     if (stampsLayer) stampsLayer.clearLayers();
     if (matchedLayer) matchedLayer.clearLayers();
+    if (detourLayer) detourLayer.clearLayers();
 }
 
 export function displayRoute(routePoints) {
@@ -113,6 +123,62 @@ export function displayMatchedStamps(matchedStamps, onMarkerClick) {
     });
 }
 
+export function displayDetourLines(matchedStamps) {
+    if (!map || !detourLayer) return;
+
+    detourLayer.clearLayers();
+
+    matchedStamps.forEach(stamp => {
+        if (!stamp.exitPoint) return;
+
+        // Determine line color based on detour effort
+        const detourDist = stamp.detourDistance || stamp.distance * 2;
+        let lineColor;
+        if (detourDist < 200) {
+            lineColor = '#5C7A5E'; // green (easy)
+        } else if (detourDist < 600) {
+            lineColor = '#B68A34'; // amber (moderate)
+        } else {
+            lineColor = '#B65A34'; // rust (significant)
+        }
+
+        // Draw dashed line from exit point to stamp
+        const detourLine = L.polyline(
+            [
+                [stamp.exitPoint.lat, stamp.exitPoint.lon],
+                [stamp.lat, stamp.lon]
+            ],
+            {
+                color: lineColor,
+                weight: 2,
+                opacity: 0.7,
+                dashArray: '6, 8',
+                lineCap: 'round'
+            }
+        );
+
+        detourLayer.addLayer(detourLine);
+
+        // Add exit point marker
+        const exitMarker = L.marker(
+            [stamp.exitPoint.lat, stamp.exitPoint.lon],
+            {
+                icon: exitPointIcon,
+                title: `Abzweig für ${stamp.name}`
+            }
+        );
+
+        exitMarker.bindPopup(`
+            <strong>Abzweig</strong>
+            <div style="margin-top:4px;">Hier Route verlassen für:</div>
+            <div style="font-weight:500;">${stamp.name}</div>
+            <div style="margin-top:4px; color:#666;">${Math.round(stamp.distance)} m bis zum Stempel</div>
+        `);
+
+        detourLayer.addLayer(exitMarker);
+    });
+}
+
 export function panToStamp(stamp, zoom = 15) {
     if (!map) return;
     map.setView([stamp.lat, stamp.lon], zoom);
@@ -130,6 +196,13 @@ function createPopupContent(stamp, showDistance = false) {
 
     if (showDistance && stamp.distance !== undefined) {
         html += `<div style="margin-top:6px; font-weight:500;">${Math.round(stamp.distance)} m entfernt</div>`;
+
+        if (stamp.detourDistance !== undefined) {
+            const detourText = stamp.detourDistance < 1000
+                ? `+${Math.round(stamp.detourDistance)} m`
+                : `+${(stamp.detourDistance / 1000).toFixed(1)} km`;
+            html += `<div style="color:#666;">Umweg: ${detourText}</div>`;
+        }
     }
 
     return html;
