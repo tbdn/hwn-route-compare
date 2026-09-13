@@ -150,6 +150,79 @@ textarea:focus, input:focus, button:focus, .file-btn:focus-within, input[type=ra
     text-align:center;
 }
 
+/* API Configuration */
+.api-config{
+    margin-top:18px;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:0;
+}
+.api-config summary{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:.04em;
+    color:var(--ink);
+    cursor:pointer;
+    padding:10px 14px;
+    list-style:none;
+}
+.api-config summary::before{
+    content:"▸ ";
+}
+.api-config[open] summary::before{
+    content:"▾ ";
+}
+.api-config-content{
+    padding:0 14px 14px;
+}
+.api-hint{
+    font-size:12px;
+    color:#5B5470;
+    margin:0 0 10px;
+    line-height:1.5;
+}
+.api-input-row{
+    display:flex;
+    gap:8px;
+}
+.api-input-row input{
+    flex:1;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    padding:8px 12px;
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    background:#FBF6EA;
+}
+.api-save-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    padding:8px 14px;
+    border:none;
+    border-radius:6px;
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+    transition:background .15s ease;
+}
+.api-save-btn:hover{
+    background:var(--ink-light);
+}
+.api-status{
+    font-size:11px;
+    font-family:'JetBrains Mono', monospace;
+    margin-top:6px;
+    min-height:16px;
+}
+.api-status.success{ color:var(--moss); }
+.api-status.error{ color:var(--rust); }
+.api-link{
+    display:inline-block;
+    margin-top:8px;
+    font-size:11px;
+    color:var(--ink);
+}
+
 .go{
     margin-top:20px;
     display:inline-flex; align-items:center; gap:10px;
@@ -341,6 +414,56 @@ textarea:focus, input:focus, button:focus, .file-btn:focus-within, input[type=ra
     font-size:11px;
     color:#5B5470;
     margin-bottom:6px;
+}
+
+/* Routing result styles */
+.routing-result{
+    margin:8px 0;
+    min-height:0;
+}
+.calc-route-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    padding:6px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    color:var(--ink);
+    transition:all .15s ease;
+}
+.calc-route-btn:hover:not(:disabled){
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+}
+.calc-route-btn:disabled{
+    opacity:0.6;
+    cursor:wait;
+}
+.routing-success{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+}
+.routed-dist{
+    background:#DDE8DD;
+    color:#2D4A2D;
+    padding:4px 8px;
+    border-radius:5px;
+    font-weight:500;
+}
+.routed-time{
+    color:#5B5470;
+    padding:4px 0;
+}
+.routing-error{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--rust);
+    padding:4px 0;
 }
 
 .stamp .desc{

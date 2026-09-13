@@ -2,7 +2,8 @@ import { parseGPX } from "./utils/gpx.js";
 import { findNearbyStamps } from "./utils/geo.js";
 import { loadStamps } from "./utils/stamps.js";
 import { analyzeDetours, getDetourEffort } from "./utils/detour.js";
-import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, panToStamp } from "./components/map.js";
+import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, displayRoutingResult, panToStamp } from "./components/map.js";
+import { setApiKey, hasApiKey, calculateDetourRoute, formatDuration, formatDistance } from "./utils/routing.js";
 
 const el = id => document.getElementById(id);
 
@@ -18,9 +19,62 @@ const stats = el('stats');
 const resultsSection = el('resultsSection');
 const resultCount = el('resultCount');
 const grid = el('grid');
+const apiKeyInput = el('apiKeyInput');
+const saveApiKeyBtn = el('saveApiKey');
+const apiStatus = el('apiStatus');
 
 // Map state
 let mapInitialized = false;
+
+// Store current results for routing
+let currentResults = [];
+
+// API key persistence
+const API_KEY_STORAGE = 'hwn-ors-api-key';
+
+function loadSavedApiKey() {
+    try {
+        const saved = localStorage.getItem(API_KEY_STORAGE);
+        if (saved) {
+            setApiKey(saved);
+            apiKeyInput.value = saved;
+            updateApiStatus(true);
+        }
+    } catch {
+        // ignore
+    }
+}
+
+function updateApiStatus(hasKey) {
+    if (hasKey) {
+        apiStatus.textContent = '✓ API-Schlüssel gespeichert';
+        apiStatus.className = 'api-status success';
+    } else {
+        apiStatus.textContent = '';
+        apiStatus.className = 'api-status';
+    }
+}
+
+// Save API key handler
+saveApiKeyBtn.addEventListener('click', () => {
+    const key = apiKeyInput.value.trim();
+    if (key) {
+        setApiKey(key);
+        try {
+            localStorage.setItem(API_KEY_STORAGE, key);
+        } catch {
+            // ignore
+        }
+        updateApiStatus(true);
+    } else {
+        setApiKey(null);
+        localStorage.removeItem(API_KEY_STORAGE);
+        updateApiStatus(false);
+    }
+});
+
+// Load saved API key on page load
+loadSavedApiKey();
 
 // Threshold slider update
 threshInput.addEventListener('input', () => {
@@ -62,6 +116,9 @@ function render(results, routeLen, threshold) {
     resultCount.textContent = results.length + ' Treffer · Radius ' + threshold + ' m';
     grid.innerHTML = '';
 
+    // Store results for routing
+    currentResults = results;
+
     if (!results.length) {
         grid.innerHTML = '<div class="empty">Keine Stempelstelle im gewählten Radius gefunden. Radius vergrößern oder Route prüfen.</div>';
         return;
@@ -92,6 +149,14 @@ function render(results, routeLen, threshold) {
             ? Math.round(stamp.routePosition * 100)
             : null;
 
+        // Check if we already have routing data (from cache)
+        const hasRoutingData = stamp.routedDistance !== undefined;
+        const routingHtml = hasRoutingData
+            ? createRoutingResultHtml(stamp)
+            : (hasApiKey() && stamp.exitPoint
+                ? `<button class="calc-route-btn" data-stamp-id="${stamp.id}" title="Echte Wanderweg-Distanz berechnen">🥾 Route berechnen</button>`
+                : '');
+
         card.innerHTML = `
             <div class="badge">${stamp.id || '#'}</div>
             <h3>${escapeHtml(stamp.name)}</h3>
@@ -100,6 +165,7 @@ function render(results, routeLen, threshold) {
                 <span class="detour ${effortClass}" title="Geschätzter Umweg (hin und zurück)">${detourText} Umweg</span>
             </div>
             ${positionPct !== null ? `<div class="route-pos">Bei ${positionPct}% der Route</div>` : ''}
+            <div class="routing-result" id="routing-${stamp.id}">${routingHtml}</div>
             ${showDesc ? `<div class="desc">${escapeHtml(stamp.description)}</div>` : ''}
             <div class="card-actions">
                 <button class="show-on-map" title="Auf Karte zeigen">📍 Karte</button>
@@ -114,8 +180,66 @@ function render(results, routeLen, threshold) {
             panToStamp(stamp);
         });
 
+        // Click handler for "calculate route" button
+        const routeBtn = card.querySelector('.calc-route-btn');
+        if (routeBtn) {
+            routeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                calculateRouteForStamp(stamp, routeBtn);
+            });
+        }
+
         grid.appendChild(card);
     });
+}
+
+function createRoutingResultHtml(stamp) {
+    if (stamp.routingError) {
+        return `<div class="routing-error">${stamp.routingError}</div>`;
+    }
+    if (stamp.routedDistance !== undefined) {
+        const distText = formatDistance(stamp.routedDistance);
+        const timeText = formatDuration(stamp.routedDuration);
+        const elevText = stamp.routedAscent ? ` · ↑${stamp.routedAscent}m` : '';
+        return `
+            <div class="routing-success">
+                <span class="routed-dist">🥾 ${distText}</span>
+                <span class="routed-time">⏱ ${timeText}${elevText}</span>
+            </div>
+        `;
+    }
+    return '';
+}
+
+async function calculateRouteForStamp(stamp, button) {
+    if (!stamp.exitPoint) return;
+
+    // Update button state
+    button.disabled = true;
+    button.textContent = '⏳ Berechne...';
+
+    const result = await calculateDetourRoute(stamp.exitPoint, stamp);
+    const routingDiv = document.getElementById(`routing-${stamp.id}`);
+
+    if (result.error) {
+        stamp.routingError = result.error;
+        routingDiv.innerHTML = `<div class="routing-error">${result.error}</div>`;
+        button.textContent = '🥾 Route berechnen';
+        button.disabled = false;
+    } else {
+        // Store result on stamp object
+        stamp.routedDistance = result.distance;
+        stamp.routedDuration = result.duration;
+        stamp.routedAscent = result.ascent;
+        stamp.routedGeometry = result.geometry;
+
+        routingDiv.innerHTML = createRoutingResultHtml(stamp);
+
+        // Display route on map
+        if (result.geometry) {
+            displayRoutingResult(stamp, result.geometry);
+        }
+    }
 }
 
 // Cached stamps

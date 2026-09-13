@@ -36,6 +36,19 @@
             <span class="val" id="threshVal">300 m</span>
         </div>
 
+        <details class="api-config" id="apiConfig">
+            <summary>Routenberechnung (optional)</summary>
+            <div class="api-config-content">
+                <p class="api-hint">Mit einem kostenlosen OpenRouteService API-Schlüssel kannst du echte Wanderwege-Distanzen berechnen lassen statt Luftlinie.</p>
+                <div class="api-input-row">
+                    <input type="password" id="apiKeyInput" placeholder="API-Schlüssel eingeben">
+                    <button type="button" id="saveApiKey" class="api-save-btn">Speichern</button>
+                </div>
+                <div class="api-status" id="apiStatus"></div>
+                <a href="https://openrouteservice.org/dev/#/signup" target="_blank" rel="noopener" class="api-link">Kostenlos registrieren (2000 Anfragen/Tag)</a>
+            </div>
+        </details>
+
         <button class="go" id="goBtn">Route abgleichen</button>
         <div class="status" id="status"></div>
         <div class="stats" id="stats"></div>

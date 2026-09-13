@@ -9,6 +9,7 @@ let routeLayer = null;
 let stampsLayer = null;
 let matchedLayer = null;
 let detourLayer = null;
+let routingLayer = null;
 
 // Custom marker icons
 const defaultStampIcon = L.divIcon({
@@ -48,6 +49,7 @@ export function initMap(containerId = 'map') {
     // Initialize layer groups (order matters for z-index)
     routeLayer = L.layerGroup().addTo(map);
     detourLayer = L.layerGroup().addTo(map);
+    routingLayer = L.layerGroup().addTo(map);
     stampsLayer = L.layerGroup().addTo(map);
     matchedLayer = L.layerGroup().addTo(map);
 
@@ -59,6 +61,7 @@ export function clearMap() {
     if (stampsLayer) stampsLayer.clearLayers();
     if (matchedLayer) matchedLayer.clearLayers();
     if (detourLayer) detourLayer.clearLayers();
+    if (routingLayer) routingLayer.clearLayers();
 }
 
 export function displayRoute(routePoints) {
@@ -210,4 +213,83 @@ function createPopupContent(stamp, showDistance = false) {
 
 export function getMap() {
     return map;
+}
+
+/**
+ * Decode an encoded polyline string (Google Polyline Algorithm)
+ * Used by OpenRouteService for geometry encoding
+ */
+function decodePolyline(encoded) {
+    const points = [];
+    let index = 0;
+    let lat = 0;
+    let lon = 0;
+
+    while (index < encoded.length) {
+        let b;
+        let shift = 0;
+        let result = 0;
+
+        do {
+            b = encoded.charCodeAt(index++) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+        } while (b >= 0x20);
+
+        const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lat += dlat;
+
+        shift = 0;
+        result = 0;
+
+        do {
+            b = encoded.charCodeAt(index++) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+        } while (b >= 0x20);
+
+        const dlon = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lon += dlon;
+
+        points.push([lat / 1e5, lon / 1e5]);
+    }
+
+    return points;
+}
+
+/**
+ * Display a calculated routing result on the map
+ * @param {Object} stamp - The stamp with routing data
+ * @param {string} geometry - Encoded polyline geometry from ORS
+ */
+export function displayRoutingResult(stamp, geometry) {
+    if (!map || !routingLayer || !geometry) return;
+
+    // Decode the polyline
+    const points = decodePolyline(geometry);
+    if (!points.length) return;
+
+    // Draw the actual walking route
+    const routeLine = L.polyline(points, {
+        color: '#2D7A4D',
+        weight: 3,
+        opacity: 0.85,
+        dashArray: null,
+        lineCap: 'round',
+        lineJoin: 'round'
+    });
+
+    routeLine.bindPopup(`
+        <strong>Wanderweg zu ${stamp.name}</strong>
+        <div style="margin-top:4px;">Berechneter Umweg via Wanderwege</div>
+    `);
+
+    routingLayer.addLayer(routeLine);
+}
+
+/**
+ * Clear only routing layer (for re-calculations)
+ */
+export function clearRoutingLayer() {
+    if (routingLayer) routingLayer.clearLayers();
 }
