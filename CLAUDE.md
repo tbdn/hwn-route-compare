@@ -134,6 +134,7 @@ Users can select stamps and add them to the route:
 - Tours come from `src/data/tours.json`; stamp coordinates/names from `stamps.geojson`
 - Progress (finished tours, extra stamps) lives only in localStorage (`hwn-tours-done`, `hwn-stamps-extra`)
 - A track (planned or walked) never marks a tour as done; only the checkbox (list or detail) / progress import does
+- "Auf Wanderwege legen" routes the closed stamp loop via ORS GeoJSON endpoint (`calculateHikingTrack`), converts it with `coordinatesToGPX` and stores it as an uploaded track
 - "Im Routenabgleich prüfen" dispatches `hwn:compare-route` ({gpx, name}) on `document`; `app.js` switches to the compare tab and runs the comparison
 - Komoot links: per tour `komoot: [{url, name}]` in `tours.json`, plus browser-added links in localStorage (`hwn-komoot-links`); both are shown
 - Uploaded GPX tracks live in IndexedDB (`hwn-route-compare` / `tour-gpx`) and override `data/tours/<ID>.gpx`

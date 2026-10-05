@@ -162,3 +162,35 @@ export function analyzeTrack(gpxText, stamps) {
         missed
     };
 }
+
+function escapeXml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+/**
+ * Build a GPX track from [lon, lat, ele?] coordinates (e.g. an OpenRouteService GeoJSON line)
+ * @param {string} name
+ * @param {Array} coordinates
+ * @returns {string} GPX text
+ */
+export function coordinatesToGPX(name, coordinates) {
+    const points = coordinates.map(([lon, lat, ele]) =>
+        `            <trkpt lat="${lat}" lon="${lon}">${Number.isFinite(ele) ? `<ele>${ele}</ele>` : ''}</trkpt>`).join('\n');
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare (OpenRouteService)" xmlns="http://www.topografix.com/GPX/1/1">
+    <metadata>
+        <name>${escapeXml(name)}</name>
+    </metadata>
+    <trk>
+        <name>${escapeXml(name)}</name>
+        <trkseg>
+${points}
+        </trkseg>
+    </trk>
+</gpx>
+`;
+}

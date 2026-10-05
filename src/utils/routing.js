@@ -202,6 +202,66 @@ export function clearCache() {
 }
 
 /**
+ * Calculate a hiking route through waypoints as plain coordinates (GeoJSON endpoint),
+ * so the result can be stored as a GPX track
+ * @param {Array} waypoints - Array of {lat, lon} points in walking order (repeat the first one to close a loop)
+ * @returns {Promise<Object>} - { distance, ascent, coordinates: [[lon, lat, ele], ...], error }
+ */
+export async function calculateHikingTrack(waypoints) {
+    if (!apiKey) {
+        return { error: 'API-Schlüssel nicht konfiguriert' };
+    }
+    if (waypoints.length < 2) {
+        return { error: 'Mindestens 2 Wegpunkte erforderlich' };
+    }
+
+    try {
+        const response = await fetch(`${ORS_BASE_URL}/geojson`, {
+            method: 'POST',
+            headers: {
+                'Authorization': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                coordinates: waypoints.map(p => [p.lon, p.lat]),
+                elevation: true,
+                instructions: false
+            })
+        });
+
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+                return { error: 'Ungültiger API-Schlüssel' };
+            }
+            if (response.status === 429) {
+                return { error: 'API-Limit erreicht (max. 2000/Tag)' };
+            }
+            // ORS explains unroutable points (e.g. no path within 350 m) in the body
+            const message = await response.json().then(d => d?.error?.message).catch(() => null);
+            return { error: message ? `Keine Route gefunden: ${message}` : `API-Fehler: ${response.status}` };
+        }
+
+        const data = await response.json();
+        const feature = data.features?.[0];
+        if (!feature?.geometry?.coordinates?.length) {
+            return { error: 'Keine Route gefunden' };
+        }
+
+        const summary = feature.properties?.summary || {};
+        return {
+            distance: Math.round(summary.distance || 0),
+            ascent: Math.round(summary.ascent || 0),
+            coordinates: feature.geometry.coordinates
+        };
+    } catch (err) {
+        if (err.name === 'TypeError') {
+            return { error: 'Netzwerkfehler - keine Verbindung zur API' };
+        }
+        return { error: err.message || 'Unbekannter Fehler' };
+    }
+}
+
+/**
  * Calculate a route through multiple waypoints
  * @param {Array} waypoints - Array of {lat, lon} points (start, stamps..., end)
  * @returns {Promise<Object>} - { distance, duration, geometry, error }

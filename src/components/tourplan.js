@@ -5,8 +5,9 @@
 import { generateGPX, downloadGPX } from "../utils/optimize.js";
 import {
     analyzeTrack, loadProjectTracks, loadUploadedTracks, saveUploadedTrack,
-    deleteUploadedTrack, clearUploadedTracks, STAMP_ON_TRACK_METERS
+    deleteUploadedTrack, clearUploadedTracks, coordinatesToGPX, STAMP_ON_TRACK_METERS
 } from "../utils/tracks.js";
+import { calculateHikingTrack, hasApiKey } from "../utils/routing.js";
 import { distanceMeters } from "../utils/geo.js";
 
 const HARZ_CENTER = [51.72, 10.75];
@@ -695,6 +696,7 @@ function renderDetail(tour) {
             ${trackInfoHtml(tour)}
             <div class="detail-actions">
                 <button type="button" class="calc-route-btn" id="trackUpload">${track ? 'GPX ersetzen' : 'GPX hinterlegen'}</button>
+                ${tour.single ? '' : `<button type="button" class="calc-route-btn" id="trackRoute" title="Runde durch die Stempel auf Wanderwegen berechnen (OpenRouteService)">${track ? 'Neu auf Wanderwege legen' : 'Auf Wanderwege legen'}</button>`}
                 ${track?.source === 'upload' ? '<button type="button" class="detail-clear" id="trackRemove">Hochgeladenen Track entfernen</button>' : ''}
                 <input type="file" id="trackFile" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
             </div>
@@ -740,6 +742,7 @@ function renderDetail(tour) {
         if (file) uploadTrack(tour, file);
     });
     el('trackRemove')?.addEventListener('click', () => removeUploadedTrack(tour));
+    el('trackRoute')?.addEventListener('click', e => routeTour(tour, e.currentTarget));
     el('tourDoneToggle').addEventListener('change', e => {
         e.target.checked ? doneTours.add(tour.id) : doneTours.delete(tour.id);
         saveDone();
@@ -803,6 +806,46 @@ async function uploadTrack(tour, file) {
         fitTo([tour]);
     } catch (e) {
         setMessage(`Track nicht übernommen: ${e.message || 'Speichern fehlgeschlagen.'}`, true);
+    }
+}
+
+// Snap the straight-line loop to hiking paths via OpenRouteService; stored like an upload (planning only)
+async function routeTour(tour, button) {
+    const setMessage = (text, isError) => {
+        detailMessage = { tourId: tour.id, text, isError };
+        render();
+    };
+    if (!hasApiKey()) {
+        setMessage('Dafür brauchst du einen OpenRouteService-API-Schlüssel. Hinterlege ihn im Tab Routenabgleich unter den API-Einstellungen.', true);
+        return;
+    }
+    const existing = tracks.get(tour.id);
+    if (existing && !confirm(`Tour ${tour.id} hat schon einen Track (${existing.name}). Durch die berechnete Route ersetzen?`
+        + (existing.source === 'project' ? '\nDie Projektdatei bleibt erhalten und gilt wieder, wenn du den hochgeladenen Track entfernst.' : ''))) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Berechne …';
+    const stamps = tourStamps(tour);
+    const result = await calculateHikingTrack([...stamps, stamps[0]]);
+    if (result.error) {
+        setMessage(`Route nicht berechnet: ${result.error}`, true);
+        return;
+    }
+
+    const name = `OpenRouteService – Tour ${tour.id}`;
+    try {
+        const gpx = coordinatesToGPX(name, result.coordinates);
+        analyzeTrack(gpx, stamps);
+        const record = { name, gpx, uploadedAt: new Date().toISOString() };
+        await saveUploadedTrack(tour.id, record);
+        uploadedTracks[tour.id] = record;
+        detailMessage = { tourId: tour.id, text: 'Route auf Wanderwegen gespeichert (geplant). Prüfe sie auf der Karte, ORS kennt nicht jeden Pfad.', isError: false };
+        refreshTracks();
+        fitTo([tour]);
+    } catch (e) {
+        setMessage(`Route nicht gespeichert: ${e.message || 'Speichern fehlgeschlagen.'}`, true);
     }
 }
 
