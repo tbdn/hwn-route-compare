@@ -3,7 +3,7 @@ function degreesToRadians(degrees) {
     return degrees * Math.PI / 180;
 }
 
-function distanceMeters(lat1, lon1, lat2, lon2) {
+export function distanceMeters(lat1, lon1, lat2, lon2) {
     const EARTH_RADIUS_METERS = 6_371_000;
 
     const latitude1 = degreesToRadians(lat1);

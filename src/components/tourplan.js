@@ -1,7 +1,12 @@
-// Tourenplan: precomputed round tours covering all open stamps, grouped by region.
+// Tourenplan: precomputed round tours covering all stamps, grouped by region.
 // Has its own Leaflet map so it doesn't interfere with the route comparison map.
+// Tours can carry a real GPX track (project file or browser upload) that replaces the straight-line loop.
 
 import { generateGPX, downloadGPX } from "../utils/optimize.js";
+import {
+    analyzeTrack, loadProjectTracks, loadUploadedTracks, saveUploadedTrack,
+    deleteUploadedTrack, clearUploadedTracks, STAMP_ON_TRACK_METERS
+} from "../utils/tracks.js";
 
 const HARZ_CENTER = [51.72, 10.75];
 const DONE_STORAGE = 'hwn-tours-done';
@@ -26,7 +31,14 @@ let extraStamps = new Set();      // collected outside of any finished tour (fro
 let regionFilter = null;
 let selectedId = null;
 
+let projectTracks = {};           // tourId -> {name, gpx}
+let uploadedTracks = {};          // tourId -> {name, gpx, uploadedAt}
+const tracks = new Map();         // tourId -> {source, name, gpx, ...analyzeTrack()}
+const trackErrors = new Map();    // tourId -> message for a file that couldn't be used
+let detailMessage = null;         // {tourId, text, isError} shown once in the detail panel
+
 const loopLines = new Map();      // tourId -> visible polyline
+const hitLines = new Map();       // tourId -> wide invisible polyline for clicks
 const stampMarkers = new Map();   // stamp number -> circleMarker
 let labelLayer = null;
 
@@ -83,6 +95,34 @@ function shortRegionName(code) {
 }
 
 /**
+ * Figures for a tour: from its GPX track when there is one, otherwise the plan's estimate.
+ * Walking time uses the plan's formula (4 km/h plus ~6 min per stamp).
+ */
+function tourFigures(tour) {
+    const track = tracks.get(tour.id);
+    if (!track) {
+        return { real: false, km: tour.km, hours: tour.hours, ascent: tour.ascent, minEle: tour.minEle, maxEle: tour.maxEle };
+    }
+    return {
+        real: true,
+        km: track.km,
+        hours: track.km / 4 + tour.stamps.length * 0.1,
+        ascent: track.ascent,
+        minEle: track.minEle ?? tour.minEle,
+        maxEle: track.maxEle ?? tour.maxEle
+    };
+}
+
+function loopLatLngs(tour) {
+    const track = tracks.get(tour.id);
+    if (track) return track.latLngs;
+    if (tour.single) return [];
+    const latLngs = tourStamps(tour).map(s => [s.lat, s.lon]);
+    latLngs.push(latLngs[0]);
+    return latLngs;
+}
+
+/**
  * Show the tour plan. Loads data and builds the map on first call.
  * @param {Array} stamps - All stamps in internal format
  */
@@ -107,6 +147,44 @@ export async function showTourPlan(stamps) {
     renderChips();
     renderList();
     render();
+
+    // Tracks load in the background; the straight-line plan is usable meanwhile
+    [projectTracks, uploadedTracks] = await Promise.all([
+        loadProjectTracks(plan.tours.map(t => t.id)),
+        loadUploadedTracks()
+    ]);
+    refreshTracks();
+}
+
+// Rebuild the effective track per tour (upload beats project file) and redraw
+function refreshTracks() {
+    tracks.clear();
+    trackErrors.clear();
+    plan.tours.forEach(tour => {
+        const upload = uploadedTracks[tour.id];
+        const project = projectTracks[tour.id];
+        const candidates = [
+            upload && { source: 'upload', ...upload },
+            project && { source: 'project', ...project }
+        ].filter(Boolean);
+
+        for (const c of candidates) {
+            try {
+                tracks.set(tour.id, { ...c, ...analyzeTrack(c.gpx, tourStamps(tour)) });
+                break;
+            } catch (e) {
+                trackErrors.set(tour.id, `${c.name}: ${e.message}`);
+            }
+        }
+    });
+
+    plan.tours.forEach(tour => {
+        const latLngs = loopLatLngs(tour);
+        loopLines.get(tour.id).setLatLngs(latLngs);
+        hitLines.get(tour.id).setLatLngs(latLngs);
+    });
+    renderList();
+    render();
 }
 
 function initTourMap() {
@@ -122,9 +200,7 @@ function initTourMap() {
     labelLayer = L.layerGroup().addTo(map);
 
     plan.tours.forEach(tour => {
-        if (tour.single) return;
-        const latLngs = tourStamps(tour).map(s => [s.lat, s.lon]);
-        latLngs.push(latLngs[0]);
+        const latLngs = loopLatLngs(tour);
 
         const line = L.polyline(latLngs, {
             color: color(tour.region),
@@ -135,13 +211,17 @@ function initTourMap() {
         }).addTo(loopLayer);
 
         // Wide transparent line makes the loop easy to hit
-        L.polyline(latLngs, { weight: 16, opacity: 0 })
-            .bindTooltip(() => `Tour ${tour.id} · ${tour.stamps.length} Stempel · ca. ${fmt1(tour.km)} km`
-                + (isDone(tour) ? ' · erledigt' : ''), { sticky: true })
+        const hit = L.polyline(latLngs, { weight: 16, opacity: 0 })
+            .bindTooltip(() => {
+                const f = tourFigures(tour);
+                return `Tour ${tour.id} · ${tour.stamps.length} Stempel · ${f.real ? '' : 'ca. '}${fmt1(f.km)} km`
+                    + (f.real ? ' · GPX' : '') + (isDone(tour) ? ' · erledigt' : '');
+            }, { sticky: true })
             .on('click', () => select(tour.id))
             .addTo(loopLayer);
 
         loopLines.set(tour.id, line);
+        hitLines.set(tour.id, hit);
     });
 
     const tourOf = new Map();
@@ -170,7 +250,7 @@ function initTourMap() {
 }
 
 function fitTo(tours) {
-    const pts = tours.flatMap(t => tourStamps(t).map(s => [s.lat, s.lon]));
+    const pts = tours.flatMap(t => [...tourStamps(t).map(s => [s.lat, s.lon]), ...(tracks.get(t.id)?.latLngs.flat() || [])]);
     if (pts.length) map.fitBounds(pts, { padding: [24, 24], maxZoom: 13 });
 }
 
@@ -202,8 +282,9 @@ function renderList() {
     plan.regions.forEach(region => {
         const tours = plan.tours.filter(t => t.region === region.code);
         if (!tours.length) return;
-        const km = tours.reduce((a, t) => a + t.km, 0);
+        const km = tours.reduce((a, t) => a + tourFigures(t).km, 0);
         const count = tours.reduce((a, t) => a + t.stamps.length, 0);
+        const withTrack = tours.filter(t => tracks.has(t.id)).length;
 
         const sec = document.createElement('section');
         sec.className = 'card region-card';
@@ -212,13 +293,13 @@ function renderList() {
         sec.innerHTML = `
             <header class="region-head">
                 <h3><span class="mono region-code">${region.code}</span> ${escapeHtml(region.name)}</h3>
-                <span class="region-sub">${tours.length} Touren · ${count} Stempel · ${Math.round(km)} km · ca. ${tours[0].driveKm} km Anfahrt ab ${escapeHtml(plan.home)}</span>
+                <span class="region-sub">${tours.length} Touren · ${count} Stempel · ${Math.round(km)} km${withTrack ? ` · ${withTrack} mit GPX` : ''} · ca. ${tours[0].driveKm} km Anfahrt ab ${escapeHtml(plan.home)}</span>
             </header>
             <div class="table-wrap">
                 <table class="tour-table">
                     <thead><tr>
                         <th scope="col">Erledigt</th><th scope="col">Tour</th>
-                        <th scope="col" class="r">km</th><th scope="col" class="r">Std.</th><th scope="col" class="r">Hm min.</th>
+                        <th scope="col" class="r">km</th><th scope="col" class="r">Std.</th><th scope="col" class="r">Hm</th>
                         <th scope="col">Niveau, Zeit</th><th scope="col">Stempel in Reihenfolge</th>
                     </tr></thead>
                     <tbody></tbody>
@@ -238,16 +319,20 @@ function createTourRow(tour) {
     tr.dataset.id = tour.id;
 
     const dash = '–';
+    const f = tourFigures(tour);
+    const noFigures = tour.single && !f.real;
+    // Estimates are marked: "~" for distance/time, "≥" for ascent (only stamp-to-stamp climbs)
+    const est = f.real ? '' : '<span class="est">~</span>';
     const seq = tourStamps(tour)
         .map(s => `<span class="seq-stop"><span class="mono">${s.number}</span> ${escapeHtml(s.name)}</span>`)
         .join(' → ');
 
     tr.innerHTML = `
         <td><input type="checkbox" class="tour-done" aria-label="Tour ${tour.id} erledigt"></td>
-        <td class="tour-id mono">${tour.id}</td>
-        <td class="r mono">${tour.single ? dash : fmt1(tour.km)}</td>
-        <td class="r mono">${tour.single ? dash : fmt1(tour.hours)}</td>
-        <td class="r mono">${tour.single ? dash : tour.ascent}</td>
+        <td class="tour-id mono">${tour.id}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}</td>
+        <td class="r mono">${noFigures ? dash : est + fmt1(f.km)}</td>
+        <td class="r mono">${noFigures ? dash : est + fmt1(f.hours)}</td>
+        <td class="r mono">${noFigures ? dash : (f.real ? '' : '<span class="est">≥</span>') + f.ascent}</td>
         <td>${tour.single ? '' : `<span class="level lv-${tour.level}">${tour.level}</span><br>`}${tour.tags
             .map(g => `<span class="season" title="${escapeHtml(g.hint)}">${escapeHtml(g.label)}</span>`).join('')}</td>
         <td class="seq">${tour.single ? '<span class="detour-tag">Abstecher</span> ' : ''}${seq}</td>`;
@@ -288,18 +373,19 @@ function render() {
     plan.tours.forEach(tour => {
         const visible = !regionFilter || tour.region === regionFilter;
         const done = isDone(tour);
+        const real = tracks.has(tour.id);
         const line = loopLines.get(tour.id);
         const isSel = selectedId === tour.id;
         const dim = !visible || (selectedId && !isSel);
-        if (line) {
-            // Finished tours stay visible, but dashed so open tours stand out
-            line.setStyle({
-                weight: isSel ? 5 : 3,
-                opacity: dim ? 0.15 : (done && !isSel ? 0.6 : 0.9),
-                dashArray: done && !isSel ? '6 7' : null
-            });
-            if (isSel) line.bringToFront();
-        }
+        // Real tracks are drawn stronger than straight-line estimates;
+        // finished tours stay visible, but dashed so open tours stand out
+        line.setStyle({
+            weight: isSel ? 5 : (real ? 3.5 : 2.5),
+            opacity: dim ? 0.15 : (done && !isSel ? 0.6 : (real ? 0.95 : 0.75)),
+            dashArray: done && !isSel ? '6 7' : null
+        });
+        if (isSel) line.bringToFront();
+
         tour.stamps.forEach(n => {
             const m = stampMarkers.get(n);
             if (!m) return;
@@ -349,14 +435,41 @@ function renderStats() {
     const openStamps = stampsByNumber.size - collected.size;
     const openKm = plan.tours
         .filter(t => !isDone(t))
-        .reduce((a, t) => a + t.km, 0);
+        .reduce((a, t) => a + tourFigures(t).km, 0);
 
     el('tourStats').innerHTML = `
         <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${collected.size}</div></div>
         <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${openStamps}</div></div>
         <div class="route-stat"><div class="label">Rundtouren</div><div class="value">${plan.tours.filter(t => !t.single).length}</div></div>
-        <div class="route-stat"><div class="label">km offen, geschätzt</div><div class="value">${Math.round(openKm)}</div></div>
+        <div class="route-stat"><div class="label">km offen</div><div class="value">${Math.round(openKm)}</div></div>
         <div class="route-stat"><div class="label">Touren erledigt</div><div class="value highlight">${plan.tours.filter(isDone).length}</div></div>`;
+}
+
+function trackInfoHtml(tour) {
+    const track = tracks.get(tour.id);
+    const error = trackErrors.get(tour.id);
+    const parts = [];
+
+    if (track) {
+        const source = track.source === 'upload' ? 'im Browser hinterlegt' : 'Projektdatei';
+        parts.push(`<p class="hint track-source"><b>GPX-Track:</b> <span class="mono">${escapeHtml(track.name)}</span> · ${source}`
+            + (track.source === 'upload' && projectTracks[tour.id] ? ' (ersetzt die Projektdatei)' : '') + '</p>');
+        if (track.missed.length) {
+            const list = track.missed
+                .map(m => `${m.number} ${escapeHtml(stampsByNumber.get(m.number)?.name || '')} (${Math.round(m.distance)} m)`)
+                .join(', ');
+            parts.push(`<p class="hint track-warning">⚠ Nicht am Track (mehr als ${STAMP_ON_TRACK_METERS} m entfernt): ${list}</p>`);
+        }
+    } else {
+        parts.push(`<p class="hint">Noch kein GPX-Track. Lade die Tour aus Komoot hoch, dann zeigt die Karte den echten Weg statt der Luftlinie.</p>`);
+    }
+    if (error) {
+        parts.push(`<p class="hint track-warning">⚠ ${escapeHtml(error)}</p>`);
+    }
+    if (detailMessage?.tourId === tour.id) {
+        parts.push(`<p class="hint ${detailMessage.isError ? 'track-warning' : 'track-ok'}">${escapeHtml(detailMessage.text)}</p>`);
+    }
+    return parts.join('');
 }
 
 function renderDetail(tour) {
@@ -366,7 +479,7 @@ function renderDetail(tour) {
         detail.style.removeProperty('--c');
         const tours = regionFilter ? plan.tours.filter(t => t.region === regionFilter) : plan.tours;
         const count = tours.reduce((a, t) => a + t.stamps.length, 0);
-        const km = Math.round(tours.reduce((a, t) => a + t.km, 0));
+        const km = Math.round(tours.reduce((a, t) => a + tourFigures(t).km, 0));
         detail.innerHTML = `
             <h3>${regionFilter ? escapeHtml(regionName(regionFilter)) : 'Tour auswählen'}</h3>
             <p class="hint">${regionFilter
@@ -377,11 +490,15 @@ function renderDetail(tour) {
     }
 
     const stamps = tourStamps(tour);
+    const f = tourFigures(tour);
+    const track = tracks.get(tour.id);
     detail.style.setProperty('--c', color(tour.region));
 
-    const meta = tour.single
+    const ca = f.real ? '' : 'ca. ';
+    const meta = tour.single && !f.real
         ? '<span>Abstecher mit dem Auto</span>'
-        : `<span>ca. ${fmt1(tour.km)} km</span><span>ca. ${fmt1(tour.hours)} Std.</span><span>mind. ${tour.ascent} Hm</span><span class="level lv-${tour.level}">${tour.level}</span>`;
+        : `<span>${ca}${fmt1(f.km)} km</span><span>ca. ${fmt1(f.hours)} Std.</span><span>${f.real ? '' : 'mind. '}${f.ascent} Hm</span>`
+            + (tour.single ? '' : `<span class="level lv-${tour.level}">${tour.level}</span>`);
 
     // Round trip: start and end at the first stamp, the others as waypoints
     const ll = s => `${s.lat},${s.lon}`;
@@ -393,7 +510,7 @@ function renderDetail(tour) {
     detail.innerHTML = `
         <span class="region-tag">${escapeHtml(regionName(tour.region))}</span>
         <h3>Tour <span class="mono">${tour.id}</span>${isDone(tour) ? ' <span class="level lv-leicht">✓ erledigt</span>' : ''}</h3>
-        <div class="tour-meta mono">${meta}<span>${tour.minEle}–${tour.maxEle} m ü. NN</span><span>${stamps.length} Stempel</span></div>
+        <div class="tour-meta mono">${meta}<span>${f.minEle}–${f.maxEle} m ü. NN</span><span>${stamps.length} Stempel</span></div>
         <ul class="tips">${tour.tags.map(g => `<li><b>${escapeHtml(g.label)}:</b> ${escapeHtml(g.hint)}</li>`).join('')}</ul>
         <ol class="stop-list">${stamps.map((s, i) => `
             <li class="stop-item">
@@ -405,13 +522,25 @@ function renderDetail(tour) {
         <p class="hint">${tour.single
             ? 'Liegt zu abseits für eine Runde; nimm ihn auf dem Weg zu einer Nachbartour mit.'
             : 'Die Runde ist geschlossen, du kannst an jedem Stempel starten.'}</p>
+        <div class="track-box">
+            ${trackInfoHtml(tour)}
+            <div class="detail-actions">
+                <button type="button" class="calc-route-btn" id="trackUpload">${track ? 'GPX ersetzen' : 'GPX hinterlegen'}</button>
+                ${track?.source === 'upload' ? '<button type="button" class="detail-clear" id="trackRemove">Hochgeladenen Track entfernen</button>' : ''}
+                <input type="file" id="trackFile" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
+            </div>
+        </div>
         <div class="detail-actions">
-            <button type="button" class="selection-btn primary" id="tourGpx">GPX herunterladen</button>
+            <button type="button" class="selection-btn primary" id="tourGpx">${track ? 'GPX-Track herunterladen' : 'GPX herunterladen'}</button>
             <a class="detail-link" href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener">Google Maps →</a>
             <button type="button" class="detail-clear" id="tourClear">Auswahl aufheben</button>
         </div>`;
 
     el('tourGpx').addEventListener('click', () => {
+        if (track) {
+            downloadGPX(track.gpx, `HWN_${tour.id}`);
+            return;
+        }
         const gpx = generateGPX(stamps, {
             name: `HWN Tour ${tour.id}`,
             description: `${regionName(tour.region)} · ${stamps.length} Stempel · ca. ${fmt1(tour.km)} km`,
@@ -424,6 +553,46 @@ function renderDetail(tour) {
         render();
         fitTo(regionFilter ? plan.tours.filter(t => t.region === regionFilter) : plan.tours);
     });
+
+    const fileInput = el('trackFile');
+    el('trackUpload').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (file) uploadTrack(tour, file);
+    });
+    el('trackRemove')?.addEventListener('click', () => removeUploadedTrack(tour));
+}
+
+async function uploadTrack(tour, file) {
+    const setMessage = (text, isError) => {
+        detailMessage = { tourId: tour.id, text, isError };
+        render();
+    };
+    try {
+        const gpx = await file.text();
+        // Validate before storing so a broken file doesn't replace a working track
+        analyzeTrack(gpx, tourStamps(tour));
+        const record = { name: file.name, gpx, uploadedAt: new Date().toISOString() };
+        await saveUploadedTrack(tour.id, record);
+        uploadedTracks[tour.id] = record;
+        detailMessage = { tourId: tour.id, text: 'Track gespeichert.', isError: false };
+        refreshTracks();
+        fitTo([tour]);
+    } catch (e) {
+        setMessage(`Track nicht übernommen: ${e.message || 'Speichern fehlgeschlagen.'}`, true);
+    }
+}
+
+async function removeUploadedTrack(tour) {
+    try {
+        await deleteUploadedTrack(tour.id);
+        delete uploadedTracks[tour.id];
+        detailMessage = { tourId: tour.id, text: 'Hochgeladener Track entfernt.', isError: false };
+        refreshTracks();
+    } catch {
+        detailMessage = { tourId: tour.id, text: 'Track konnte nicht entfernt werden.', isError: true };
+        render();
+    }
 }
 
 // Progress backup: export/import as JSON so it survives a cleared browser storage
@@ -448,17 +617,22 @@ function setTransferStatus(msg, isError = false) {
 
 function exportProgress() {
     const today = new Date().toISOString().slice(0, 10);
+    // Only uploads are exported; project files already live in the repository
+    const exportedTracks = Object.fromEntries(
+        Object.entries(uploadedTracks).map(([id, t]) => [id, { name: t.name, gpx: t.gpx, uploadedAt: t.uploadedAt }]));
     downloadJSON({
         format: PROGRESS_FORMAT,
-        version: 1,
+        version: 2,
         exportedAt: new Date().toISOString(),
         doneTours: plan.tours.filter(isDone).map(t => t.id),
-        stamps: [...collectedStamps()].sort((a, b) => a - b)
+        stamps: [...collectedStamps()].sort((a, b) => a - b),
+        tracks: exportedTracks
     }, `hwn-fortschritt-${today}.json`);
-    setTransferStatus('Fortschritt exportiert.');
+    const n = Object.keys(exportedTracks).length;
+    setTransferStatus(`Fortschritt exportiert${n ? ` (mit ${n} GPX-Track${n > 1 ? 's' : ''})` : ''}.`);
 }
 
-function importProgress(text) {
+async function importProgress(text) {
     let data;
     try {
         data = JSON.parse(text);
@@ -477,12 +651,24 @@ function importProgress(text) {
     extraStamps = new Set();
     const covered = collectedStamps();
     extraStamps = new Set(data.stamps.map(Number).filter(n => stampsByNumber.has(n) && !covered.has(n)));
-
     saveDone();
     saveSet(EXTRA_STAMPS_STORAGE, extraStamps);
-    render();
 
-    const msg = `Importiert: ${plan.tours.filter(isDone).length} Touren erledigt, ${collectedStamps().size} Stempel gesammelt.`;
+    // Older exports have no tracks; then the uploaded tracks in the browser stay untouched
+    let trackCount = null;
+    if (data.tracks && typeof data.tracks === 'object') {
+        const valid = Object.entries(data.tracks)
+            .filter(([id, t]) => tourIds.has(id) && typeof t?.gpx === 'string')
+            .map(([id, t]) => [id, { name: String(t.name || `${id}.gpx`), gpx: t.gpx, uploadedAt: t.uploadedAt || null }]);
+        await clearUploadedTracks();
+        for (const [id, record] of valid) await saveUploadedTrack(id, record);
+        uploadedTracks = Object.fromEntries(valid);
+        trackCount = valid.length;
+    }
+    refreshTracks();
+
+    let msg = `Importiert: ${plan.tours.filter(isDone).length} Touren erledigt, ${collectedStamps().size} Stempel gesammelt`;
+    msg += trackCount === null ? '.' : `, ${trackCount} GPX-Track${trackCount === 1 ? '' : 's'}.`;
     setTransferStatus(unknownTours.length ? `${msg} Unbekannte Touren ignoriert: ${unknownTours.join(', ')}` : msg);
 }
 
@@ -494,11 +680,11 @@ function initProgressTransfer() {
         const file = input.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
             try {
-                importProgress(reader.result);
+                await importProgress(reader.result);
             } catch (e) {
-                setTransferStatus(e.message, true);
+                setTransferStatus(e.message || 'Import fehlgeschlagen.', true);
             }
             input.value = '';
         };

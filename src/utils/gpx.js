@@ -1,7 +1,7 @@
 import { routeToGeoJSON } from './geojson.js';
 
 // Parse GPX track/route points (e.g., from Komoot)
-function parseTrackPoint(trackPoint) {
+export function parseTrackPoint(trackPoint) {
     const lat = parseFloat(trackPoint.getAttribute("lat"));
     const lon = parseFloat(trackPoint.getAttribute("lon"));
 
