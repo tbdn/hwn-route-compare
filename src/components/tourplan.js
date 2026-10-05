@@ -589,14 +589,16 @@ function renderStats() {
     const openKm = openList.reduce((a, t) => a + tourFigures(t).km, 0);
     // Estimated ascent only counts climbs between stamps, so it's a lower bound ("≥")
     const openHm = openList.reduce((a, t) => a + tourFigures(t).ascent, 0);
-    const openHmEstimated = openList.some(t => !tourFigures(t).realAscent);
+    // Single stamps (car detour) have no distance or ascent, so nothing there is estimated
+    const estimatedAscent = t => !t.single && !tourFigures(t).realAscent;
+    const openHmEstimated = openList.some(estimatedAscent);
 
     // Walked distance: real track where there is one, otherwise the plan's estimate
     const doneList = plan.tours.filter(isDone);
     const walkedKm = doneList.reduce((a, t) => a + tourFigures(t).km, 0);
     const walkedHm = doneList.reduce((a, t) => a + tourFigures(t).ascent, 0);
-    const walkedEstimated = doneList.some(t => !tracks.has(t.id));
-    const walkedHmEstimated = doneList.some(t => !tourFigures(t).realAscent);
+    const walkedEstimated = doneList.some(t => !t.single && !tracks.has(t.id));
+    const walkedHmEstimated = doneList.some(estimatedAscent);
     const hm = n => Math.round(n).toLocaleString('de-DE');
 
     el('tourStats').innerHTML = `
