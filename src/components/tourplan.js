@@ -7,11 +7,14 @@ import {
     analyzeTrack, loadProjectTracks, loadUploadedTracks, saveUploadedTrack,
     deleteUploadedTrack, clearUploadedTracks, STAMP_ON_TRACK_METERS
 } from "../utils/tracks.js";
+import { distanceMeters } from "../utils/geo.js";
 
 const HARZ_CENTER = [51.72, 10.75];
 const DONE_STORAGE = 'hwn-tours-done';
 const EXTRA_STAMPS_STORAGE = 'hwn-stamps-extra';
 const PROGRESS_FORMAT = 'hwn-tourenplan-progress';
+// Start and end closer than this are shown as one "Start/Ziel" marker
+const LOOP_CLOSE_METERS = 250;
 
 // Region colors, readable on paper and on OSM tiles
 const REGION_COLORS = {
@@ -41,6 +44,7 @@ const loopLines = new Map();      // tourId -> visible polyline
 const hitLines = new Map();       // tourId -> wide invisible polyline for clicks
 const stampMarkers = new Map();   // stamp number -> circleMarker
 let labelLayer = null;
+let endpointLayer = null;
 
 function escapeHtml(str) {
     const div = document.createElement('div');
@@ -123,6 +127,63 @@ function loopLatLngs(tour) {
 }
 
 /**
+ * Start and end points of a tour, one pair per track segment.
+ * A loop (start ≈ end) collapses into a single "Start/Ziel" point.
+ * @returns {Array<{latLng: number[], kind: 'start'|'end'|'both', title: string}>}
+ */
+function tourEndpoints(tour) {
+    const raw = loopLatLngs(tour);
+    if (!raw.length) return [];
+    const segments = Array.isArray(raw[0][0]) ? raw : [raw];
+    const multi = segments.filter(seg => seg.length).length > 1;
+
+    return segments.filter(seg => seg.length).flatMap((seg, i) => {
+        const part = multi ? ` (Teil ${i + 1})` : '';
+        const start = seg[0];
+        const end = seg[seg.length - 1];
+        const gap = distanceMeters(start[0], start[1], end[0], end[1]);
+        if (gap < LOOP_CLOSE_METERS) {
+            return [{ latLng: start, kind: 'both', title: `Start/Ziel${part}` }];
+        }
+        return [
+            { latLng: start, kind: 'start', title: `Start${part}` },
+            { latLng: end, kind: 'end', title: `Ziel${part}` }
+        ];
+    });
+}
+
+function renderEndpoints() {
+    endpointLayer.clearLayers();
+    const selected = plan.tours.find(t => t.id === selectedId);
+    // With a selection only that tour gets (large) markers; otherwise every visible tour gets small ones
+    const tours = selected ? [selected] : plan.tours.filter(t => !regionFilter || t.region === regionFilter);
+
+    tours.forEach(tour => {
+        const big = tour === selected;
+        tourEndpoints(tour).forEach(p => {
+            const label = { start: 'S', end: 'Z', both: 'S/Z' }[p.kind];
+            const marker = L.marker(p.latLng, {
+                icon: L.divIcon({
+                    className: 'endpoint-marker',
+                    html: big
+                        ? `<div class="endpoint-pin ${p.kind}"><span>${label}</span></div>`
+                        : `<div class="endpoint-dot ${p.kind}"></div>`,
+                    iconSize: big ? [30, 30] : [10, 10],
+                    // Pins point at the spot from above so the stop number underneath stays visible
+                    iconAnchor: big ? [15, 36] : [5, 5]
+                }),
+                keyboard: false,
+                zIndexOffset: big ? 3000 : 0
+            })
+                .bindTooltip(`Tour ${tour.id} · ${p.title}`)
+                .on('click', () => select(tour.id))
+                .addTo(endpointLayer);
+            if (isDone(tour) && !big) marker.setOpacity(0.6);
+        });
+    });
+}
+
+/**
  * Show the tour plan. Loads data and builds the map on first call.
  * @param {Array} stamps - All stamps in internal format
  */
@@ -197,6 +258,7 @@ function initTourMap() {
 
     const loopLayer = L.layerGroup().addTo(map);
     const pointLayer = L.layerGroup().addTo(map);
+    endpointLayer = L.layerGroup().addTo(map);
     labelLayer = L.layerGroup().addTo(map);
 
     plan.tours.forEach(tour => {
@@ -398,6 +460,8 @@ function render() {
             });
         });
     });
+
+    renderEndpoints();
 
     labelLayer.clearLayers();
     const tour = plan.tours.find(t => t.id === selectedId);

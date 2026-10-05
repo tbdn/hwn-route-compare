@@ -1001,6 +1001,40 @@ input:focus, button:focus, .file-btn:focus-within, input[type=range]:focus{
     margin-right:6px;
 }
 
+/* Start/end markers on the tour map: pins for the selected tour, dots otherwise */
+.endpoint-marker{ background:transparent; }
+.endpoint-pin{
+    width:30px; height:30px;
+    border:2.5px solid white;
+    border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);
+    box-shadow:0 2px 6px rgba(0,0,0,.35);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+.endpoint-pin span{
+    transform:rotate(45deg);
+    color:white;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:-.5px;
+}
+.endpoint-pin.start, .endpoint-dot.start{ background:#2E8B3E; }
+.endpoint-pin.end, .endpoint-dot.end{ background:#1B1B1F; }
+.endpoint-pin.both, .endpoint-dot.both{ background:linear-gradient(135deg, #2E8B3E 50%, #1B1B1F 50%); }
+.endpoint-pin.both span{ font-size:9.5px; }
+.endpoint-dot{
+    width:10px; height:10px;
+    border:2px solid white;
+    border-radius:2px;
+    box-shadow:0 0 0 1px rgba(0,0,0,.25);
+    box-sizing:border-box;
+}
+.tour-legend i.legend-start{ background:#2E8B3E; border-radius:2px; }
+.tour-legend i.legend-end{ background:#1B1B1F; border-radius:2px; }
+
 .tour-detail{
     margin-top:0;
     display:grid;
