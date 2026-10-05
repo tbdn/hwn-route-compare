@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { setupBrowser, startTourPlan, plan, SRC, $, $$, tick, text, importProgressFile, loopGpx, tourById } from './helpers/browser.mjs';
+import { setupBrowser, startTourPlan, plan, SRC, $, $$, tick, text, importProgressFile, loopGpx, tourById, row, parseDe } from './helpers/browser.mjs';
 
 setupBrowser();
 const { trackOrigin } = await import(SRC + 'utils/tracks.js');
@@ -45,4 +45,16 @@ test('a planned own tour joins, a finished tour leaves', async () => {
 test('an OpenRouteService track does not make a suggestion planned', () => {
     assert.equal(trackOrigin(fs.readFileSync(`${SRC}data/tours/A1.gpx`, 'utf8')), 'ors');
     assert.ok(!visibleRows().includes('A1'));
+});
+
+test('the level shows its Leistungs-km (km + Hm/100) next to it, "~" when estimated', () => {
+    // E1 has a Komoot track: real km and ascent from the cells of its row
+    const effort = id => text(row(id).querySelector('.effort'));
+    const [km, , hm] = [...row('E1').querySelectorAll('td')].slice(2, 5).map(td => parseDe(td.textContent));
+    assert.match(effort('E1'), /^\d+,\d Leistungs-km$/);
+    assert.ok(Math.abs(parseDe(effort('E1').split(' ')[0]) - (km + hm / 100)) <= 0.11, effort('E1'));
+    assert.ok(row('E1').querySelector('.level'));
+    // Without a track the figures are estimates
+    const estimated = plan.tours.find(t => !fs.existsSync(`${SRC}data/tours/${t.id}.gpx`) && !t.single);
+    if (estimated) assert.match(effort(estimated.id), /^~\d+,\d Leistungs-km$/);
 });

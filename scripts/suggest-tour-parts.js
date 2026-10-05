@@ -27,7 +27,8 @@ const ELEVATION_NOISE_METERS = 3;
 // Tours that are long, but better handled differently
 const NO_SPLIT = {
     B3: 'Brocken: besser als Streckenwanderung mit der Brockenbahn',
-    C7: 'ein Teil wäre fast nur Hin- und Rückweg zum Goedeckenplatz, zusammen nur ~1,5 km kürzer'
+    C7: 'ein Teil wäre fast nur Hin- und Rückweg zum Goedeckenplatz, zusammen nur ~1,5 km kürzer',
+    E1: 'mit Komoot als ganze Runde geplant'
 };
 
 const stamps = new Map(geojson.features.map(f => [f.properties.number, {
