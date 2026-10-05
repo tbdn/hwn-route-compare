@@ -201,6 +201,33 @@ function tourFigures(tour) {
     };
 }
 
+/**
+ * Difficulty from distance and climbing: "Leistungs-km" = km + Hm / 100, plus the highest point.
+ * Real track ascent (with valleys and hills between stamps) is much higher than the stamp-to-stamp
+ * estimate, so each source has its own thresholds. Without real elevation the result is an estimate.
+ */
+const LEVEL_RULES = {
+    track: { mittel: 25, anspruchsvoll: 32 },
+    estimate: { mittel: 21, anspruchsvoll: 26.5, mittelEle: 650 }
+};
+const LEVEL_HIGH_ELE = 850;
+
+function tourLevel(tour) {
+    const f = tourFigures(tour);
+    const rule = f.realAscent ? LEVEL_RULES.track : LEVEL_RULES.estimate;
+    const effort = f.km + f.ascent / 100;
+    let level = 'leicht';
+    if (f.maxEle >= LEVEL_HIGH_ELE || effort >= rule.anspruchsvoll) level = 'anspruchsvoll';
+    else if (effort >= rule.mittel || (rule.mittelEle && f.maxEle >= rule.mittelEle)) level = 'mittel';
+    return { level, effort, estimated: !f.realAscent };
+}
+
+function levelHtml(tour) {
+    const { level, effort, estimated } = tourLevel(tour);
+    const title = `${fmt1(effort)} Leistungs-km (km + Hm/100)${estimated ? ', aus geschätzten Werten' : ', aus dem GPX-Track'}`;
+    return `<span class="level lv-${level}" title="${title}">${estimated ? '~' : ''}${level}</span>`;
+}
+
 function loopLatLngs(tour) {
     const track = tracks.get(tour.id);
     if (track) return track.latLngs;
@@ -481,7 +508,7 @@ function createTourRow(tour) {
         <td class="r mono">${noFigures ? dash : est + fmt1(f.km)}</td>
         <td class="r mono">${noFigures ? dash : est + fmt1(f.hours)}</td>
         <td class="r mono">${noFigures ? dash : (f.realAscent ? '' : '<span class="est">≥</span>') + f.ascent}</td>
-        <td>${tour.single ? '' : `<span class="level lv-${tour.level}">${tour.level}</span><br>`}${tour.tags
+        <td>${tour.single ? '' : `${levelHtml(tour)}<br>`}${tour.tags
             .map(g => `<span class="season" title="${escapeHtml(g.hint)}">${escapeHtml(g.label)}</span>`).join('')}</td>
         <td class="seq">${tour.single ? '<span class="detour-tag">Abstecher</span> ' : ''}${seq}</td>`;
 
@@ -666,7 +693,7 @@ function renderDetail(tour) {
     const meta = tour.single && !f.real
         ? '<span>Abstecher mit dem Auto</span>'
         : `<span>${ca}${fmt1(f.km)} km</span><span>ca. ${fmt1(f.hours)} Std.</span><span>${f.realAscent ? '' : 'mind. '}${f.ascent} Hm</span>`
-            + (tour.single ? '' : `<span class="level lv-${tour.level}">${tour.level}</span>`);
+            + (tour.single ? '' : levelHtml(tour));
 
     // Round trip: start and end at the first stamp, the others as waypoints
     const ll = s => `${s.lat},${s.lon}`;
