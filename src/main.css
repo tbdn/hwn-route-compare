@@ -26,9 +26,7 @@ body{
     *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
 }
 [hidden]{display:none !important;}
-.wrap{max-width:880px; margin:0 auto;}
-.wrap:has(#viewTours:not([hidden])),
-.wrap:has(#viewStamps:not([hidden])){max-width:1180px;}
+.wrap{max-width:1180px; margin:0 auto;}
 
 header{margin-bottom:28px;}
 .eyebrow{
