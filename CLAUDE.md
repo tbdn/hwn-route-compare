@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A client-side web tool that compares GPX routes (e.g., from Komoot) against the 222 stamping points ("Stempelstellen") of the Harzer Wandernadel hiking badge system. Shows which stamping points lie within an adjustable radius of your route, with detour analysis and optional real trail distance calculation.
 
 **Key characteristics:**
-- No build step, no npm dependencies - pure browser-based ES6 modules
+- No build step, no runtime dependencies - pure browser-based ES6 modules (npm is only used for the test tools)
 - German-language UI
 - Uses Haversine formula for great-circle distance calculations
 - Routes with >3000 points are downsampled for performance
@@ -24,6 +24,18 @@ python -m http.server -d src
 ```
 
 Then open http://localhost:3000 (or the port shown).
+
+## Tests
+
+```bash
+npm install   # once: linkedom (DOM) and fake-indexeddb, dev dependencies only
+npm test      # node --test tests/
+```
+
+- `tests/*.test.mjs` use the built-in `node:test` runner. Each file runs in its own process with a fresh app: `tests/helpers/browser.mjs` loads the real `src/index.html` into linkedom and stubs Leaflet, localStorage, downloads and `fetch` (files from `src/`, plus an OpenRouteService mock)
+- Tests work with the real project data and derive expected values from it (e.g. "km offen" is recomputed), so refining tracks or tours should not break them
+- linkedom does not reflect the `checked` attribute into the property: use `setChecked()` to change a checkbox and `isRenderedChecked()` to read a rendered one
+- `package.json` sets `"type": "module"`; `scripts/package.json` keeps the Node scripts CommonJS
 
 ## Architecture
 
@@ -50,6 +62,10 @@ src/                        # Serve this directory
 
 data/
 └── raw/HWN2025.gpx         # Official HWN GPX source file (input for conversion)
+
+tests/                      # node --test (npm test), see "Tests"
+├── helpers/browser.mjs     # linkedom DOM, Leaflet/fetch/ORS stubs, DOM helpers
+└── *.test.mjs              # progress, part tours, own tours, suggestion rest, ORS, Routenabgleich, storage/data
 
 scripts/
 ├── convert-gpx-to-json.js  # Node.js script to regenerate src/data/stamps.geojson

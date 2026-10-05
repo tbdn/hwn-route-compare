@@ -14,6 +14,8 @@ Stand: 05.10.2026
 | 4 | Routenabgleich anbinden | ✅ erledigt (05.10.2026) |
 | 5 | Eigene Tour auf der Karte zusammenstellen (optional) | ⬜ offen, nächster Schritt |
 
+Die automatisierten Tests zu den erledigten Schritten liegen in `tests/` (`npm install`, dann `npm test`), siehe Abschnitt „Tests“ in `CLAUDE.md`.
+
 ## Ziel
 
 - Die Touren aus `tours.json` und die Tracks in `src/data/tours/` sind **Vorschläge**. Das muss in der App klar erkennbar sein.

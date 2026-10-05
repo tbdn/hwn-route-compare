@@ -1,0 +1,13 @@
+{
+  "name": "hwn-route-compare",
+  "private": true,
+  "type": "module",
+  "description": "Harzer Wandernadel route comparison and tour plan. The app itself has no dependencies; these are only for the tests.",
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
+    "linkedom": "^0.18.13"
+  }
+}
