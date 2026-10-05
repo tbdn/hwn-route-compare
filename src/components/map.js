@@ -11,6 +11,7 @@ let matchedLayer = null;
 let detourLayer = null;
 let routingLayer = null;
 let extendedRouteLayer = null;
+let suggestionLayer = null;
 
 // Custom marker icons
 const defaultStampIcon = L.divIcon({
@@ -63,6 +64,7 @@ export function initMap(containerId = 'map') {
     }).addTo(map);
 
     // Initialize layer groups (order matters for z-index)
+    suggestionLayer = L.layerGroup().addTo(map);
     routeLayer = L.layerGroup().addTo(map);
     extendedRouteLayer = L.layerGroup().addTo(map);
     detourLayer = L.layerGroup().addTo(map);
@@ -80,6 +82,7 @@ export function clearMap() {
     if (detourLayer) detourLayer.clearLayers();
     if (routingLayer) routingLayer.clearLayers();
     if (extendedRouteLayer) extendedRouteLayer.clearLayers();
+    if (suggestionLayer) suggestionLayer.clearLayers();
 }
 
 export function displayRoute(routePoints) {
@@ -336,4 +339,28 @@ export function displayExtendedRoute(geometry, stamps) {
  */
 export function clearExtendedRoute() {
     if (extendedRouteLayer) extendedRouteLayer.clearLayers();
+}
+
+/**
+ * Show a suggestion from the Tourenplan next to the compared route: its track dashed underneath,
+ * and the stretches where the route leaves it highlighted
+ * @param {Array} latLngs - [[[lat, lon], ...], ...] per segment of the suggestion's track
+ * @param {Array} deviations - [[[lat, lon], ...]] stretches of the route off the suggestion
+ * @param {string} color - line color of the suggestion
+ * @param {string} label - popup text
+ */
+export function displaySuggestion(latLngs, deviations, color, label) {
+    if (!map || !suggestionLayer) return;
+    suggestionLayer.clearLayers();
+    const line = L.polyline(latLngs, { color, weight: 6, opacity: 0.75, dashArray: '8 10', lineCap: 'round' })
+        .bindPopup(`<strong>${label}</strong>`);
+    suggestionLayer.addLayer(line);
+    deviations.forEach(points => {
+        suggestionLayer.addLayer(L.polyline(points, { color: '#E08A00', weight: 10, opacity: 0.45, lineCap: 'round', interactive: false }));
+    });
+    map.fitBounds(line.getBounds().extend(routeLayer.getLayers()[0]?.getBounds() || line.getBounds()), { padding: [30, 30] });
+}
+
+export function clearSuggestion() {
+    if (suggestionLayer) suggestionLayer.clearLayers();
 }

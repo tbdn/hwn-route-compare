@@ -2,10 +2,10 @@ import { parseGPX } from "./utils/gpx.js";
 import { findNearbyStamps } from "./utils/geo.js";
 import { loadStamps } from "./utils/stamps.js";
 import { analyzeDetours, getDetourEffort } from "./utils/detour.js";
-import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, displayRoutingResult, displayExtendedRoute, clearExtendedRoute, panToStamp, getMap } from "./components/map.js";
-import { showTourPlan, openOwnTourDraft, showTour, loadStampProgress, isStampCollected } from "./components/tourplan.js";
+import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, displayRoutingResult, displayExtendedRoute, clearExtendedRoute, panToStamp, getMap, displaySuggestion, clearSuggestion } from "./components/map.js";
+import { showTourPlan, openOwnTourDraft, showTour, loadStampProgress, loadPlanTracks, isStampCollected, suggestionMatches } from "./components/tourplan.js";
 import { showStampPass } from "./components/stamppass.js";
-import { coordinatesToGPX } from "./utils/tracks.js";
+import { coordinatesToGPX, analyzeTrack } from "./utils/tracks.js";
 import { setApiKey, hasApiKey, calculateDetourRoute, calculateMultiWaypointRoute, formatDuration, formatDistance } from "./utils/routing.js";
 import { optimizeStampOrder, calculateTotalDetour, generateGPX, downloadGPX } from "./utils/optimize.js";
 
@@ -452,6 +452,90 @@ function render(results, routeLen, threshold) {
     syncCollected();
 }
 
+// Suggestions from the Tourenplan that the route passes: does one of them fit the route?
+const matchSection = el('matchSection');
+const matchList = el('matchList');
+let currentMatches = [];
+
+const MATCH_VERDICTS = {
+    fits: { label: 'passt', hint: 'Gleiche Stempel, fast überall dieselben Wege' },
+    covers: { label: 'Vorschlag + mehr', hint: 'Deine Route läuft den ganzen Vorschlag ab und noch weitere Wege' },
+    inside: { label: 'kürzer', hint: 'Deine Route bleibt auf den Wegen des Vorschlags, lässt aber einen Teil davon aus' },
+    differs: { label: 'andere Wege', hint: 'Gleiche Stempel, aber über andere Wege' },
+    partial: { label: 'teilweise', hint: 'Deine Route erreicht nur einen Teil der Stempel dieses Vorschlags' },
+    nearby: { label: 'in der Nähe', hint: 'Kein Stempel dieses Vorschlags auf deiner Route, aber gemeinsame Wege oder ein Stempel knapp daneben' }
+};
+const fmtKm = km => km.toFixed(1).replace('.', ',');
+const pct = share => `${Math.round(share * 100)} %`;
+
+function matchHtml(m) {
+    const verdict = MATCH_VERDICTS[m.verdict];
+    const total = m.hit.length + m.missed.length;
+    const diff = m.routeKm - m.km;
+    const diffText = `${diff >= 0 ? '+' : '−'}${fmtKm(Math.abs(diff))}`;
+    const stampName = n => escapeHtml(`${n} ${stampsCache.find(s => s.number === n)?.name || ''}`);
+    // Stamps that are only a little off the route say how far, the others are just named
+    const missedName = ({ number, distance }) => distance < 1000
+        ? `${stampName(number)} <b>(${Math.round(distance)} m daneben)</b>`
+        : stampName(number);
+    const ways = m.suggestionShare === null
+        ? '<span>kein Track zum Vergleich der Wege</span>'
+        : `<span title="Anteil des Vorschlags, der auf deiner Route liegt">Vorschlag zu <b>${pct(m.suggestionShare)}</b> auf deiner Route</span>
+           <span title="Anteil deiner Route, der auf dem Vorschlag liegt">deine Route zu <b>${pct(m.routeShare)}</b> auf dem Vorschlag (${fmtKm(m.sharedKm)} km gemeinsam)</span>`;
+    return `<div class="match match-${m.verdict}" data-id="${m.id}" style="--tour:${m.color}">
+        <div class="match-head">
+            <b class="match-name">${escapeHtml(m.label)}</b>
+            <span class="match-verdict" title="${verdict.hint}">${verdict.label}</span>
+            <span class="match-actions">
+                ${m.latLngs ? '<button type="button" class="calc-route-btn match-map">Auf Karte</button>' : ''}
+                <button type="button" class="calc-route-btn match-tour">Im Tourenplan</button>
+            </span>
+        </div>
+        <div class="match-figures">
+            <span>Stempel <b>${m.hit.length}/${total}</b></span>
+            <span>${fmtKm(m.routeKm)} km statt ${m.real ? '' : '~'}${fmtKm(m.km)} km (${diffText})</span>
+            ${ways}
+        </div>
+        ${m.missed.length ? `<div class="match-missed">Nicht auf deiner Route: ${[...m.missed].sort((a, b) => a.distance - b.distance).map(missedName).join(', ')}</div>` : ''}
+        ${m.originLabel ? `<div class="match-origin">Verglichen mit: ${escapeHtml(m.originLabel)}</div>` : ''}
+    </div>`;
+}
+
+function showMatchOnMap(m) {
+    displaySuggestion(m.latLngs, m.deviations, m.color, escapeHtml(m.label));
+    matchList.querySelectorAll('.match').forEach(row => row.classList.toggle('shown', row.dataset.id === m.id));
+}
+
+// Shown after every comparison; an empty list or an error says why there is nothing to see
+function renderMatches(matches, error = '') {
+    currentMatches = matches;
+    matchSection.hidden = false;
+    matchList.innerHTML = error
+        ? `<div class="empty">${escapeHtml(error)}</div>`
+        : matches.length
+            ? matches.map(matchHtml).join('')
+            : '<div class="empty">Kein Tourenvorschlag in der Nähe: kein Stempel höchstens 300 m neben der Route und keine gemeinsamen Wege.</div>';
+    // The best match with a track is drawn right away
+    const best = matches.find(m => m.latLngs);
+    if (best) showMatchOnMap(best);
+}
+
+matchList.addEventListener('click', e => {
+    const row = e.target.closest('.match');
+    const m = row && currentMatches.find(x => x.id === row.dataset.id);
+    if (!m) return;
+    if (e.target.closest('.match-map')) {
+        if (row.classList.contains('shown')) {
+            clearSuggestion();
+            row.classList.remove('shown');
+        } else {
+            showMatchOnMap(m);
+        }
+    } else if (e.target.closest('.match-tour')) {
+        document.dispatchEvent(new CustomEvent('hwn:show-tour', { detail: { id: m.id } }));
+    }
+});
+
 // Hits that are already collected are marked on the cards, the map and in the count.
 // Runs again whenever the progress changes (e.g. in "Meine Stempel").
 let mapStamps = null;           // {stamps, results} drawn on the map
@@ -787,6 +871,16 @@ async function runComparison() {
         displayAllStamps(stamps, isStampCollected);
         displayMatchedStamps(results, null, isStampCollected);
         displayDetourLines(results);
+
+        // Suggestions need the plan and its tracks; the comparison works without them
+        try {
+            await loadStampProgress(stamps);
+            await loadPlanTracks();
+            const { latLngs, km } = analyzeTrack(gpxText, []);
+            renderMatches(suggestionMatches({ latLngs, km }));
+        } catch (e) {
+            renderMatches([], `Tourenvorschläge konnten nicht verglichen werden: ${e.message || 'unbekannter Fehler'}`);
+        }
 
     } catch (e) {
         setStatus(e.message || 'Unbekannter Fehler beim Verarbeiten.', true);

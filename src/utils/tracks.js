@@ -305,6 +305,91 @@ export function reviewTrack(latLngs, stamps) {
     return { points, legs, backtrackShare: doubled / total };
 }
 
+// Points of two tracks closer than this are on the same way (GPS noise, both sides of a road)
+export const SAME_WAY_METERS = 60;
+// Tracks are compared at points this far apart, so sparse and dense tracks weigh the same
+const RESAMPLE_METERS = 20;
+// Shorter stretches off the other track are not shown as deviations
+const MIN_DEVIATION_METERS = 300;
+
+// Points every RESAMPLE_METERS along each segment; `meters` is the stretch a point stands for
+function resample(latLngs) {
+    const out = [];
+    latLngs.forEach(seg => {
+        if (seg.length) out.push({ lat: seg[0][0], lon: seg[0][1], meters: 0, segStart: true });
+        for (let i = 1; i < seg.length; i++) {
+            const [lat1, lon1] = seg[i - 1];
+            const [lat2, lon2] = seg[i];
+            const d = distanceMeters(lat1, lon1, lat2, lon2);
+            const n = Math.max(1, Math.ceil(d / RESAMPLE_METERS));
+            for (let k = 1; k <= n; k++) {
+                out.push({ lat: lat1 + (lat2 - lat1) * k / n, lon: lon1 + (lon2 - lon1) * k / n, meters: d / n });
+            }
+        }
+    });
+    return out;
+}
+
+/**
+ * How much of track `a` runs on track `b` (within SAME_WAY_METERS), and where it leaves it.
+ * @param {Array} a - [[[lat, lon], ...], ...] per segment, as returned by analyzeTrack()
+ * @param {Array} b - same format
+ * @returns {Object} - {share: 0..1 of a's length, offKm, deviations: [[[lat, lon], ...]] stretches of a
+ *                      off b, each at least MIN_DEVIATION_METERS long}
+ */
+export function trackOverlap(a, b) {
+    const pa = resample(a);
+    const pb = resample(b);
+    if (!pa.length || !pb.length) return { share: 0, offKm: 0, deviations: [] };
+
+    // Grid of cells at least SAME_WAY_METERS wide, so only neighbouring cells need a look
+    const cellLat = SAME_WAY_METERS / 111_000;
+    const cellLon = cellLat / Math.cos(pb[0].lat * Math.PI / 180);
+    const key = (cy, cx) => `${cy}:${cx}`;
+    const grid = new Map();
+    pb.forEach(p => {
+        const k = key(Math.floor(p.lat / cellLat), Math.floor(p.lon / cellLon));
+        if (!grid.has(k)) grid.set(k, []);
+        grid.get(k).push(p);
+    });
+    const onB = p => {
+        const cy = Math.floor(p.lat / cellLat);
+        const cx = Math.floor(p.lon / cellLon);
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                for (const q of grid.get(key(cy + dy, cx + dx)) || []) {
+                    if (distanceMeters(p.lat, p.lon, q.lat, q.lon) <= SAME_WAY_METERS) return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    let total = 0;
+    let on = 0;
+    const deviations = [];
+    let run = null;
+    const closeRun = () => {
+        if (run && run.meters >= MIN_DEVIATION_METERS) deviations.push(run.points);
+        run = null;
+    };
+    pa.forEach(p => {
+        if (p.segStart) closeRun();
+        total += p.meters;
+        if (onB(p)) {
+            on += p.meters;
+            closeRun();
+            return;
+        }
+        run ??= { points: [], meters: 0 };
+        run.points.push([p.lat, p.lon]);
+        run.meters += p.meters;
+    });
+    closeRun();
+
+    return { share: total ? on / total : 0, offKm: (total - on) / 1000, deviations };
+}
+
 // Name stored in the GPX (metadata or first track/route), if any
 export function gpxName(gpxText) {
     const doc = new DOMParser().parseFromString(gpxText, 'application/xml');

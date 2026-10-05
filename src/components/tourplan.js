@@ -9,7 +9,7 @@ import { generateGPX, downloadGPX } from "../utils/optimize.js";
 import {
     analyzeTrack, loadProjectTracks, loadUploadedTracks, saveUploadedTrack,
     deleteUploadedTrack, clearUploadedTracks, coordinatesToGPX, STAMP_ON_TRACK_METERS,
-    loadOwnTours, saveOwnTour, deleteOwnTour, clearOwnTours, stampsAlongTrack, gpxName, reviewTrack, trackOrigin
+    loadOwnTours, saveOwnTour, deleteOwnTour, clearOwnTours, stampsAlongTrack, gpxName, reviewTrack, trackOrigin, trackOverlap
 } from "../utils/tracks.js";
 import { calculateHikingTrack, hasApiKey } from "../utils/routing.js";
 import { distanceMeters } from "../utils/geo.js";
@@ -559,6 +559,102 @@ export function stampPlanning() {
     return new Map([...stampPlanningMap()].map(([n, p]) => [n, {
         status: p.status, unitId: p.unit.id, name: unitLabel(p.unit), origin: p.origin, originLabel: ORIGIN_LABELS[p.origin] || ''
     }]));
+}
+
+// When a route from elsewhere (e.g. Komoot) fits a suggestion
+const MATCH_RULES = {
+    share: 0.8,          // this share of both tracks runs on the same way
+    kmFactor: 0.2,       // without a track to compare: the length differs at most this much from the estimate
+    nearStampMeters: 300, // a suggestion without stamps on the route is still shown with a stamp this close ...
+    sharedKm: 0.5        // ... or this much way in common
+};
+const MATCH_ORDER = { fits: 0, covers: 1, inside: 2, differs: 3, partial: 4, nearby: 5 };
+
+// [south, west, north, east] of [[lat, lon], ...], widened by `meters`
+function boundsOf(points, meters = 0) {
+    const lats = points.map(p => p[0]);
+    const lons = points.map(p => p[1]);
+    const dLat = meters / 111_000;
+    const dLon = dLat / Math.cos(lats[0] * Math.PI / 180);
+    return [Math.min(...lats) - dLat, Math.min(...lons) - dLon, Math.max(...lats) + dLat, Math.max(...lons) + dLon];
+}
+const boundsMeet = (a, b) => a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3];
+
+/**
+ * Suggestions and part tours (whatever variant is chosen) near a route, best fit first: those with a stamp
+ * on the route, a stamp close to it or some way in common. Compares the stamps, the length and, when the
+ * suggestion has a track, the ways.
+ * Needs the plan (loadStampProgress) and, for the ways, the tracks (loadPlanTracks).
+ * @param {Object} route - {latLngs: [[[lat, lon], ...], ...] per segment, km}
+ * @returns {Array<Object>} - {id, label, color, verdict: 'fits'|'covers'|'inside'|'differs'|'partial'|'nearby',
+ *   hit: [number], missed: [{number, distance}], km, real, routeKm, origin, originLabel,
+ *   suggestionShare, routeShare, sharedKm, latLngs, deviations}
+ */
+export function suggestionMatches(route) {
+    if (!plan) return [];
+    const points = route.latLngs.flat();
+    if (!points.length) return [];
+    const routeBounds = boundsOf(points, MATCH_RULES.nearStampMeters);
+    const distances = new Map();
+    const distanceToRoute = n => {
+        if (!distances.has(n)) {
+            const s = stampsByNumber.get(n);
+            distances.set(n, !s || !boundsMeet(routeBounds, [s.lat, s.lon, s.lat, s.lon])
+                ? Infinity
+                : Math.min(...points.map(p => distanceMeters(s.lat, s.lon, p[0], p[1]))));
+        }
+        return distances.get(n);
+    };
+
+    return units.filter(u => !u.own).map(unit => {
+        const hit = unit.stamps.filter(n => distanceToRoute(n) <= STAMP_ON_TRACK_METERS);
+        const missed = unit.stamps.filter(n => !hit.includes(n)).map(number => ({ number, distance: distanceToRoute(number) }));
+        const track = tracks.get(unit.id);
+        const trackNear = track && boundsMeet(routeBounds, boundsOf(track.latLngs.flat()));
+        const stampNear = missed.some(m => m.distance <= MATCH_RULES.nearStampMeters);
+        if (!hit.length && !trackNear && !stampNear) return null;
+
+        const f = tourFigures(unit);
+        const result = {
+            id: unit.id, label: unitLabel(unit), color: unitColor(unit), hit, missed,
+            km: f.km, real: f.real, routeKm: route.km,
+            origin: track?.origin || null, originLabel: track ? ORIGIN_LABELS[track.origin] : '',
+            suggestionShare: null, routeShare: null, sharedKm: 0, latLngs: track?.latLngs || null, deviations: []
+        };
+        if (track && trackNear) {
+            const ofSuggestion = trackOverlap(track.latLngs, route.latLngs);
+            const ofRoute = trackOverlap(route.latLngs, track.latLngs);
+            result.suggestionShare = ofSuggestion.share;
+            result.routeShare = ofRoute.share;
+            result.sharedKm = ofRoute.share * route.km;
+            result.deviations = ofRoute.deviations;
+        } else if (track) {
+            result.suggestionShare = 0;
+            result.routeShare = 0;
+        }
+        if (!hit.length && !stampNear && result.sharedKm < MATCH_RULES.sharedKm) return null;
+        result.verdict = matchVerdict(result);
+        return result;
+    }).filter(Boolean).sort((a, b) =>
+        MATCH_ORDER[a.verdict] - MATCH_ORDER[b.verdict]
+        || b.hit.length / (b.hit.length + b.missed.length) - a.hit.length / (a.hit.length + a.missed.length)
+        || (b.routeShare ?? 0) - (a.routeShare ?? 0));
+}
+
+// fits = same ways; covers = the route walks the whole suggestion and more; inside = the route is a piece of it;
+// differs = same stamps on other ways; partial = only some of the stamps; nearby = no stamp, but close or shared ways
+function matchVerdict(m) {
+    if (!m.hit.length) return 'nearby';
+    if (m.missed.length) return 'partial';
+    if (m.suggestionShare === null) {
+        return Math.abs(m.routeKm - m.km) <= MATCH_RULES.kmFactor * m.km ? 'fits' : 'differs';
+    }
+    const suggestionOn = m.suggestionShare >= MATCH_RULES.share;
+    const routeOn = m.routeShare >= MATCH_RULES.share;
+    if (suggestionOn && routeOn) return 'fits';
+    if (suggestionOn) return 'covers';
+    if (routeOn) return 'inside';
+    return 'differs';
 }
 
 const plannedCount = (planning = stampPlanningMap()) => [...planning.values()].filter(p => p.status === 'planned').length;

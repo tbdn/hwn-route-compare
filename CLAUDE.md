@@ -51,6 +51,7 @@ src/                        # Serve this directory
 ├── data/
 │   ├── stamps.geojson      # 222 HWN stamps as GeoJSON FeatureCollection
 │   ├── tours.json          # Precomputed round tours (regions, stamp order, estimates)
+│   ├── badges.json         # Badge levels (Bronze … Wanderkaiser, Steiger required stamps) and themed collections
 │   └── tours/<ID>.gpx      # Optional real tracks per tour (e.g. Komoot), loaded automatically
 └── utils/
     ├── geo.js              # Haversine distance, findNearbyStamps()
@@ -59,6 +60,7 @@ src/                        # Serve this directory
     ├── stamps.js           # Loads stamps.geojson, converts to internal format
     ├── detour.js           # Exit point analysis, detour distance calculation
     ├── tracks.js           # Tour GPX tracks: project files + IndexedDB uploads, track stats
+    ├── badges.js           # Badge progress from badges.json (levels, Steiger, collections, "seit" date)
     └── routing.js          # OpenRouteService API for real trail distances
 
 data/
@@ -142,6 +144,7 @@ The app supports OpenRouteService for calculating actual hiking trail distances:
 
 Users can select stamps and add them to the route:
 - Checkbox on each stamp card for selection
+- Hits that are already collected are marked ("✓ schon gestempelt" on the card, grey on the map, count in the header); `syncCollected()` in `app.js` follows `hwn:progress-changed`
 - Floating selection bar shows count and "Zur Route hinzufügen" button
 - Calculates actual hiking route via OpenRouteService API
 - Modal shows total distance, duration, elevation gain/loss
@@ -149,17 +152,26 @@ Users can select stamps and add them to the route:
 - GPX export for import back to Komoot or other navigation apps
 - "Als eigene Tour speichern" in the modal hands the ORS track to the Tourenplan; the same button in the results header saves the compared route itself (stamps directly on the route and selected cards are preselected). `app.js` calls `openOwnTourDraft()` from `tourplan.js` after switching to the tab
 
+## Matching suggestions (Routenabgleich)
+
+- After every comparison, `#matchSection` lists every suggestion and part tour (whichever variant is chosen) with a stamp on the route (≤ 150 m), a stamp close to it (≤ `nearStampMeters` 300 m) or ≥ `sharedKm` 0.5 km of shared way; otherwise it says why nothing is there: `suggestionMatches({latLngs, km})` in `tourplan.js` (needs `loadStampProgress()` + `loadPlanTracks()`, which `runComparison()` awaits)
+- Ways are compared with `trackOverlap()` in `tracks.js`: both tracks resampled every 20 m, a point counts as shared within `SAME_WAY_METERS` (60 m); shares are by length in both directions, stretches of the route ≥ 300 m off the suggestion are `deviations`
+- Verdicts (`matchVerdict()`, `MATCH_RULES`): `fits` (all stamps, ≥ 80 % shared both ways; without a track: km within ±20 %), `covers` (route walks the whole suggestion and more), `inside` (route stays on it but skips a part), `differs` (same stamps, other ways), `partial` (some stamps), `nearby` (no stamp, but close or shared ways; missed stamps show their distance)
+- "Auf Karte" draws the suggestion track dashed plus the route's deviations in orange (`displaySuggestion()` in `map.js`); the best match with a track is drawn right away. "Im Tourenplan" dispatches `hwn:show-tour`
+
 ## Meine Stempel (third tab, `#stempel`)
 
 - Grid of all 222 stamps in number order (`stamppass.js`), collected ones filled; filter Alle/Offen/Gestempelt and search (digits = exact number, otherwise id/name/description)
 - Ticking a tile or "Mehrere eintragen" (`parseNumbers()`: `3, 17 120-125`, `HWN020`) changes the same progress as the Tourenplan, with "Rückgängig" for the last list entry
 - Progress stays owned by `tourplan.js`: `loadStampProgress()` loads tours.json and the progress without building the map, `setStampsCollected()` saves and redraws an open Tourenplan; `saveCollected()` dispatches `hwn:progress-changed`, which the stamp page syncs in place (focus stays, a stamp ticked under "Offen" stays visible until the filter changes)
+- Badges: foldable box `#passBadges` (`<details>`, state in `hwn-badges-open`, the summary shows the next level) with the level ladder (from `badges.json` via `badgeProgress()` in `utils/badges.js`), ticks on the progress bar and the collections; select `#passTheme` filters the grid by a collection or the Steiger's required stamps. The Tourenplan shows the next level under "Stempel gesammelt" (`nextLevelHtml()`)
 - The suggestion badge on a tile dispatches `hwn:show-tour` ({id}); `app.js` switches to the Tourenplan and calls `showTour()`. The "Stempel gesammelt" stat in the Tourenplan links to `#stempel`
 
 ## Tourenplan (second tab, `#touren`)
 
 - Tours come from `src/data/tours.json`; stamp coordinates/names from `stamps.geojson`
 - Tours in `tours.json` are suggestions ("Vorschlag A1"); ORS-computed tracks are labelled "Routenvorschlag (OpenRouteService, ungeprüft)"
+- Collection dates live in `hwn-stamp-dates` (`{number: 'YYYY-MM-DD'}`, local date via `today()`); `collectStamps()` is the only place that collects/removes stamps (new stamps get the date, existing ones keep it). Export v4 adds `stampDates`; walked own tours carry `walkedAt`
 - Progress is stored per stamp in localStorage (`hwn-stamps-collected`); a tour is done when all its stamps are collected. The tour checkbox sets/clears all of its stamps (indeterminate when partial), single stamps are toggled in the detail list. Legacy keys `hwn-tours-done` / `hwn-stamps-extra` are only read once for migration
 - A track (planned or walked) never changes progress
 - Season tags (ganzjährig/Apr–Nov/Mai–Okt) are computed from `tourFigures().maxEle` (`SEASON_TAGS`); `tours.json` `tags` only holds thematic hints
@@ -169,11 +181,14 @@ Users can select stamps and add them to the route:
 - "km/Hm zurückgelegt" = walked own tours + finished suggestions that share no stamp with a walked own tour
 - Rest of a suggestion (`restStamps()` / `restFigures()`): stamps neither collected nor in a planned own tour (`plannedStampOwners()`), kept in the suggestion's order; unchanged → track/estimate figures, reduced → `estimateLoop()` (straight line × `ROUTE_FACTOR` 1.4), empty → 0. "km/Hm offen" = planned own tours + rest of open suggestions, so every open stamp counts once. List cells are refreshed in `render()` via `fillRowCells()`; reduced suggestions fade on the map with a dotted rest loop (`restLayer`)
 - "Rest auf Wanderwege legen" (`routeRest`) and "Als eigene Tour übernehmen" (`adoptSuggestion`, only with a track) create own tours
+- Track origin: `trackOrigin()` in `tracks.js` reads the GPX head (`ors` = OpenRouteService, `app` = straight lines from this app, `komoot`, `external`); `tracks` entries carry `origin`. "Verplant" (`stampPlanningMap()` / exported `stampPlanning()`) = open stamp passed by the Komoot/external track of an open unit (chosen variant or planned own tour); own tours with ORS/app tracks are "eigene Tour, ungeprüft". `ownTourStampOwners()` (rest of suggestions) ignores the origin so nothing counts twice. Project tracks load via `loadPlanTracks()` (tour plan or stamp page); `refreshTracks()` dispatches `hwn:progress-changed`
 - Review hints ("⚠ prüfen", chip "Zu prüfen"): `computeReviews()` in `tourplan.js` judges only OpenRouteService tracks (`isSuggestedTrack`) with `reviewTrack()` from `tracks.js` (detour legs, backtracking share) against `REVIEW_RULES`, plus `review: [text]` notes in `tours.json` and "parts much shorter than the whole". Recomputed whenever tracks change; finished tours and own tours are never flagged
 - Plan for own tours, part tours and next steps: `docs/plan-eigene-touren.md`
+- Plan for stamp dates, badges, backups and planned stamps on "Meine Stempel": `docs/plan-stempel.md`
 - "Auf Wanderwege legen" routes the closed stamp loop via ORS GeoJSON endpoint (`calculateHikingTrack`), converts it with `coordinatesToGPX` and stores it as an uploaded track
 - "Im Routenabgleich prüfen" dispatches `hwn:compare-route` ({gpx, name}) on `document`; `app.js` switches to the compare tab and runs the comparison
 - Difficulty (`tourLevel()`) is computed in the app from `tourFigures()`: Leistungs-km = km + Hm/100; track thresholds 25/32, estimate thresholds 21/26.5 (+ ≥650 m → mittel), ≥850 m → anspruchsvoll. `tours.json` has no `level` field
 - Komoot links: per tour `komoot: [{url, name}]` in `tours.json`, plus browser-added links in localStorage (`hwn-komoot-links`); both are shown
 - Uploaded GPX tracks live in IndexedDB (`hwn-route-compare` / `tour-gpx`) and override `data/tours/<ID>.gpx`; "Browser-Tracks löschen (n)" next to export/import removes all of them at once (confirmation in the bar; own tours, Komoot links and progress stay) — useful after changing project files
+- Backup bar `#backupBar` (export/import, uploads clear) sits outside the views and shows on "Meine Stempel" and in the Tourenplan; `loadPlanData()` already loads uploads and own tours, so exports are complete without the map. Reminder `#backupHint`: `hwn-last-backup`, `hwn-changes-since-backup`, `hwn-backup-snooze`; `navigator.storage.persist()` is requested once on the first collected stamp
 - "Exportieren"/"Importieren" writes/reads a JSON backup (format `hwn-tourenplan-progress`; v2 added uploaded tracks and browser Komoot links, v3 makes `stamps` authoritative and keeps `doneTours` derived); import replaces browser state
