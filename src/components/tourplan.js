@@ -12,6 +12,7 @@ import { distanceMeters } from "../utils/geo.js";
 const HARZ_CENTER = [51.72, 10.75];
 const DONE_STORAGE = 'hwn-tours-done';
 const EXTRA_STAMPS_STORAGE = 'hwn-stamps-extra';
+const KOMOOT_STORAGE = 'hwn-komoot-links';
 const PROGRESS_FORMAT = 'hwn-tourenplan-progress';
 // Start and end closer than this are shown as one "Start/Ziel" marker
 const LOOP_CLOSE_METERS = 250;
@@ -38,6 +39,7 @@ let projectTracks = {};           // tourId -> {name, gpx}
 let uploadedTracks = {};          // tourId -> {name, gpx, uploadedAt}
 const tracks = new Map();         // tourId -> {source, name, gpx, ...analyzeTrack()}
 const trackErrors = new Map();    // tourId -> message for a file that couldn't be used
+let komootLinks = {};             // tourId -> [{url, name}] added in the browser (project links live in tours.json)
 let detailMessage = null;         // {tourId, text, isError} shown once in the detail panel
 
 const loopLines = new Map();      // tourId -> visible polyline
@@ -69,6 +71,85 @@ function saveSet(key, set) {
     } catch {
         // ignore
     }
+}
+
+// Komoot: accept a tour link (komoot.com/.de, any locale) or a bare tour id
+function parseKomootUrl(input) {
+    const text = input.trim();
+    if (/^\d{5,}$/.test(text)) return `https://www.komoot.com/de-de/tour/${text}`;
+    let url;
+    try {
+        url = new URL(/^https?:\/\//i.test(text) ? text : `https://${text}`);
+    } catch {
+        return null;
+    }
+    if (!/(^|\.)komoot\.(com|de)$/i.test(url.hostname)) return null;
+    // Plain tour pages are normalized; anything else (collections, share links) is kept as is
+    const id = url.pathname.match(/\/tour\/(\d+)/)?.[1];
+    return id && !url.search ? `https://www.komoot.com/de-de/tour/${id}` : url.href;
+}
+
+// Komoot's GPX export is named like "2026-09-26_3310815718_Ilsetal.gpx"
+function komootUrlFromFilename(name) {
+    const id = name.match(/^\d{4}-\d{2}-\d{2}_(\d{5,})_/)?.[1];
+    return id ? `https://www.komoot.com/de-de/tour/${id}` : null;
+}
+
+function loadKomootLinks() {
+    try {
+        const data = JSON.parse(localStorage.getItem(KOMOOT_STORAGE) || '{}');
+        return data && typeof data === 'object' ? data : {};
+    } catch {
+        return {};
+    }
+}
+
+function saveKomootLinks() {
+    try {
+        localStorage.setItem(KOMOOT_STORAGE, JSON.stringify(komootLinks));
+    } catch {
+        // ignore
+    }
+}
+
+// Only well-formed links for known tours survive (storage and imports are untrusted)
+function sanitizeKomootLinks(data, tourIds) {
+    const result = {};
+    Object.entries(data || {}).forEach(([id, links]) => {
+        if (!tourIds.has(id) || !Array.isArray(links)) return;
+        const valid = links
+            .map(l => ({ url: parseKomootUrl(String(l?.url || '')), name: l?.name ? String(l.name) : '' }))
+            .filter(l => l.url);
+        if (valid.length) result[id] = valid;
+    });
+    return result;
+}
+
+// Project links first, then browser links; the same tour is listed once
+function tourKomootLinks(tour) {
+    const seen = new Set();
+    return [
+        ...(tour.komoot || []).map(l => ({ ...l, source: 'project' })),
+        ...(komootLinks[tour.id] || []).map(l => ({ ...l, source: 'browser' }))
+    ].filter(l => !seen.has(l.url) && seen.add(l.url));
+}
+
+function komootLabel(link) {
+    const id = link.url.match(/\/tour\/(\d+)/)?.[1];
+    return link.name || (id ? `Komoot-Tour ${id}` : 'Komoot');
+}
+
+function addKomootLink(tour, url, name = '') {
+    if (tourKomootLinks(tour).some(l => l.url === url)) return false;
+    komootLinks[tour.id] = [...(komootLinks[tour.id] || []), { url, name }];
+    saveKomootLinks();
+    return true;
+}
+
+function removeKomootLink(tour, url) {
+    komootLinks[tour.id] = (komootLinks[tour.id] || []).filter(l => l.url !== url);
+    if (!komootLinks[tour.id].length) delete komootLinks[tour.id];
+    saveKomootLinks();
 }
 
 function saveDone() {
@@ -202,6 +283,7 @@ export async function showTourPlan(stamps) {
     stampsByNumber = new Map(stamps.map(s => [s.number, s]));
     doneTours = loadSet(DONE_STORAGE);
     extraStamps = loadSet(EXTRA_STAMPS_STORAGE);
+    komootLinks = sanitizeKomootLinks(loadKomootLinks(), new Set(plan.tours.map(t => t.id)));
 
     initTourMap();
     initProgressTransfer();
@@ -391,7 +473,7 @@ function createTourRow(tour) {
 
     tr.innerHTML = `
         <td><input type="checkbox" class="tour-done" aria-label="Tour ${tour.id} erledigt"></td>
-        <td class="tour-id mono">${tour.id}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}</td>
+        <td class="tour-id mono">${tour.id}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}${tourKomootLinks(tour).length ? '<span class="gpx-tag komoot-tag" title="Mit Komoot-Link">komoot</span>' : ''}</td>
         <td class="r mono">${noFigures ? dash : est + fmt1(f.km)}</td>
         <td class="r mono">${noFigures ? dash : est + fmt1(f.hours)}</td>
         <td class="r mono">${noFigures ? dash : (f.real ? '' : '<span class="est">≥</span>') + f.ascent}</td>
@@ -530,7 +612,7 @@ function trackInfoHtml(tour) {
     if (error) {
         parts.push(`<p class="hint track-warning">⚠ ${escapeHtml(error)}</p>`);
     }
-    if (detailMessage?.tourId === tour.id) {
+    if (detailMessage?.tourId === tour.id && !detailMessage.komoot) {
         parts.push(`<p class="hint ${detailMessage.isError ? 'track-warning' : 'track-ok'}">${escapeHtml(detailMessage.text)}</p>`);
     }
     return parts.join('');
@@ -594,6 +676,14 @@ function renderDetail(tour) {
                 <input type="file" id="trackFile" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
             </div>
         </div>
+        <div class="komoot-box">
+            <b>Komoot</b>
+            ${komootHtml(tour)}
+            <form class="komoot-add" id="komootForm">
+                <input type="text" id="komootInput" placeholder="komoot.com/tour/… oder Tour-ID" aria-label="Komoot-Link hinzufügen" autocomplete="off">
+                <button type="submit" class="calc-route-btn">Verlinken</button>
+            </form>
+        </div>
         <div class="detail-actions">
             <button type="button" class="selection-btn primary" id="tourGpx">${track ? 'GPX-Track herunterladen' : 'GPX herunterladen'}</button>
             <a class="detail-link" href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener">Google Maps →</a>
@@ -625,6 +715,43 @@ function renderDetail(tour) {
         if (file) uploadTrack(tour, file);
     });
     el('trackRemove')?.addEventListener('click', () => removeUploadedTrack(tour));
+
+    el('komootForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const input = el('komootInput');
+        const url = parseKomootUrl(input.value);
+        if (!url) {
+            detailMessage = { tourId: tour.id, text: 'Das ist kein Komoot-Link.', isError: true, komoot: true };
+        } else if (!addKomootLink(tour, url)) {
+            detailMessage = { tourId: tour.id, text: 'Dieser Link ist schon hinterlegt.', isError: true, komoot: true };
+        } else {
+            detailMessage = null;
+        }
+        renderList();
+        render();
+        if (!url) el('komootInput').value = input.value;
+    });
+    el('tourDetail').querySelectorAll('[data-komoot-remove]').forEach(btn =>
+        btn.addEventListener('click', () => {
+            removeKomootLink(tour, btn.dataset.komootRemove);
+            renderList();
+            render();
+        }));
+}
+
+function komootHtml(tour) {
+    const links = tourKomootLinks(tour);
+    const items = links.map(l => `
+        <li>
+            <a class="detail-link" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(komootLabel(l))} →</a>
+            ${l.source === 'browser'
+                ? `<button type="button" class="detail-clear" data-komoot-remove="${escapeHtml(l.url)}" title="Link entfernen" aria-label="Link entfernen">×</button>`
+                : '<span class="hint" title="Steht in src/data/tours.json">Projekt</span>'}
+        </li>`).join('');
+    const msg = detailMessage?.tourId === tour.id && detailMessage.komoot
+        ? `<p class="hint ${detailMessage.isError ? 'track-warning' : 'track-ok'}">${escapeHtml(detailMessage.text)}</p>`
+        : '';
+    return (links.length ? `<ul class="komoot-links">${items}</ul>` : '<p class="hint">Noch keine Komoot-Tour verlinkt.</p>') + msg;
 }
 
 async function uploadTrack(tour, file) {
@@ -639,7 +766,9 @@ async function uploadTrack(tour, file) {
         const record = { name: file.name, gpx, uploadedAt: new Date().toISOString() };
         await saveUploadedTrack(tour.id, record);
         uploadedTracks[tour.id] = record;
-        detailMessage = { tourId: tour.id, text: 'Track gespeichert.', isError: false };
+        const komootUrl = komootUrlFromFilename(file.name);
+        const linked = komootUrl && addKomootLink(tour, komootUrl);
+        detailMessage = { tourId: tour.id, text: linked ? 'Track gespeichert und Komoot-Tour verlinkt.' : 'Track gespeichert.', isError: false };
         refreshTracks();
         fitTo([tour]);
     } catch (e) {
@@ -690,7 +819,8 @@ function exportProgress() {
         exportedAt: new Date().toISOString(),
         doneTours: plan.tours.filter(isDone).map(t => t.id),
         stamps: [...collectedStamps()].sort((a, b) => a - b),
-        tracks: exportedTracks
+        tracks: exportedTracks,
+        komoot: komootLinks
     }, `hwn-fortschritt-${today}.json`);
     const n = Object.keys(exportedTracks).length;
     setTransferStatus(`Fortschritt exportiert${n ? ` (mit ${n} GPX-Track${n > 1 ? 's' : ''})` : ''}.`);
@@ -728,6 +858,11 @@ async function importProgress(text) {
         for (const [id, record] of valid) await saveUploadedTrack(id, record);
         uploadedTracks = Object.fromEntries(valid);
         trackCount = valid.length;
+    }
+    // Same for Komoot links: only replaced when the file has them
+    if (data.komoot && typeof data.komoot === 'object') {
+        komootLinks = sanitizeKomootLinks(data.komoot, tourIds);
+        saveKomootLinks();
     }
     refreshTracks();
 

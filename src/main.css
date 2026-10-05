@@ -1232,6 +1232,48 @@ input:focus, button:focus, .file-btn:focus-within, input[type=range]:focus{
     background:#FBF6EA;
 }
 .track-source b{ color:#241E38; }
+
+.komoot-box{
+    display:grid;
+    gap:8px;
+    margin-top:10px;
+    padding:12px;
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    background:#F2F6EE;
+    font-size:13px;
+}
+.komoot-box .hint{ margin:0; }
+.komoot-links{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:grid;
+    gap:6px;
+}
+.komoot-links li{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+}
+.komoot-links .detail-clear{ text-decoration:none; font-size:15px; line-height:1; }
+.komoot-add{
+    display:flex;
+    gap:6px;
+}
+.komoot-add input{
+    flex:1;
+    min-width:0;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    padding:6px 8px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:white;
+    color:var(--ink);
+}
+.komoot-tag{ background:#E3EEDA; color:#3C5A1E; text-transform:lowercase; }
 .tour-detail .track-warning{ color:var(--rust); }
 .tour-detail .track-ok{ color:var(--moss); }
 
