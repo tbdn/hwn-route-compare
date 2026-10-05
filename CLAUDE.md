@@ -132,11 +132,14 @@ Users can select stamps and add them to the route:
 ## Tourenplan (second tab, `#touren`)
 
 - Tours come from `src/data/tours.json`; stamp coordinates/names from `stamps.geojson`
-- Progress (finished tours, extra stamps) lives only in localStorage (`hwn-tours-done`, `hwn-stamps-extra`)
-- A track (planned or walked) never marks a tour as done; only the checkbox (list or detail) / progress import does
+- Tours in `tours.json` are suggestions ("Vorschlag A1"); ORS-computed tracks are labelled "Routenvorschlag (OpenRouteService, ungeprüft)"
+- Progress is stored per stamp in localStorage (`hwn-stamps-collected`); a tour is done when all its stamps are collected. The tour checkbox sets/clears all of its stamps (indeterminate when partial), single stamps are toggled in the detail list. Legacy keys `hwn-tours-done` / `hwn-stamps-extra` are only read once for migration
+- A track (planned or walked) never changes progress
+- Season tags (ganzjährig/Apr–Nov/Mai–Okt) are computed from `tourFigures().maxEle` (`SEASON_TAGS`); `tours.json` `tags` only holds thematic hints
+- Plan for own tours, part tours and next steps: `docs/plan-eigene-touren.md`
 - "Auf Wanderwege legen" routes the closed stamp loop via ORS GeoJSON endpoint (`calculateHikingTrack`), converts it with `coordinatesToGPX` and stores it as an uploaded track
 - "Im Routenabgleich prüfen" dispatches `hwn:compare-route` ({gpx, name}) on `document`; `app.js` switches to the compare tab and runs the comparison
 - Difficulty (`tourLevel()`) is computed in the app from `tourFigures()`: Leistungs-km = km + Hm/100; track thresholds 25/32, estimate thresholds 21/26.5 (+ ≥650 m → mittel), ≥850 m → anspruchsvoll. `tours.json` has no `level` field
 - Komoot links: per tour `komoot: [{url, name}]` in `tours.json`, plus browser-added links in localStorage (`hwn-komoot-links`); both are shown
 - Uploaded GPX tracks live in IndexedDB (`hwn-route-compare` / `tour-gpx`) and override `data/tours/<ID>.gpx`
-- "Exportieren"/"Importieren" writes/reads a JSON backup (format `hwn-tourenplan-progress`, v2 includes uploaded tracks and browser Komoot links); import replaces browser state
+- "Exportieren"/"Importieren" writes/reads a JSON backup (format `hwn-tourenplan-progress`; v2 added uploaded tracks and browser Komoot links, v3 makes `stamps` authoritative and keeps `doneTours` derived); import replaces browser state

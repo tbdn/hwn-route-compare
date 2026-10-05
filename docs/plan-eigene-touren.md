@@ -87,13 +87,19 @@ Das Niveau ist kein gespeicherter Wert mehr. `tours.json` hat kein Feld `level`.
 - Die Schwellen stehen zentral in `LEVEL_RULES`. Sobald einige Touren tatsächlich gelaufen sind, sollten sie mit dem eigenen Empfinden abgeglichen werden.
 - Die ORS-Höhendaten sind grob, und einige ORS-Tracks enthalten Umwege (A5, B3, C5, D7). Nach dem Feinschliff in Komoot ändern sich km, Hm und damit das Niveau automatisch.
 
-**Bekannte Restbaustelle:** Die Saison-Tags in `tours.json` („ganzjährig – unter 600 m“, „Mai–Okt – Hochlage über 800 m“) beruhen noch auf dem höchsten Stempel, nicht auf dem höchsten Punkt des Tracks. Sie sollten ebenfalls in der App aus `maxEle` berechnet werden (mit Schritt 1 erledigen).
+**Saison-Tags:** werden seit Schritt 1 ebenfalls in der App aus dem höchsten Punkt berechnet (unter 600 m ganzjährig, unter 800 m Apr–Nov, darüber Mai–Okt).
 
 ## Umsetzung in Schritten
 
 Jeder Schritt ist für sich nutzbar und testbar.
 
 ### Schritt 1: Fortschritt pro Stempel und Kennzeichnung als Vorschlag
+
+**Status: umgesetzt am 05.10.2026.** Abweichungen von der ursprünglichen Planung:
+- Die Rückfrage beim Entfernen des Hakens ist entfallen. Jeder Stempel gehört zu genau einem Vorschlag, der Haken kann also keine Stempel anderer Touren entfernen.
+- Den Button im Karten-Popup gibt es nicht. Ein Klick auf einen Stempel wählt den Vorschlag aus, die Haken pro Stempel stehen in der Stempelliste im Detail.
+- Die Saison-Tags werden jetzt aus dem höchsten Punkt berechnet (`SEASON_TAGS`). In `tours.json` stehen nur noch die thematischen Hinweise (Herbst, Frühjahr, früh starten).
+- Statistik: „Touren erledigt“ heißt jetzt „Vorschläge erledigt“.
 
 **Fortschritt und Speicher**
 - Neuer Speicher-Schlüssel `hwn-stamps-collected` als einzige Quelle.

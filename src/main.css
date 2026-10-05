@@ -1321,3 +1321,19 @@ footer{
     line-height:1.6;
 }
 footer a{color:var(--paper-2);}
+/* Per-stamp progress in the Tourenplan */
+.done-count{
+    display:block;
+    font-size:10px;
+    color:#5B5470;
+    margin-top:2px;
+}
+.stamp-check{
+    display:flex;
+    align-items:center;
+    cursor:pointer;
+}
+.stamp-check input{ width:16px; height:16px; accent-color:var(--ink); cursor:pointer; }
+.tour-detail .stop-item.collected .stop-name{ color:#5B5470; text-decoration:line-through; text-decoration-color:#9A958A; }
+.tour-detail .stop-item.collected .stop-number{ background:#9A958A; }
+.suggestion-hint{ font-style:italic; }
