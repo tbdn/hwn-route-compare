@@ -1,5 +1,5 @@
 {
-  "source": "Leistungsabzeichen: https://www.harzer-wandernadel.de/die-wandernadel/leistungsabzeichen/ (abgerufen 05.10.2026). Stempellisten: Liste Sonderstempelstellen Harz (übernommen 05.10.2026).",
+  "source": "Leistungsabzeichen: https://www.harzer-wandernadel.de/die-wandernadel/leistungsabzeichen/ (abgerufen 05.10.2026). Stempellisten: Liste Sonderstempelstellen Harz aus dem Wanderpass (übernommen 05.10.2026; Nationalpark Harz = alle Stempelstellen mit „(NPH)“ hinter dem Namen).",
   "checkedAt": "2026-10-05",
   "levels": [
     {
@@ -37,7 +37,7 @@
       "name": "Harzer Steiger",
       "stamps": 111,
       "required": [37, 39, 60, 61, 85, 91, 107, 113, 126, 127, 128, 133, 137, 146, 155, 172, 175, 179, 190, 193, 194, 217, 222],
-      "note": "23 Pflicht-Stempelstellen mit bergbaulichem Bezug."
+      "note": "23 Pflicht-Stempelstellen mit bergbaulichem Bezug. Eigenes Stempelheft."
     },
     {
       "id": "kaiserschuh",
@@ -60,7 +60,7 @@
     {
       "id": "hexenstieg",
       "name": "Harzer Hexenstieg",
-      "stamps": [9, 17, 22, 40, 41, 42, 60, 62, 63, 69, 88, 123, 128, 133, 136, 137, 140, 149, 155, 174, 178, 188],
+      "stamps": [9, 17, 22, 40, 41, 42, 60, 62, 63, 69, 88, 123, 128, 133, 136, 137, 140, 149, 155, 174, 178],
       "needed": 11,
       "required": [69, 140],
       "note": "9 beliebige Stempel entlang des Weges plus HWN 69 und HWN 140. Eigenes Stempelheft."
@@ -68,7 +68,7 @@
     {
       "id": "goethe",
       "name": "Goethe im Harz",
-      "stamps": [9, 13, 31, 38, 41, 42, 62, 69, 71, 78, 80, 85, 88, 91, 95, 99, 101, 105, 116, 117, 129, 132, 136, 140, 144, 155, 188],
+      "stamps": [9, 13, 14, 31, 38, 41, 42, 62, 69, 71, 78, 80, 85, 88, 91, 95, 99, 101, 105, 116, 117, 129, 132, 136, 140, 144, 155, 188],
       "note": "Die HWN nennt 28 Stempel, die Liste enthält 27. Eigenes Stempelheft."
     },
     {
