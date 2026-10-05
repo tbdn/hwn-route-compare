@@ -3,7 +3,7 @@ import { findNearbyStamps } from "./utils/geo.js";
 import { loadStamps } from "./utils/stamps.js";
 import { analyzeDetours, getDetourEffort } from "./utils/detour.js";
 import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, displayRoutingResult, displayExtendedRoute, clearExtendedRoute, panToStamp, getMap } from "./components/map.js";
-import { showTourPlan, openOwnTourDraft, showTour } from "./components/tourplan.js";
+import { showTourPlan, openOwnTourDraft, showTour, loadStampProgress, isStampCollected } from "./components/tourplan.js";
 import { showStampPass } from "./components/stamppass.js";
 import { coordinatesToGPX } from "./utils/tracks.js";
 import { setApiKey, hasApiKey, calculateDetourRoute, calculateMultiWaypointRoute, formatDuration, formatDistance } from "./utils/routing.js";
@@ -411,7 +411,8 @@ function render(results, routeLen, threshold) {
 
     // Format threshold for display
     const thresholdText = threshold >= 1000 ? (threshold / 1000) + ' km' : threshold + ' m';
-    resultCount.textContent = results.length + ' Treffer · Radius ' + thresholdText;
+    resultCount.dataset.base = results.length + ' Treffer · Radius ' + thresholdText;
+    resultCount.textContent = resultCount.dataset.base;
 
     // Clear grids
     onRouteGrid.innerHTML = '';
@@ -448,7 +449,31 @@ function render(results, routeLen, threshold) {
         const card = createStampCard(stamp, i, false);
         nearbyGrid.appendChild(card);
     });
+    syncCollected();
 }
+
+// Hits that are already collected are marked on the cards, the map and in the count.
+// Runs again whenever the progress changes (e.g. in "Meine Stempel").
+let mapStamps = null;           // {stamps, results} drawn on the map
+
+function syncCollected() {
+    let got = 0;
+    document.querySelectorAll('#onRouteGrid .stamp, #nearbyGrid .stamp').forEach(card => {
+        const on = isStampCollected(Number(card.dataset.number));
+        if (on) got++;
+        card.classList.toggle('got', on);
+        card.querySelector('.got-hint').hidden = !on;
+    });
+    if (resultCount.dataset.base) {
+        resultCount.textContent = resultCount.dataset.base + (got ? ` · ${got} schon gestempelt` : '');
+    }
+    if (mapStamps) {
+        displayAllStamps(mapStamps.stamps, isStampCollected);
+        displayMatchedStamps(mapStamps.results, null, isStampCollected);
+    }
+}
+
+document.addEventListener('hwn:progress-changed', syncCollected);
 
 function createStampCard(stamp, index, isOnRoute) {
     const rotation = ((index * 37) % 11) - 5;
@@ -461,6 +486,7 @@ function createStampCard(stamp, index, isOnRoute) {
     card.className = 'stamp';
     card.style.setProperty('--rot', rotation + 'deg');
     card.dataset.stampId = stamp.id;
+    card.dataset.number = stamp.number;
 
     const showDesc = stamp.description && stamp.description !== stamp.name;
 
@@ -489,11 +515,13 @@ function createStampCard(stamp, index, isOnRoute) {
             : '');
 
     // For on-route stamps, show simpler info
+    const gotHtml = '<span class="got-hint" hidden>✓ schon gestempelt</span>';
     const metaHtml = isOnRoute
-        ? `<div class="stamp-meta"><span class="dist close">${distText} von Route</span></div>`
+        ? `<div class="stamp-meta"><span class="dist close">${distText} von Route</span>${gotHtml}</div>`
         : `<div class="stamp-meta">
             <span class="dist ${effortClass}">${distText} entfernt</span>
             <span class="detour ${effortClass}" title="Geschätzter Umweg (hin und zurück)">${detourText} Umweg</span>
+            ${gotHtml}
            </div>`;
 
     card.innerHTML = `
@@ -715,6 +743,9 @@ async function runComparison() {
             return;
         }
 
+        // Progress for "schon gestempelt"; the comparison works without it
+        await loadStampProgress(stamps).catch(() => {});
+
         setStatus('Vergleiche ' + routePoints.length + ' Routenpunkte mit ' + stamps.length + ' Stempelstellen …');
 
         // Let status paint before heavy computation
@@ -736,6 +767,7 @@ async function runComparison() {
         stats.innerHTML = `<span><b>${routePoints.length}</b> Routenpunkte</span><span><b>${stamps.length}</b> bekannte Stempelstellen</span>`;
 
         // Render results (now sorted by position along route)
+        mapStamps = null;
         render(results, routePoints.length, threshold);
 
         // Initialize map if needed (after results section is visible)
@@ -748,8 +780,9 @@ async function runComparison() {
         // Update map
         clearMap();
         displayRoute(routePoints);
-        displayAllStamps(stamps);
-        displayMatchedStamps(results);
+        mapStamps = { stamps, results };
+        displayAllStamps(stamps, isStampCollected);
+        displayMatchedStamps(results, null, isStampCollected);
         displayDetourLines(results);
 
     } catch (e) {

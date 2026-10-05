@@ -27,6 +27,21 @@ const matchedStampIcon = L.divIcon({
     iconAnchor: [9, 9]
 });
 
+// Already collected stamps are grey, like in the Tourenplan
+const collectedStampIcon = L.divIcon({
+    className: 'stamp-marker got',
+    html: '<div class="marker-dot"></div>',
+    iconSize: [12, 12],
+    iconAnchor: [6, 6]
+});
+
+const collectedMatchedIcon = L.divIcon({
+    className: 'stamp-marker matched got',
+    html: '<div class="marker-dot"></div>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
+});
+
 const exitPointIcon = L.divIcon({
     className: 'exit-point-marker',
     html: '<div class="exit-dot"></div>',
@@ -91,35 +106,39 @@ export function displayRoute(routePoints) {
     map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
 }
 
-export function displayAllStamps(stamps) {
+/**
+ * @param {Array} stamps
+ * @param {Function} isCollected - optional, (number) => true for stamps already collected
+ */
+export function displayAllStamps(stamps, isCollected = () => false) {
     if (!map || !stampsLayer) return;
 
     stampsLayer.clearLayers();
 
     stamps.forEach(stamp => {
         const marker = L.marker([stamp.lat, stamp.lon], {
-            icon: defaultStampIcon,
+            icon: isCollected(stamp.number) ? collectedStampIcon : defaultStampIcon,
             title: stamp.name
         });
 
-        marker.bindPopup(createPopupContent(stamp));
+        marker.bindPopup(createPopupContent(stamp, false, isCollected(stamp.number)));
         stampsLayer.addLayer(marker);
     });
 }
 
-export function displayMatchedStamps(matchedStamps, onMarkerClick) {
+export function displayMatchedStamps(matchedStamps, onMarkerClick, isCollected = () => false) {
     if (!map || !matchedLayer) return;
 
     matchedLayer.clearLayers();
 
     matchedStamps.forEach(stamp => {
         const marker = L.marker([stamp.lat, stamp.lon], {
-            icon: matchedStampIcon,
+            icon: isCollected(stamp.number) ? collectedMatchedIcon : matchedStampIcon,
             title: stamp.name,
             zIndexOffset: 1000
         });
 
-        marker.bindPopup(createPopupContent(stamp, true));
+        marker.bindPopup(createPopupContent(stamp, true, isCollected(stamp.number)));
 
         if (onMarkerClick) {
             marker.on('click', () => onMarkerClick(stamp));
@@ -190,11 +209,15 @@ export function panToStamp(stamp, zoom = 15) {
     map.setView([stamp.lat, stamp.lon], zoom);
 }
 
-function createPopupContent(stamp, showDistance = false) {
+function createPopupContent(stamp, showDistance = false, collected = false) {
     let html = `
         <span class="stamp-id">${stamp.id || '#'}</span>
         <strong>${stamp.name}</strong>
     `;
+
+    if (collected) {
+        html += `<div style="margin-top:4px; color:#3D5140;">✓ schon gestempelt</div>`;
+    }
 
     if (stamp.description && stamp.description !== stamp.name) {
         html += `<div style="color:#666; margin-top:4px;">${stamp.description}</div>`;
