@@ -1381,3 +1381,46 @@ footer a{color:var(--paper-2);}
     cursor:pointer;
     text-align:left;
 }
+
+/* Own tours */
+.own-actions{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin:-6px 0 14px;
+}
+.own-actions .selection-btn{ padding:8px 14px; }
+.tour-legend .legend-line.own{ border-top-color:#3D2A6B; }
+.own-name{ font-family:'Inter', sans-serif; font-weight:600; }
+.own-form{ display:grid; gap:8px; }
+.own-form input[type="text"]{
+    font:inherit;
+    font-size:14px;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:white;
+    color:var(--ink);
+    min-width:0;
+}
+.own-stamps{
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    padding:10px 12px;
+    margin:4px 0;
+    display:grid;
+    gap:8px;
+    font-size:13px;
+}
+.own-stamps legend{ font-weight:600; padding:0 4px; }
+.own-stamps .hint{ margin:0; }
+.own-stamps ul{ list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.own-stamps label{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 8px; cursor:pointer; }
+.own-stamps input[type="checkbox"]{ accent-color:var(--ink); }
+.own-add{ display:flex; gap:6px; }
+.own-add input{ flex:1; font-family:'JetBrains Mono', monospace; font-size:12px; }
+.own-walked{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; }
+.own-walked input{ width:16px; height:16px; accent-color:var(--ink); }
+.own-confirm{ display:grid; gap:6px; margin-top:8px; }
+.own-confirm .hint{ margin:0; }

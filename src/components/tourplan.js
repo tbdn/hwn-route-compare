@@ -3,11 +3,13 @@
 // Tours can carry a real GPX track (project file or browser upload) that replaces the straight-line loop.
 // Progress is stored per stamp; a tour counts as done when all of its stamps are collected.
 // Long tours can have two part tours ("parts" in tours.json); each tour is shown either whole or in parts.
+// Own tours (GPX + detected stamps, planned or walked) are stored in the browser next to the suggestions.
 
 import { generateGPX, downloadGPX } from "../utils/optimize.js";
 import {
     analyzeTrack, loadProjectTracks, loadUploadedTracks, saveUploadedTrack,
-    deleteUploadedTrack, clearUploadedTracks, coordinatesToGPX, STAMP_ON_TRACK_METERS
+    deleteUploadedTrack, clearUploadedTracks, coordinatesToGPX, STAMP_ON_TRACK_METERS,
+    loadOwnTours, saveOwnTour, deleteOwnTour, clearOwnTours, stampsAlongTrack, gpxName
 } from "../utils/tracks.js";
 import { calculateHikingTrack, hasApiKey } from "../utils/routing.js";
 import { distanceMeters } from "../utils/geo.js";
@@ -29,6 +31,9 @@ const REGION_COLORS = {
     E: '#7C6C10', F: '#AD2F63', G: '#3F7F2E', H: '#5A6070'
 };
 const STAMPED_COLOR = '#9A958A';
+const OWN_REGION = 'own';
+const OWN_COLOR = '#3D2A6B';
+const OWN_ID = /^own-[\w-]{1,40}$/;
 
 // Season hint from the highest point of the tour (track or highest stamp)
 const SEASON_TAGS = [
@@ -45,8 +50,11 @@ let plan = null;
 let stampsByNumber = new Map();
 let collected = new Set();        // stamp numbers; the only source of progress
 let variants = {};                // tourId -> 'parts' when a tour is walked as its part tours
-let units = [];                   // every walkable tour: suggestions and their part tours
+let units = [];                   // every walkable tour: suggestions, their part tours, own tours
 const unitById = new Map();
+let ownTours = [];                // own tour records as stored: {id, name, gpx, fileName, stamps, status, createdAt}
+let ownDraft = null;              // own tour being created or edited (form in the detail panel)
+let ownDeleteId = null;           // own tour waiting for the delete confirmation
 let regionFilter = null;
 let selectedId = null;
 
@@ -60,8 +68,10 @@ let detailMessage = null;         // {tourId, text, isError} shown once in the d
 const loopLines = new Map();      // tourId -> visible polyline
 const hitLines = new Map();       // tourId -> wide invisible polyline for clicks
 const stampMarkers = new Map();   // stamp number -> circleMarker
+let loopLayer = null;
 let labelLayer = null;
 let endpointLayer = null;
+let draftLine = null;             // preview of the GPX in the own tour form
 
 function escapeHtml(str) {
     const div = document.createElement('div');
@@ -70,7 +80,7 @@ function escapeHtml(str) {
 }
 
 const fmt1 = n => n.toFixed(1).replace('.', ',');
-const color = code => REGION_COLORS[code] || '#3D3563';
+const color = code => code === OWN_REGION ? OWN_COLOR : REGION_COLORS[code] || '#3D3563';
 
 function lighten(hex, amount) {
     const n = parseInt(hex.slice(1), 16);
@@ -83,18 +93,64 @@ function lighten(hex, amount) {
 
 // The second part of a split tour is drawn in a lighter shade of the region color
 const unitColor = unit => unit.parent && unit.index === 1 ? lighten(color(unit.region), 0.45) : color(unit.region);
-const unitLabel = unit => unit.parent ? `Teil ${unit.id}` : `Vorschlag ${unit.id}`;
+const unitLabel = unit => unit.own ? `Eigene Tour „${unit.name}“` : unit.parent ? `Teil ${unit.id}` : `Vorschlag ${unit.id}`;
 
 // Part tours behave like tours of their own (track, Komoot links, checkbox) and know their parent
-function buildUnits() {
+function prepareParts() {
     plan.tours.forEach(tour => {
         tour.parts = (tour.parts || []).map((part, index) => ({
             ...part, region: tour.region, single: false, tags: tour.tags, parent: tour, index
         }));
     });
-    units = plan.tours.flatMap(t => [t, ...t.parts]);
+}
+
+// Own tours get their figures from their GPX; the estimate fields are only a fallback for a broken file
+function ownUnit(record) {
+    const stamps = record.stamps.filter(n => stampsByNumber.has(n));
+    const eles = stamps.map(n => stampsByNumber.get(n).elevation).filter(Number.isFinite);
+    return {
+        id: record.id, name: record.name, own: true, record, region: OWN_REGION, stamps, single: false, tags: [],
+        km: 0, hours: 0, ascent: 0, minEle: eles.length ? Math.min(...eles) : 0, maxEle: eles.length ? Math.max(...eles) : 0
+    };
+}
+
+function buildUnits() {
+    units = [...plan.tours.flatMap(t => [t, ...t.parts]), ...ownTours.map(ownUnit)];
     unitById.clear();
     units.forEach(u => unitById.set(u.id, u));
+}
+
+const ownUnits = () => units.filter(u => u.own);
+// Suggestions (whole or as parts) without the own tours
+const suggestionUnits = () => shownUnits().filter(u => !u.own);
+
+// Storage and imports are untrusted: keep only well-formed own tours
+function sanitizeOwnRecord(r) {
+    if (!r || typeof r !== 'object' || !OWN_ID.test(String(r.id)) || typeof r.gpx !== 'string' || !r.gpx.includes('<gpx')) return null;
+    const name = String(r.name || '').trim().slice(0, 120);
+    if (!name || !Array.isArray(r.stamps)) return null;
+    return {
+        id: String(r.id),
+        name,
+        gpx: r.gpx,
+        fileName: r.fileName ? String(r.fileName).slice(0, 200) : '',
+        stamps: [...validStamps(r.stamps)],
+        status: r.status === 'walked' ? 'walked' : 'planned',
+        createdAt: r.createdAt ? String(r.createdAt) : new Date().toISOString()
+    };
+}
+
+// Replace the own tours (after loading, saving, deleting or importing) and redraw everything
+function setOwnTours(records) {
+    ownTours = records;
+    const before = ownUnits().map(u => u.id);
+    buildUnits();
+    before.filter(id => !unitById.has(id)).forEach(removeUnitLines);
+    units.filter(u => !loopLines.has(u.id)).forEach(addUnitLines);
+    if (selectedId && !unitById.has(selectedId)) selectedId = null;
+    if (regionFilter === OWN_REGION && !ownTours.length) regionFilter = null;
+    renderChips();
+    refreshTracks();
 }
 
 function usesParts(tour) {
@@ -203,10 +259,10 @@ function saveKomootLinks() {
 }
 
 // Only well-formed links for known tours survive (storage and imports are untrusted)
-function sanitizeKomootLinks(data, tourIds) {
+function sanitizeKomootLinks(data, isKnownId) {
     const result = {};
     Object.entries(data || {}).forEach(([id, links]) => {
-        if (!tourIds.has(id) || !Array.isArray(links)) return;
+        if (!isKnownId(id) || !Array.isArray(links)) return;
         const valid = links
             .map(l => ({ url: parseKomootUrl(String(l?.url || '')), name: l?.name ? String(l.name) : '' }))
             .filter(l => l.url);
@@ -283,19 +339,43 @@ function collectedCount(tour) {
     return tour.stamps.filter(n => collected.has(n)).length;
 }
 
+// Own tours are done when marked as walked; suggestions when all of their stamps are collected
 function isDone(tour) {
+    if (tour.own) return tour.record.status === 'walked';
     return collectedCount(tour) === tour.stamps.length;
 }
 
 function isPartial(tour) {
+    if (tour.own) return false;
     const n = collectedCount(tour);
     return n > 0 && n < tour.stamps.length;
 }
 
-// The tour checkbox collects or removes all of its stamps (each stamp belongs to one tour)
+// The tour checkbox collects or removes all of its stamps (each stamp belongs to one suggestion)
 function setTourCollected(tour, on) {
+    if (tour.own) {
+        setOwnWalked(tour, on);
+        return;
+    }
     tour.stamps.forEach(n => on ? collected.add(n) : collected.delete(n));
     saveCollected();
+}
+
+// Walking an own tour collects its stamps; undoing it removes them again,
+// except those another walked own tour covers as well
+function setOwnWalked(unit, on) {
+    unit.record.status = on ? 'walked' : 'planned';
+    if (on) {
+        unit.stamps.forEach(n => collected.add(n));
+    } else {
+        const keep = new Set(ownUnits().filter(u => u !== unit && isDone(u)).flatMap(u => u.stamps));
+        unit.stamps.filter(n => !keep.has(n)).forEach(n => collected.delete(n));
+    }
+    saveCollected();
+    saveOwnTour(unit.record).catch(() => {
+        detailMessage = { tourId: unit.id, text: 'Status konnte nicht gespeichert werden.', isError: true };
+        render();
+    });
 }
 
 function setStampCollected(number, on) {
@@ -464,23 +544,28 @@ export async function showTourPlan(stamps) {
     }
     plan = await response.json();
     stampsByNumber = new Map(stamps.map(s => [s.number, s]));
+    prepareParts();
     buildUnits();
     collected = loadCollected();
     variants = loadVariants();
-    komootLinks = sanitizeKomootLinks(loadKomootLinks(), new Set(units.map(u => u.id)));
+    // Own tours load later, so their links are kept by id pattern
+    komootLinks = sanitizeKomootLinks(loadKomootLinks(), id => unitById.has(id) || OWN_ID.test(id));
 
     initTourMap();
     initProgressTransfer();
+    initOwnTours();
     renderChips();
     renderList();
     render();
 
     // Tracks load in the background; the straight-line plan is usable meanwhile
-    [projectTracks, uploadedTracks] = await Promise.all([
+    let ownRecords;
+    [projectTracks, uploadedTracks, ownRecords] = await Promise.all([
         loadProjectTracks(units.map(u => u.id)),
-        loadUploadedTracks()
+        loadUploadedTracks(),
+        loadOwnTours().catch(() => [])
     ]);
-    refreshTracks();
+    setOwnTours(ownRecords.map(sanitizeOwnRecord).filter(Boolean));
 }
 
 // Rebuild the effective track per tour (upload beats project file) and redraw
@@ -490,10 +575,12 @@ function refreshTracks() {
     units.forEach(tour => {
         const upload = uploadedTracks[tour.id];
         const project = projectTracks[tour.id];
-        const candidates = [
-            upload && { source: 'upload', ...upload },
-            project && { source: 'project', ...project }
-        ].filter(Boolean);
+        const candidates = tour.own
+            ? [{ source: 'own', name: tour.record.fileName || `${tour.name}.gpx`, gpx: tour.record.gpx }]
+            : [
+                upload && { source: 'upload', ...upload },
+                project && { source: 'project', ...project }
+            ].filter(Boolean);
 
         for (const c of candidates) {
             try {
@@ -527,36 +614,13 @@ function initTourMap() {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
-    const loopLayer = L.layerGroup().addTo(map);
+    loopLayer = L.layerGroup().addTo(map);
     const pointLayer = L.layerGroup().addTo(map);
+    draftLine = L.polyline([], { color: OWN_COLOR, weight: 4, opacity: 0.9, dashArray: '2 8', interactive: false }).addTo(map);
     endpointLayer = L.layerGroup().addTo(map);
     labelLayer = L.layerGroup().addTo(map);
 
-    units.forEach(tour => {
-        const latLngs = isShown(tour) ? loopLatLngs(tour) : [];
-
-        const line = L.polyline(latLngs, {
-            color: unitColor(tour),
-            weight: 3,
-            opacity: 0.85,
-            lineJoin: 'round',
-            interactive: false
-        }).addTo(loopLayer);
-
-        // Wide transparent line makes the loop easy to hit
-        const hit = L.polyline(latLngs, { weight: 16, opacity: 0 })
-            .bindTooltip(() => {
-                const f = tourFigures(tour);
-                return `${unitLabel(tour)} · ${tour.stamps.length} Stempel · ${f.real ? '' : 'ca. '}${fmt1(f.km)} km`
-                    + (f.real ? ' · GPX' : '')
-                    + (isDone(tour) ? ' · erledigt' : isPartial(tour) ? ` · ${collectedCount(tour)}/${tour.stamps.length} gestempelt` : '');
-            }, { sticky: true })
-            .on('click', () => select(tour.id))
-            .addTo(loopLayer);
-
-        loopLines.set(tour.id, line);
-        hitLines.set(tour.id, hit);
-    });
+    units.forEach(addUnitLines);
 
     const tourOf = new Map();
     plan.tours.forEach(t => t.stamps.forEach(n => tourOf.set(n, t)));
@@ -585,6 +649,39 @@ function initTourMap() {
     fitTo(shownUnits());
 }
 
+function addUnitLines(tour) {
+    const latLngs = isShown(tour) ? loopLatLngs(tour) : [];
+
+    const line = L.polyline(latLngs, {
+        color: unitColor(tour),
+        weight: 3,
+        opacity: 0.85,
+        lineJoin: 'round',
+        interactive: false
+    }).addTo(loopLayer);
+
+    // Wide transparent line makes the loop easy to hit
+    const hit = L.polyline(latLngs, { weight: 16, opacity: 0 })
+        .bindTooltip(() => {
+            const f = tourFigures(tour);
+            return `${escapeHtml(unitLabel(tour))} · ${tour.stamps.length} Stempel · ${f.real ? '' : 'ca. '}${fmt1(f.km)} km`
+                + (f.real && !tour.own ? ' · GPX' : '')
+                + (isDone(tour) ? (tour.own ? ' · gelaufen' : ' · erledigt') : isPartial(tour) ? ` · ${collectedCount(tour)}/${tour.stamps.length} gestempelt` : '');
+        }, { sticky: true })
+        .on('click', () => select(tour.id))
+        .addTo(loopLayer);
+
+    loopLines.set(tour.id, line);
+    hitLines.set(tour.id, hit);
+}
+
+function removeUnitLines(id) {
+    loopLines.get(id)?.remove();
+    hitLines.get(id)?.remove();
+    loopLines.delete(id);
+    hitLines.delete(id);
+}
+
 function fitTo(tours) {
     const pts = tours.flatMap(t => [...tourStamps(t).map(s => [s.lat, s.lon]), ...(tracks.get(t.id)?.latLngs.flat() || [])]);
     if (pts.length) map.fitBounds(pts, { padding: [24, 24], maxZoom: 13 });
@@ -592,13 +689,14 @@ function fitTo(tours) {
 
 function renderChips() {
     const chips = el('tourChips');
+    chips.innerHTML = '';
     const make = (code, label) => {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'region-chip';
         b.dataset.code = code || '';
         b.style.setProperty('--c', code ? color(code) : 'var(--ink)');
-        b.innerHTML = (code ? `<i></i><span class="mono">${code}</span> ` : '') + escapeHtml(label);
+        b.innerHTML = (code === OWN_REGION ? '<i></i>' : code ? `<i></i><span class="mono">${code}</span> ` : '') + escapeHtml(label);
         b.addEventListener('click', () => {
             regionFilter = code;
             if (selectedId && code && !selectedId.startsWith(code)) selectedId = null;
@@ -608,12 +706,14 @@ function renderChips() {
         chips.appendChild(b);
     };
     make(null, 'Alle Regionen');
+    if (ownTours.length) make(OWN_REGION, 'Eigene Touren');
     plan.regions.forEach(r => make(r.code, shortRegionName(r.code)));
 }
 
 function renderList() {
     const list = el('tourList');
     list.innerHTML = '';
+    if (ownTours.length) list.appendChild(createOwnSection());
 
     plan.regions.forEach(region => {
         const tours = plan.tours.filter(t => t.region === region.code);
@@ -649,9 +749,37 @@ function renderList() {
     });
 }
 
+function createOwnSection() {
+    const own = ownUnits();
+    const km = own.reduce((a, t) => a + tourFigures(t).km, 0);
+    const walked = own.filter(isDone).length;
+    const sec = document.createElement('section');
+    sec.className = 'card region-card own-card';
+    sec.dataset.code = OWN_REGION;
+    sec.style.setProperty('--c', OWN_COLOR);
+    sec.innerHTML = `
+        <header class="region-head">
+            <h3>Eigene Touren</h3>
+            <span class="region-sub">${own.length} ${own.length === 1 ? 'Tour' : 'Touren'} · ${walked} gelaufen · ${Math.round(km)} km · im Browser gespeichert</span>
+        </header>
+        <div class="table-wrap">
+            <table class="tour-table">
+                <thead><tr>
+                    <th scope="col">Gelaufen</th><th scope="col">Tour</th>
+                    <th scope="col" class="r">km</th><th scope="col" class="r">Std.</th><th scope="col" class="r">Hm</th>
+                    <th scope="col">Niveau, Zeit</th><th scope="col">Stempel am Track</th>
+                </tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>`;
+    const tbody = sec.querySelector('tbody');
+    own.forEach(unit => tbody.appendChild(createTourRow(unit)));
+    return sec;
+}
+
 function createTourRow(tour) {
     const tr = document.createElement('tr');
-    tr.className = tour.parent ? 'tour-row part-row' : 'tour-row';
+    tr.className = tour.parent ? 'tour-row part-row' : tour.own ? 'tour-row own-row' : 'tour-row';
     tr.tabIndex = 0;
     tr.dataset.id = tour.id;
 
@@ -662,11 +790,14 @@ function createTourRow(tour) {
     const est = f.real ? '' : '<span class="est">~</span>';
     const seq = tourStamps(tour)
         .map(s => `<span class="seq-stop"><span class="mono">${s.number}</span> ${escapeHtml(s.name)}</span>`)
-        .join(' → ');
+        .join(' → ') || '<span class="hint">Keine Stempel am Track</span>';
+    const idCell = tour.own
+        ? `<span class="own-name">${escapeHtml(tour.name)}</span>`
+        : `${tour.parent ? '<span class="part-arrow" aria-hidden="true">↳</span>' : ''}${tour.id}${tour.parts?.length ? '<span class="gpx-tag parts-tag" title="Lässt sich in zwei Teilen gehen">2 Teile</span>' : ''}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}`;
 
     tr.innerHTML = `
-        <td><input type="checkbox" class="tour-done" aria-label="Alle Stempel von ${unitLabel(tour)} gesammelt"><span class="done-count mono"></span></td>
-        <td class="tour-id mono">${tour.parent ? '<span class="part-arrow" aria-hidden="true">↳</span>' : ''}${tour.id}${tour.parts?.length ? '<span class="gpx-tag parts-tag" title="Lässt sich in zwei Teilen gehen">2 Teile</span>' : ''}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}${tourKomootLinks(tour).length ? '<span class="gpx-tag komoot-tag" title="Mit Komoot-Link">komoot</span>' : ''}</td>
+        <td><input type="checkbox" class="tour-done" aria-label="${escapeHtml(unitLabel(tour))} ${tour.own ? 'gelaufen' : ': alle Stempel gesammelt'}"><span class="done-count mono"></span></td>
+        <td class="tour-id mono">${idCell}${tourKomootLinks(tour).length ? '<span class="gpx-tag komoot-tag" title="Mit Komoot-Link">komoot</span>' : ''}</td>
         <td class="r mono">${noFigures ? dash : est + fmt1(f.km)}</td>
         <td class="r mono">${noFigures ? dash : est + fmt1(f.hours)}</td>
         <td class="r mono">${noFigures ? dash : (f.realAscent ? '' : '<span class="est">≥</span>') + f.ascent}</td>
@@ -679,6 +810,7 @@ function createTourRow(tour) {
     cb.addEventListener('click', e => e.stopPropagation());
     cb.addEventListener('change', () => {
         setTourCollected(tour, cb.checked);
+        if (tour.own) renderList();
         render();
     });
 
@@ -736,19 +868,25 @@ function render() {
             dashArray: done && !isSel ? '6 7' : null
         });
         if (isSel) line.bringToFront();
-
-        tour.stamps.forEach(n => {
-            const m = stampMarkers.get(n);
-            if (!m) return;
-            const got = collected.has(n);
-            m.setRadius(got ? 4 : 5.5);
-            m.setStyle({
-                fillColor: got ? STAMPED_COLOR : color(tour.region),
-                opacity: dim ? 0.25 : 1,
-                fillOpacity: dim ? 0.25 : 1
-            });
-        });
     });
+
+    // Stamp markers keep the color of their suggestion; dimmed when outside the selection or filter
+    const selectedStamps = new Set(shownUnits().filter(isSelected).flatMap(u => u.stamps));
+    const ownStamps = new Set(ownUnits().flatMap(u => u.stamps));
+    plan.tours.forEach(tour => tour.stamps.forEach(n => {
+        const m = stampMarkers.get(n);
+        if (!m) return;
+        const visible = !regionFilter || tour.region === regionFilter || (regionFilter === OWN_REGION && ownStamps.has(n));
+        const dim = !visible || (selectedId && !selectedStamps.has(n));
+        const got = collected.has(n);
+        m.setRadius(got ? 4 : 5.5);
+        m.setStyle({
+            fillColor: got ? STAMPED_COLOR : color(tour.region),
+            opacity: dim ? 0.25 : 1,
+            fillOpacity: dim ? 0.25 : 1
+        });
+    }));
+    draftLine.setLatLngs(ownDraft?.latLngs || []);
 
     renderEndpoints();
 
@@ -791,7 +929,7 @@ function renderStats() {
     const collected = collectedStamps();
     const openStamps = stampsByNumber.size - collected.size;
     // Split tours count with the chosen variant (whole or parts), never both
-    const openList = shownUnits().filter(t => !isDone(t));
+    const openList = suggestionUnits().filter(t => !isDone(t));
     const openKm = openList.reduce((a, t) => a + tourFigures(t).km, 0);
     const openKmEstimated = openList.some(t => !t.single && !tracks.has(t.id));
     // Estimated ascent only counts climbs between stamps, so it's a lower bound ("≥")
@@ -800,8 +938,14 @@ function renderStats() {
     const estimatedAscent = t => !t.single && !tourFigures(t).realAscent;
     const openHmEstimated = openList.some(estimatedAscent);
 
-    // Walked distance: real track where there is one, otherwise the plan's estimate
-    const doneList = shownUnits().filter(isDone);
+    // Walked distance: walked own tours, plus finished suggestions (real track where there is one,
+    // otherwise the estimate). A suggestion finished partly through own tours isn't counted again.
+    const walkedOwn = ownUnits().filter(isDone);
+    const walkedOwnStamps = new Set(walkedOwn.flatMap(u => u.stamps));
+    const doneList = [
+        ...suggestionUnits().filter(t => isDone(t) && !t.stamps.some(n => walkedOwnStamps.has(n))),
+        ...walkedOwn
+    ];
     const walkedKm = doneList.reduce((a, t) => a + tourFigures(t).km, 0);
     const walkedHm = doneList.reduce((a, t) => a + tourFigures(t).ascent, 0);
     const walkedEstimated = doneList.some(t => !t.single && !tracks.has(t.id));
@@ -816,7 +960,8 @@ function renderStats() {
         <div class="route-stat"${openHmEstimated ? ' title="Teilweise geschätzt (nur Anstiege von Stempel zu Stempel), echte Höhenmeter liegen meist höher"' : ''}><div class="label">Hm offen</div><div class="value">${openHmEstimated ? '≥' : ''}${hm(openHm)}</div></div>
         <div class="route-stat"${walkedEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track"' : ''}><div class="label">km zurückgelegt</div><div class="value highlight">${walkedEstimated ? '~' : ''}${fmt1(walkedKm)}</div></div>
         <div class="route-stat"${walkedHmEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track mit Höhendaten"' : ''}><div class="label">Hm zurückgelegt</div><div class="value highlight">${walkedHmEstimated ? '≥' : ''}${hm(walkedHm)}</div></div>
-        <div class="route-stat"><div class="label">Vorschläge erledigt</div><div class="value highlight">${plan.tours.filter(isDone).length}</div></div>`;
+        <div class="route-stat"><div class="label">Vorschläge erledigt</div><div class="value highlight">${plan.tours.filter(isDone).length}</div></div>`
+        + (ownTours.length ? `<div class="route-stat"><div class="label">Eigene Touren gelaufen</div><div class="value highlight">${walkedOwn.length}/${ownTours.length}</div></div>` : '');
 }
 
 function trackInfoHtml(tour) {
@@ -849,6 +994,18 @@ function trackInfoHtml(tour) {
 function renderDetail(tour) {
     const detail = el('tourDetail');
 
+    if (ownDraft) {
+        renderOwnForm(detail);
+        return;
+    }
+    if (!tour && regionFilter === OWN_REGION) {
+        detail.style.setProperty('--c', OWN_COLOR);
+        const own = ownUnits();
+        detail.innerHTML = `
+            <h3>Eigene Touren</h3>
+            <p class="hint">${own.length} ${own.length === 1 ? 'Tour' : 'Touren'}, davon ${own.filter(isDone).length} gelaufen. Wähle eine Tour in der Liste oder auf der Karte.</p>`;
+        return;
+    }
     if (!tour) {
         detail.style.removeProperty('--c');
         const tours = regionFilter ? plan.tours.filter(t => t.region === regionFilter) : plan.tours;
@@ -861,6 +1018,11 @@ function renderDetail(tour) {
                 ? `${tours.length} Touren mit ${count} Stempeln, zusammen etwa ${km} km.`
                 : 'Tippe auf eine farbige Runde in der Karte oder auf eine Zeile in der Liste.'}</p>
             <p class="hint">Für Tagesausflüge ab ${escapeHtml(plan.home)} liegen die Regionen A bis C am nächsten. E bis H lohnen sich eher als Wochenende mit Übernachtung.</p>`;
+        return;
+    }
+
+    if (tour.own) {
+        renderOwnDetail(detail, tour);
         return;
     }
 
@@ -890,15 +1052,8 @@ function renderDetail(tour) {
         <div class="tour-meta mono">${meta}<span>${f.minEle}–${f.maxEle} m ü. NN</span><span>${stamps.length} Stempel</span></div>
         ${tour.parent ? partInfoHtml(tour) : '<p class="hint suggestion-hint">Vorschlag aus dem Tourenplan: Du kannst ihn so gehen, mit eigenem GPX anpassen oder nur einzelne Stempel davon sammeln.</p>'}
         ${tour.parts?.length ? variantHtml(tour) : ''}
-        <ul class="tips">${tourTags(tour).map(g => `<li><b>${escapeHtml(g.label)}:</b> ${escapeHtml(g.hint)}</li>`).join('')}</ul>
-        <ol class="stop-list">${stamps.map((s, i) => `
-            <li class="stop-item${collected.has(s.number) ? ' collected' : ''}">
-                <span class="stop-number">${i + 1}</span>
-                <span class="stop-name">${escapeHtml(s.name)}</span>
-                <span class="stop-id">${s.id}${s.elevation ? ` · ${s.elevation} m` : ''}</span>
-                <label class="stamp-check" title="Gestempelt"><input type="checkbox" class="stamp-done" data-stamp="${s.number}"${collected.has(s.number) ? ' checked' : ''} aria-label="${escapeHtml(`${s.id} ${s.name} gestempelt`)}"></label>
-            </li>`).join('')}
-        </ol>
+        ${tipsHtml(tour)}
+        ${stopListHtml(stamps)}
         <p class="hint">${tour.single
             ? 'Liegt zu abseits für eine Runde; nimm ihn auf dem Weg zu einer Nachbartour mit.'
             : 'Die Runde ist geschlossen, du kannst an jedem Stempel starten.'}</p>
@@ -915,14 +1070,7 @@ function renderDetail(tour) {
                 <input type="file" id="trackFile" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
             </div>
         </div>
-        <div class="komoot-box">
-            <b>Komoot</b>
-            ${komootHtml(tour)}
-            <form class="komoot-add" id="komootForm">
-                <input type="text" id="komootInput" placeholder="komoot.com/tour/… oder Tour-ID" aria-label="Komoot-Link hinzufügen" autocomplete="off">
-                <button type="submit" class="calc-route-btn">Verlinken</button>
-            </form>
-        </div>
+        ${komootBoxHtml(tour)}
         <div class="detail-actions">
             <button type="button" class="selection-btn primary" id="tourGpx">${track ? 'GPX-Track herunterladen' : 'GPX herunterladen'}</button>
             <button type="button" class="calc-route-btn" id="tourCompare" title="${track ? 'Track' : 'Luftlinien-Runde'} im Routenabgleich gegen alle Stempel prüfen">Im Routenabgleich prüfen</button>
@@ -936,17 +1084,10 @@ function renderDetail(tour) {
         description: `${regionName(tour.region)} · ${stamps.length} Stempel · ca. ${fmt1(tour.km)} km`,
         closeLoop: !tour.single
     });
-    el('tourGpx').addEventListener('click', () => downloadGPX(tourGpx(), `HWN_${tour.id}`));
-    // app.js owns the comparison view; hand the route over without importing it here
-    el('tourCompare').addEventListener('click', () => {
-        document.dispatchEvent(new CustomEvent('hwn:compare-route', {
-            detail: { gpx: tourGpx(), name: track ? `${unitLabel(tour)}: ${track.name}` : `${unitLabel(tour)} (Luftlinie)` }
-        }));
-    });
-    el('tourClear').addEventListener('click', () => {
-        selectedId = null;
-        render();
-        fitTo(shownUnits().filter(t => !regionFilter || t.region === regionFilter));
+    bindDetailCommon(detail, tour, {
+        gpx: tourGpx,
+        fileName: `HWN_${tour.id}`,
+        compareName: track ? `${unitLabel(tour)}: ${track.name}` : `${unitLabel(tour)} (Luftlinie)`
     });
 
     const fileInput = el('trackFile');
@@ -957,17 +1098,64 @@ function renderDetail(tour) {
     });
     el('trackRemove')?.addEventListener('click', () => removeUploadedTrack(tour));
     el('trackRoute')?.addEventListener('click', e => routeTour(tour, e.currentTarget));
-    const doneToggle = el('tourDoneToggle');
-    syncDoneCheckbox(doneToggle, tour);
-    doneToggle.addEventListener('change', e => {
-        setTourCollected(tour, e.target.checked);
-        render();
-    });
     el('tourParent')?.addEventListener('click', () => select(tour.parent.id));
     detail.querySelectorAll('input[name="tourVariant"]').forEach(radio =>
         radio.addEventListener('change', () => setVariant(tour, radio.value === 'parts')));
     detail.querySelectorAll('[data-part]').forEach(btn =>
         btn.addEventListener('click', () => select(btn.dataset.part)));
+}
+
+function tipsHtml(tour) {
+    return `<ul class="tips">${tourTags(tour).map(g => `<li><b>${escapeHtml(g.label)}:</b> ${escapeHtml(g.hint)}</li>`).join('')}</ul>`;
+}
+
+// Stamps in walking order, each with its own "gestempelt" checkbox
+function stopListHtml(stamps, showSuggestion = false) {
+    if (!stamps.length) return '<p class="hint">Keine Stempel an dieser Tour.</p>';
+    return `<ol class="stop-list">${stamps.map((s, i) => {
+        const suggestion = showSuggestion && plan.tours.find(t => t.stamps.includes(s.number));
+        return `
+            <li class="stop-item${collected.has(s.number) ? ' collected' : ''}">
+                <span class="stop-number">${i + 1}</span>
+                <span class="stop-name">${escapeHtml(s.name)}</span>
+                <span class="stop-id">${s.id}${s.elevation ? ` · ${s.elevation} m` : ''}${suggestion ? ` · Vorschlag ${suggestion.id}` : ''}</span>
+                <label class="stamp-check" title="Gestempelt"><input type="checkbox" class="stamp-done" data-stamp="${s.number}"${collected.has(s.number) ? ' checked' : ''} aria-label="${escapeHtml(`${s.id} ${s.name} gestempelt`)}"></label>
+            </li>`;
+    }).join('')}
+        </ol>`;
+}
+
+function komootBoxHtml(tour) {
+    return `<div class="komoot-box">
+            <b>Komoot</b>
+            ${komootHtml(tour)}
+            <form class="komoot-add" id="komootForm">
+                <input type="text" id="komootInput" placeholder="komoot.com/tour/… oder Tour-ID" aria-label="Komoot-Link hinzufügen" autocomplete="off">
+                <button type="submit" class="calc-route-btn">Verlinken</button>
+            </form>
+        </div>`;
+}
+
+// Handlers shared by suggestions, parts and own tours
+function bindDetailCommon(detail, tour, { gpx, fileName, compareName }) {
+    el('tourGpx').addEventListener('click', () => downloadGPX(gpx(), fileName));
+    // app.js owns the comparison view; hand the route over without importing it here
+    el('tourCompare').addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('hwn:compare-route', { detail: { gpx: gpx(), name: compareName } }));
+    });
+    el('tourClear').addEventListener('click', () => {
+        selectedId = null;
+        render();
+        fitTo(shownUnits().filter(t => !regionFilter || t.region === regionFilter));
+    });
+
+    const doneToggle = el('tourDoneToggle');
+    syncDoneCheckbox(doneToggle, tour);
+    doneToggle.addEventListener('change', e => {
+        setTourCollected(tour, e.target.checked);
+        renderList();
+        render();
+    });
     detail.querySelectorAll('.stamp-done').forEach(cb =>
         cb.addEventListener('change', () => {
             setStampCollected(Number(cb.dataset.stamp), cb.checked);
@@ -995,6 +1183,267 @@ function renderDetail(tour) {
             renderList();
             render();
         }));
+}
+
+function renderOwnDetail(detail, tour) {
+    const stamps = tourStamps(tour);
+    const f = tourFigures(tour);
+    const track = tracks.get(tour.id);
+    const error = trackErrors.get(tour.id);
+    const walked = isDone(tour);
+    detail.style.setProperty('--c', OWN_COLOR);
+
+    const message = detailMessage?.tourId === tour.id && !detailMessage.komoot
+        ? `<p class="hint ${detailMessage.isError ? 'track-warning' : 'track-ok'}">${escapeHtml(detailMessage.text)}</p>` : '';
+    const confirmDelete = ownDeleteId === tour.id
+        ? `<div class="own-confirm">
+                <p class="hint track-warning">„${escapeHtml(tour.name)}“ wirklich löschen? Die gesammelten Stempel bleiben erhalten.</p>
+                <div class="detail-actions">
+                    <button type="button" class="selection-btn primary" id="ownDeleteYes">Ja, löschen</button>
+                    <button type="button" class="detail-clear" id="ownDeleteNo">Abbrechen</button>
+                </div>
+            </div>`
+        : '';
+
+    detail.innerHTML = `
+        <span class="region-tag">Eigene Tour</span>
+        <h3>${escapeHtml(tour.name)} <span class="level ${walked ? 'lv-leicht' : 'lv-mittel'}">${walked ? '✓ gelaufen' : 'geplant'}</span></h3>
+        <div class="tour-meta mono">${track
+            ? `<span>${fmt1(f.km)} km</span><span>ca. ${fmt1(f.hours)} Std.</span><span>${f.realAscent ? '' : 'mind. '}${f.ascent} Hm</span>${levelHtml(tour)}<span>${f.minEle}–${f.maxEle} m ü. NN</span>`
+            : ''}<span>${stamps.length} Stempel</span></div>
+        ${tipsHtml(tour)}
+        ${stopListHtml(stamps, true)}
+        <div class="done-box">
+            <label><input type="checkbox" id="tourDoneToggle"> Gelaufen</label>
+            <span class="hint">Markiert die Tour als gelaufen und sammelt ihre Stempel. Ohne Haken werden diese Stempel wieder entfernt, außer eine andere gelaufene eigene Tour enthält sie.</span>
+        </div>
+        <div class="track-box">
+            <p class="hint track-source"><b>Eigene Tour:</b> <span class="mono">${escapeHtml(tour.record.fileName || 'GPX')}</span> · im Browser gespeichert, wird mit exportiert</p>
+            ${error ? `<p class="hint track-warning">⚠ ${escapeHtml(error)}</p>` : ''}
+            ${message}
+            <div class="detail-actions">
+                <button type="button" class="calc-route-btn" id="ownEdit">Bearbeiten</button>
+                <button type="button" class="detail-clear" id="ownDelete">Löschen</button>
+            </div>
+            ${confirmDelete}
+        </div>
+        ${komootBoxHtml(tour)}
+        <div class="detail-actions">
+            <button type="button" class="selection-btn primary" id="tourGpx">GPX-Track herunterladen</button>
+            <button type="button" class="calc-route-btn" id="tourCompare" title="Track im Routenabgleich gegen alle Stempel prüfen">Im Routenabgleich prüfen</button>
+            <button type="button" class="detail-clear" id="tourClear">Auswahl aufheben</button>
+        </div>`;
+
+    bindDetailCommon(detail, tour, {
+        gpx: () => tour.record.gpx,
+        fileName: tour.name.replace(/[^\wäöüÄÖÜß-]+/g, '_').slice(0, 60) || 'eigene-tour',
+        compareName: unitLabel(tour)
+    });
+    el('ownEdit').addEventListener('click', () => startOwnDraft(tour.record.gpx, tour.record.fileName, tour.record));
+    el('ownDelete').addEventListener('click', () => {
+        ownDeleteId = tour.id;
+        render();
+    });
+    el('ownDeleteNo')?.addEventListener('click', () => {
+        ownDeleteId = null;
+        render();
+    });
+    el('ownDeleteYes')?.addEventListener('click', () => removeOwnTour(tour));
+}
+
+// "2026-09-26_3310815718_Ilsetal.gpx" (Komoot export) -> "Ilsetal"
+function nameFromFile(fileName) {
+    return fileName.replace(/\.gpx$/i, '').replace(/^\d{4}-\d{2}-\d{2}_\d{5,}_/, '').replace(/[_]+/g, ' ').trim();
+}
+
+/**
+ * Open the own tour form for a GPX: detects the stamps along the track.
+ * @param {Object|null} existing - record when editing an own tour
+ */
+function startOwnDraft(gpx, fileName, existing = null) {
+    const latLngs = analyzeTrack(gpx, []).latLngs;
+    const along = stampsAlongTrack(gpx, [...stampsByNumber.values()]);
+    const detected = along.filter(a => a.distance <= STAMP_ON_TRACK_METERS).map(a => a.number);
+    const keepStamps = existing && existing.gpx === gpx;
+    ownDraft = {
+        id: existing?.id || null,
+        name: existing?.name || gpxName(gpx) || nameFromFile(fileName || '') || 'Eigene Tour',
+        gpx,
+        fileName: fileName || '',
+        latLngs,
+        along,
+        chosen: new Set(keepStamps ? existing.stamps : detected),
+        walked: existing?.status === 'walked',
+        message: null
+    };
+    ownDeleteId = null;
+    render();
+    const pts = latLngs.flat();
+    if (pts.length) map.fitBounds(pts, { padding: [24, 24], maxZoom: 14 });
+    el('tourMapGrid').scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+function renderOwnForm(detail) {
+    const d = ownDraft;
+    detail.style.setProperty('--c', OWN_COLOR);
+    const km = d.latLngs.flat().reduce((a, p, i, all) => i ? a + distanceMeters(all[i - 1][0], all[i - 1][1], p[0], p[1]) : 0, 0) / 1000;
+    // Detected stamps plus manually added ones, in the order the track passes them
+    const listed = d.along.filter(a => a.distance <= STAMP_ON_TRACK_METERS || d.chosen.has(a.number));
+    const items = listed.map(a => {
+        const s = stampsByNumber.get(a.number);
+        const suggestion = plan.tours.find(t => t.stamps.includes(a.number));
+        return `<li><label>
+            <input type="checkbox" class="own-stamp" data-stamp="${a.number}"${d.chosen.has(a.number) ? ' checked' : ''}>
+            <span class="mono">${s.number}</span> ${escapeHtml(s.name)}
+            <span class="hint">${Math.round(a.distance)} m vom Track${suggestion ? ` · Vorschlag ${suggestion.id}` : ''}${collected.has(a.number) ? ' · schon gestempelt' : ''}</span>
+        </label></li>`;
+    }).join('');
+
+    detail.innerHTML = `
+        <span class="region-tag">Eigene Tour</span>
+        <h3>${d.id ? 'Eigene Tour bearbeiten' : 'Eigene Tour anlegen'}</h3>
+        <p class="hint">GPX: <span class="mono">${escapeHtml(d.fileName || 'ohne Dateiname')}</span> · ${fmt1(km)} km. Die Karte zeigt den Track gepunktet.</p>
+        <form class="own-form" id="ownForm">
+            <label class="field-label" for="ownName">Name</label>
+            <input type="text" id="ownName" maxlength="120" required value="${escapeHtml(d.name)}">
+            <fieldset class="own-stamps">
+                <legend>Stempel dieser Tour</legend>
+                <p class="hint">Erkannt werden alle Stempel bis ${STAMP_ON_TRACK_METERS} m vom Track. Nimm den Haken weg, wenn du einen davon nicht mitnimmst.</p>
+                ${items ? `<ul>${items}</ul>` : '<p class="hint">Kein Stempel liegt am Track.</p>'}
+                <div class="own-add">
+                    <input type="text" id="ownStampNumber" inputmode="numeric" placeholder="Nummer, z. B. 131" aria-label="Stempel per Nummer hinzufügen" autocomplete="off">
+                    <button type="button" class="calc-route-btn" id="ownStampAdd">Stempel hinzufügen</button>
+                </div>
+            </fieldset>
+            ${d.id ? '' : `<label class="own-walked"><input type="checkbox" id="ownWalked"${d.walked ? ' checked' : ''}> Schon gelaufen (sammelt die Stempel)</label>`}
+            ${d.message ? `<p class="hint ${d.message.isError ? 'track-warning' : 'track-ok'}">${escapeHtml(d.message.text)}</p>` : ''}
+            <div class="detail-actions">
+                <button type="submit" class="selection-btn primary">Speichern</button>
+                <button type="button" class="calc-route-btn" id="ownPickGpx">Andere GPX-Datei</button>
+                <button type="button" class="detail-clear" id="ownCancel">Abbrechen</button>
+            </div>
+        </form>`;
+
+    el('ownName').addEventListener('input', e => { d.name = e.target.value; });
+    el('ownWalked')?.addEventListener('change', e => { d.walked = e.target.checked; });
+    detail.querySelectorAll('.own-stamp').forEach(cb => cb.addEventListener('change', () => {
+        const n = Number(cb.dataset.stamp);
+        cb.checked ? d.chosen.add(n) : d.chosen.delete(n);
+    }));
+    const addStamp = () => {
+        const n = Number(el('ownStampNumber').value.trim());
+        const a = d.along.find(x => x.number === n);
+        if (!a) d.message = { text: `Stempel ${el('ownStampNumber').value.trim() || '?'} gibt es nicht.`, isError: true };
+        else if (d.chosen.has(n)) d.message = { text: `Stempel ${n} ist schon dabei.`, isError: true };
+        else {
+            d.chosen.add(n);
+            d.message = { text: `Stempel ${n} hinzugefügt (${Math.round(a.distance)} m vom Track).`, isError: false };
+        }
+        render();
+        el('ownStampNumber')?.focus();
+    };
+    el('ownStampAdd').addEventListener('click', addStamp);
+    el('ownStampNumber').addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addStamp();
+        }
+    });
+    el('ownPickGpx').addEventListener('click', () => el('ownFile').click());
+    el('ownCancel').addEventListener('click', () => {
+        ownDraft = null;
+        render();
+    });
+    el('ownForm').addEventListener('submit', e => {
+        e.preventDefault();
+        saveOwnDraft();
+    });
+}
+
+async function saveOwnDraft() {
+    const d = ownDraft;
+    const name = d.name.trim();
+    if (!name) {
+        d.message = { text: 'Bitte gib der Tour einen Namen.', isError: true };
+        render();
+        return;
+    }
+    const existing = ownTours.find(r => r.id === d.id);
+    const record = {
+        id: d.id || `own-${Date.now()}`,
+        name: name.slice(0, 120),
+        gpx: d.gpx,
+        fileName: d.fileName,
+        stamps: d.along.filter(a => d.chosen.has(a.number)).map(a => a.number),
+        status: existing ? existing.status : (d.walked ? 'walked' : 'planned'),
+        createdAt: existing?.createdAt || new Date().toISOString()
+    };
+    try {
+        await saveOwnTour(record);
+    } catch {
+        d.message = { text: 'Speichern fehlgeschlagen.', isError: true };
+        render();
+        return;
+    }
+    // A walked tour collects its (possibly new) stamps
+    if (record.status === 'walked') {
+        record.stamps.forEach(n => collected.add(n));
+        saveCollected();
+    }
+    ownDraft = null;
+    const komootUrl = komootUrlFromFilename(record.fileName);
+    const linked = komootUrl && !(komootLinks[record.id] || []).some(l => l.url === komootUrl);
+    if (linked) {
+        komootLinks[record.id] = [...(komootLinks[record.id] || []), { url: komootUrl, name: '' }];
+        saveKomootLinks();
+    }
+    detailMessage = { tourId: record.id, text: (existing ? 'Änderungen gespeichert.' : 'Eigene Tour gespeichert.') + (linked ? ' Komoot-Tour verlinkt.' : ''), isError: false };
+    setOwnTours([...ownTours.filter(r => r.id !== record.id), record]);
+    select(record.id);
+}
+
+async function removeOwnTour(tour) {
+    try {
+        await deleteOwnTour(tour.id);
+    } catch {
+        detailMessage = { tourId: tour.id, text: 'Löschen fehlgeschlagen.', isError: true };
+        render();
+        return;
+    }
+    ownDeleteId = null;
+    delete komootLinks[tour.id];
+    saveKomootLinks();
+    selectedId = null;
+    setOwnTours(ownTours.filter(r => r.id !== tour.id));
+    setOwnStatus(`„${tour.name}“ gelöscht.`);
+}
+
+function setOwnStatus(msg, isError = false) {
+    const status = el('ownStatus');
+    status.textContent = msg;
+    status.classList.toggle('error', isError);
+}
+
+function initOwnTours() {
+    const input = el('ownFile');
+    el('ownAdd').addEventListener('click', () => input.click());
+    input.addEventListener('change', async () => {
+        const file = input.files[0];
+        input.value = '';
+        if (!file) return;
+        try {
+            const gpx = await file.text();
+            // Editing keeps the tour's id and name; a new file re-detects the stamps
+            const existing = ownDraft?.id ? ownTours.find(r => r.id === ownDraft.id) : null;
+            const name = ownDraft?.id ? ownDraft.name : null;
+            startOwnDraft(gpx, file.name, existing);
+            if (name) ownDraft.name = name;
+            setOwnStatus('');
+            render();
+        } catch (e) {
+            setOwnStatus(`GPX nicht übernommen: ${e.message || 'Datei unlesbar.'}`, true);
+        }
+    });
 }
 
 function partInfoHtml(part) {
@@ -1151,10 +1600,12 @@ function exportProgress() {
         doneTours: plan.tours.filter(isDone).map(t => t.id),
         tracks: exportedTracks,
         komoot: komootLinks,
-        variants
+        variants,
+        ownTours
     }, `hwn-fortschritt-${today}.json`);
     const n = Object.keys(exportedTracks).length;
-    setTransferStatus(`Fortschritt exportiert${n ? ` (mit ${n} GPX-Track${n > 1 ? 's' : ''})` : ''}.`);
+    const extras = [n && `${n} GPX-Track${n > 1 ? 's' : ''}`, ownTours.length && `${ownTours.length} eigenen ${ownTours.length > 1 ? 'Touren' : 'Tour'}`].filter(Boolean);
+    setTransferStatus(`Fortschritt exportiert${extras.length ? ` (mit ${extras.join(' und ')})` : ''}.`);
 }
 
 async function importProgress(text) {
@@ -1191,9 +1642,20 @@ async function importProgress(text) {
         uploadedTracks = Object.fromEntries(valid);
         trackCount = valid.length;
     }
+    // Own tours: only replaced when the file has them (exports before own tours keep the browser's)
+    let ownCount = null;
+    let ownRecords = ownTours;
+    if (Array.isArray(data.ownTours)) {
+        ownRecords = data.ownTours.map(sanitizeOwnRecord).filter(Boolean)
+            .filter((r, i, all) => all.findIndex(x => x.id === r.id) === i);
+        await clearOwnTours();
+        for (const record of ownRecords) await saveOwnTour(record);
+        ownCount = ownRecords.length;
+    }
     // Same for Komoot links: only replaced when the file has them
     if (data.komoot && typeof data.komoot === 'object') {
-        komootLinks = sanitizeKomootLinks(data.komoot, tourIds);
+        const ownIds = new Set(ownRecords.map(r => r.id));
+        komootLinks = sanitizeKomootLinks(data.komoot, id => tourIds.has(id) || ownIds.has(id));
         saveKomootLinks();
     }
     // Same for the chosen variants of split tours
@@ -1201,11 +1663,14 @@ async function importProgress(text) {
         variants = sanitizeVariants(data.variants);
         saveVariants();
     }
-    refreshTracks();
+    ownDraft = null;
+    setOwnTours(ownRecords);
 
     const doneCount = plan.tours.filter(isDone).length;
     let msg = `Importiert: ${doneCount} ${doneCount === 1 ? 'Vorschlag' : 'Vorschläge'} erledigt, ${collected.size} Stempel gesammelt`;
-    msg += trackCount === null ? '.' : `, ${trackCount} GPX-Track${trackCount === 1 ? '' : 's'}.`;
+    if (trackCount !== null) msg += `, ${trackCount} GPX-Track${trackCount === 1 ? '' : 's'}`;
+    if (ownCount !== null) msg += `, ${ownCount} eigene ${ownCount === 1 ? 'Tour' : 'Touren'}`;
+    msg += '.';
     setTransferStatus(unknownTours.length ? `${msg} Unbekannte Touren ignoriert: ${unknownTours.join(', ')}` : msg);
 }
 

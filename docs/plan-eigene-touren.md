@@ -9,8 +9,8 @@ Stand: 05.10.2026
 | – | Niveau-Berechnung aus aktuellen Werten | ✅ erledigt (05.10.2026) |
 | 1 | Fortschritt pro Stempel, Kennzeichnung als Vorschlag | ✅ erledigt (05.10.2026) |
 | 1b | Teilvorschläge für lange Touren | ✅ erledigt (05.10.2026) |
-| 2 | Eigene Touren | ⬜ offen, nächster Schritt |
-| 3 | Vorschläge passen sich an | ⬜ offen |
+| 2 | Eigene Touren | ✅ erledigt (05.10.2026) |
+| 3 | Vorschläge passen sich an | ⬜ offen, nächster Schritt |
 | 4 | Routenabgleich anbinden | ⬜ offen |
 | 5 | Eigene Tour auf der Karte zusammenstellen (optional) | ⬜ offen |
 
@@ -224,7 +224,31 @@ Abweichungen von der ursprünglichen Planung:
 - Den Teil A5b abhaken: A5 steht auf 2/6, und erst mit A5a ist A5 erledigt.
 - „km offen“ zählt die gewählte Variante, nicht beide.
 
-### Schritt 2: Eigene Touren
+### ✅ Schritt 2: Eigene Touren
+
+**Status: umgesetzt am 05.10.2026.**
+
+**Bedienung**
+- Der Button „+ Eigene Tour aus GPX“ steht über den Region-Chips.
+- Nach der Dateiauswahl öffnet sich im Detail-Panel ein Formular. Die Karte zeigt dabei den Track gepunktet als Vorschau.
+- Im Formular stehen der Name (aus dem GPX `<name>` oder dem Dateinamen, Komoot-Präfix entfernt) und die erkannten Stempel mit Abstand zum Track und zugehörigem Vorschlag. Stempel lassen sich abwählen oder per Nummer hinzufügen. Dazu kommt „Schon gelaufen“ und „Speichern“.
+- Eigene Touren stehen in einer eigenen Liste über den Regionen und haben einen Chip „Eigene Touren“ sowie eine eigene Farbe (`OWN_COLOR`).
+- Das Detail einer eigenen Tour bietet: Kennzahlen aus dem Track, Niveau, Saison, Stempelliste mit Haken, „Gelaufen“, „Bearbeiten“ (Name, Stempel, andere GPX-Datei), „Löschen“ mit Rückfrage im Panel, Komoot, GPX-Download und „Im Routenabgleich prüfen“.
+
+**Abweichungen von der ursprünglichen Planung**
+- **Stempel-Erkennung:** Sie läuft über die neue Funktion `stampsAlongTrack()` in `tracks.js` statt über `findNearbyStamps`. Die liefert zusätzlich die Position am Track, und die Stempelliste steht dadurch in Laufrichtung.
+- **Komoot-Links** eigener Touren liegen wie bei Vorschlägen in `hwn-komoot-links`, mit der ID der eigenen Tour als Schlüssel, nicht im Datensatz selbst.
+- **Status:** Er wird nur im Detail über „Gelaufen“ geändert, im Bearbeiten-Formular nur beim Anlegen.
+- **Gelaufen entfernen:** Nimmt man „Gelaufen“ heraus, verschwinden die Stempel der Tour wieder, außer eine andere gelaufene eigene Tour enthält sie.
+- **Löschen:** Die gesammelten Stempel bleiben erhalten.
+- **Offene Frage 2 entschieden:** Entfernt man einzelne Stempel, bleibt die Tour „gelaufen“.
+- **Offene Frage 1, Übergangslösung bis Schritt 3:**
+  - „km/Hm zurückgelegt“ = gelaufene eigene Touren + erledigte Vorschläge, die **keinen** Stempel mit einer gelaufenen eigenen Tour teilen. Dadurch wird nichts doppelt gezählt.
+  - Einen Vorschlag, der teils über eine eigene Tour und teils über seinen eigenen Haken erledigt wurde, zählt die Statistik nur mit der eigenen Tour. Den Rest schätzt erst Schritt 3.
+  - „km/Hm offen“ zählt weiter die offenen Vorschläge. Geplante eigene Touren kommen erst mit Schritt 3 dazu, damit Stempel dort nicht doppelt zählen.
+- **Neue Statistik** „Eigene Touren gelaufen“ (x/y), nur sichtbar, wenn es eigene Touren gibt.
+
+**Ursprüngliche Planung:**
 
 **Datenmodell**
 
@@ -312,11 +336,11 @@ Abweichungen von der ursprünglichen Planung:
 
 ## Offene Fragen / Entscheidungen
 
-1. **Doppelt gezählte km bei „zurückgelegt“.** Beispiel: Erst wird „Meine Runde“ (129, 130) gelaufen, später der Rest von A1.
+1. **Doppelt gezählte km bei „zurückgelegt“.** *(Übergangslösung mit Schritt 2 umgesetzt, siehe dort.)* Beispiel: Erst wird „Meine Runde“ (129, 130) gelaufen, später der Rest von A1.
    - Vorschlag: „zurückgelegt“ = Summe der Tracks aller gelaufenen eigenen Touren + Track bzw. Schätzung der Vorschläge, die **als Ganzes** abgehakt wurden.
    - Ein Vorschlag, der nur durch eigene Touren und einzelne Haken vollständig wurde, zählt keine km mehr.
    - Dafür braucht es zusätzlich zu den Stempeln die Liste „als Ganzes erledigte Vorschläge“. Sie wird nur für die Statistik verwendet, nicht für den Fortschritt.
-2. **Status einer eigenen Tour beim Entfernen einzelner Stempel.** Wenn man bei einer gelaufenen eigenen Tour später einen Stempel wieder entfernt:
+2. ✅ **Status einer eigenen Tour beim Entfernen einzelner Stempel.** *(Entschieden mit Schritt 2: bleibt „gelaufen“.)* Wenn man bei einer gelaufenen eigenen Tour später einen Stempel wieder entfernt:
    - Vorschlag: Die Tour bleibt „gelaufen“, es wird nur der Stempel entfernt.
 3. **Speicherort eigener Touren im Projekt.** Sollen eigene Touren auch als Dateien im Repo liegen können, z. B. `src/data/own/*.gpx` mit Namen aus dem GPX?
    - Vorschlag: Zunächst nur Browser + Export, später bei Bedarf.

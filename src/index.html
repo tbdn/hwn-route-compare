@@ -126,6 +126,12 @@
             <span class="progress-status" id="progressStatus" role="status"></span>
         </div>
 
+        <div class="own-actions">
+            <button type="button" class="selection-btn primary" id="ownAdd">+ Eigene Tour aus GPX</button>
+            <input type="file" id="ownFile" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
+            <span class="progress-status" id="ownStatus" role="status"></span>
+        </div>
+
         <div class="region-chips" id="tourChips" role="group" aria-label="Region filtern"></div>
 
         <div class="tour-mapgrid" id="tourMapGrid">
@@ -134,6 +140,7 @@
                 <div class="tour-legend">
                     <span><b class="legend-line thin"></b>Luftlinie (geschätzt)</span>
                     <span><b class="legend-line"></b>GPX-Track</span>
+                    <span><b class="legend-line own"></b>eigene Tour</span>
                     <span><i style="background:#9A958A"></i>schon gestempelt</span>
                     <span><b class="legend-dash"></b>gestrichelt = alle Stempel gesammelt</span>
                     <span><i class="legend-start"></i>Start</span>
@@ -157,6 +164,7 @@
                 <p><b>Abstecher:</b> Die ehemalige Steinmühle (96) liegt zu abseits für eine Runde. Nimm sie mit dem Auto mit, wenn du für Tour G2 nach Ilfeld fährst.</p>
                 <p><b>GPX-Tracks:</b> Für jede Tour kannst du einen echten Track hinterlegen, etwa aus Komoot. Dann zeigt die Karte den Weg, und km und Höhenmeter kommen aus dem Track statt aus der Schätzung (Werte mit „~“ oder „≥“ sind geschätzt). Entweder im Browser über „GPX hinterlegen“ in der Tour-Ansicht (wird mit exportiert) oder als Datei <span class="mono">src/data/tours/B7.gpx</span> im Projekt. Ein Upload hat Vorrang. Ein Track ist nur der Weg, egal ob geplant oder gelaufen. Am Fortschritt ändert er nichts. Die mitgelieferten Tracks sind von OpenRouteService berechnet und heißen „Routenvorschlag (ungeprüft)“: ORS kennt nicht jeden Pfad, prüfe sie vor der Wanderung, am besten in Komoot.</p>
                 <p><b>Auf Wanderwege legen:</b> Mit einem OpenRouteService-API-Schlüssel (im Routenabgleich hinterlegt) berechnet die Tour-Ansicht die Runde durch die Stempel auf echten Wegen und speichert sie wie einen hochgeladenen, geplanten Track. ORS kennt nur Wege aus OpenStreetMap; für die endgültige Planung ist Komoot meist besser.</p>
+                <p><b>Eigene Touren:</b> Mit „+ Eigene Tour aus GPX“ legst du eine Tour mit beliebigen Stempeln an, z. B. eine Komoot-Planung nur über 129 und 130. Die App erkennt alle Stempel bis 150 m vom Track; du kannst Stempel abwählen oder per Nummer hinzufügen. Eigene Touren werden im Browser gespeichert und mit exportiert. Der Haken „Gelaufen“ sammelt ihre Stempel, und „km/Hm zurückgelegt“ zählt ihren Track. Ein Vorschlag, dessen Stempel du (auch nur teilweise) mit eigenen Touren gesammelt hast, zählt dort nicht noch einmal.</p>
                 <p><b>Komoot:</b> Jede Tour kann auf eine oder mehrere Komoot-Touren verlinken. Links aus <span class="mono">src/data/tours.json</span> (Feld <span class="mono">komoot</span>) sind fest im Projekt; über „Verlinken“ in der Tour-Ansicht hinzugefügte Links bleiben im Browser und werden mit exportiert. Lädst du einen GPX-Export von Komoot hoch, wird die Tour automatisch verlinkt.</p>
                 <p><b>Fortschritt:</b> Gezählt wird pro Stempel. Hake einzelne Stempel in der Tour-Ansicht ab, oder setze mit dem Haken eines Vorschlags alle seine Stempel auf einmal. Ein Vorschlag gilt als erledigt, wenn alle seine Stempel gesammelt sind; teilweise gesammelte zeigen z. B. „2/4“. Der Stand wird nur in diesem Browser gespeichert. Sichere ihn mit „Exportieren“ als Datei; „Importieren“ ersetzt den Stand im Browser durch den aus der Datei. Ältere Sicherungen funktionieren weiter.</p>
             </div>

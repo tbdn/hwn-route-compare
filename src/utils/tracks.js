@@ -1,12 +1,14 @@
 // Real GPX tracks (e.g. from Komoot) for tours in the Tourenplan.
 // Two sources: project files in data/tours/<ID>.gpx, and uploads stored in IndexedDB.
-// An upload overrides the project file.
+// An upload overrides the project file. Own tours (name, GPX, stamps, status) live in IndexedDB as well.
 
 import { parseGPX, parseTrackPoint } from './gpx.js';
 import { distanceMeters } from './geo.js';
 
 const DB_NAME = 'hwn-route-compare';
+const DB_VERSION = 2;
 const STORE = 'tour-gpx';
+const OWN_STORE = 'own-tours';
 
 // Stamps further away than this from the track are flagged as missed
 export const STAMP_ON_TRACK_METERS = 150;
@@ -16,18 +18,23 @@ const ELEVATION_NOISE_METERS = 3;
 
 function openDB() {
     return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, 1);
-        req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        // Version 1 only had the track store; create whatever is missing
+        req.onupgradeneeded = () => {
+            [STORE, OWN_STORE].forEach(name => {
+                if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name);
+            });
+        };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
     });
 }
 
-async function withStore(mode, fn) {
+async function withStore(mode, fn, storeName = STORE) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, mode);
-        const result = fn(tx.objectStore(STORE));
+        const tx = db.transaction(storeName, mode);
+        const result = fn(tx.objectStore(storeName));
         tx.oncomplete = () => resolve(result.result ?? result);
         tx.onerror = () => reject(tx.error);
     });
@@ -37,12 +44,16 @@ async function withStore(mode, fn) {
  * Load all uploaded tracks
  * @returns {Promise<Object>} - {tourId: {name, gpx, uploadedAt}}
  */
-export async function loadUploadedTracks() {
+export function loadUploadedTracks() {
+    return loadAll(STORE);
+}
+
+async function loadAll(storeName) {
     try {
         const db = await openDB();
         return await new Promise((resolve, reject) => {
             const out = {};
-            const req = db.transaction(STORE).objectStore(STORE).openCursor();
+            const req = db.transaction(storeName).objectStore(storeName).openCursor();
             req.onsuccess = () => {
                 const cursor = req.result;
                 if (!cursor) return resolve(out);
@@ -66,6 +77,27 @@ export function deleteUploadedTrack(tourId) {
 
 export function clearUploadedTracks() {
     return withStore('readwrite', store => store.clear());
+}
+
+/**
+ * Own tours, keyed by their id ("own-<timestamp>")
+ * @returns {Promise<Array>} - [{id, name, gpx, fileName, stamps, status: 'planned'|'walked', createdAt}]
+ */
+export async function loadOwnTours() {
+    const all = await loadAll(OWN_STORE);
+    return Object.values(all).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+}
+
+export function saveOwnTour(record) {
+    return withStore('readwrite', store => store.put(record, record.id), OWN_STORE);
+}
+
+export function deleteOwnTour(id) {
+    return withStore('readwrite', store => store.delete(id), OWN_STORE);
+}
+
+export function clearOwnTours() {
+    return withStore('readwrite', store => store.clear(), OWN_STORE);
 }
 
 /**
@@ -161,6 +193,36 @@ export function analyzeTrack(gpxText, stamps) {
         minEle: eles.length ? Math.round(Math.min(...eles)) : null,
         missed
     };
+}
+
+/**
+ * Distance of every stamp to a GPX track, ordered by where the track passes the stamp.
+ * @param {string} gpxText
+ * @param {Array} stamps - All stamps {number, lat, lon}
+ * @returns {Array<{number, distance, index}>} - index = closest track point (for the order along the track)
+ */
+export function stampsAlongTrack(gpxText, stamps) {
+    const points = parseSegments(gpxText).flat();
+    if (points.length < 2) {
+        throw new Error('GPX enthält keinen Track.');
+    }
+    return stamps
+        .map(s => {
+            let best = { distance: Infinity, index: 0 };
+            points.forEach((p, index) => {
+                const distance = distanceMeters(s.lat, s.lon, p.lat, p.lon);
+                if (distance < best.distance) best = { distance, index };
+            });
+            return { number: s.number, distance: best.distance, index: best.index };
+        })
+        .sort((a, b) => a.index - b.index || a.distance - b.distance);
+}
+
+// Name stored in the GPX (metadata or first track/route), if any
+export function gpxName(gpxText) {
+    const doc = new DOMParser().parseFromString(gpxText, 'application/xml');
+    const node = doc.querySelector('metadata > name, trk > name, rte > name');
+    return node?.textContent.trim() || '';
 }
 
 function escapeXml(str) {
