@@ -36,14 +36,17 @@ test('a tour is walked whole until the parts variant is chosen', async () => {
 });
 
 test('switching to parts counts the parts in the open distance instead of the whole tour', async () => {
-    const before = parseDe(stats()['km offen']);
+    const beforeText = stats()['km offen'];
+    const before = parseDe(beforeText);
     const whole = parseDe(rowCells('A5').km);
     setChecked($('#tourDetail input[name="tourVariant"][value="parts"]'), true);
     await tick();
     assert.deepEqual(variantsInStore(), { A5: 'parts' });
     const parts = A5.parts.reduce((a, p) => a + parseDe(rowCells(p.id).km), 0);
     assert.ok(Math.abs(parseDe(stats()['km offen']) - (before - whole + parts)) <= 1);
-    assert.match(stats()['km offen'], /^~/, 'parts without a track are estimated');
+    // Parts without a project track are estimates ("~")
+    const partWithoutTrack = A5.parts.some(p => !row(p.id).querySelector('.tour-id').textContent.includes('GPX'));
+    if (!beforeText.startsWith('~')) assert.equal(stats()['km offen'].startsWith('~'), partWithoutTrack);
     assert.equal(row('A5').classList.contains('variant-off'), true);
     assert.equal(row('A5a').classList.contains('variant-off'), false);
 });

@@ -156,7 +156,7 @@ Jeder Schritt ist für sich nutzbar und testbar.
 **Status: umgesetzt am 05.10.2026.**
 - `scripts/suggest-tour-parts.js` hat die Teilungen berechnet und mit `--write` in `tours.json` geschrieben. Geteilt sind **A2, A5, B4, D2, D7, E3 und G2**, je in Teil a und b.
 - Die Platzhalter liegen in `draft/tours/<ID>a.gpx` / `<ID>b.gpx`.
-- Die Teile haben noch **keine Tracks**. Ihre Werte sind geschätzt („~“, „≥“), deshalb zeigt „km offen“ ein „~“, sobald ein Teil ohne Track gezählt wird. Nächster Handgriff: Für jeden Teil „Auf Wanderwege legen“ ausführen oder einen Komoot-Track als `src/data/tours/<ID>a.gpx` ablegen.
+- ~~Die Teile haben noch keine Tracks.~~ Seit 05.10.2026 liegen für alle 14 Teile ORS-Tracks in `src/data/tours/<ID>a.gpx` / `<ID>b.gpx`. Alle sind geschlossene Runden mit Höhendaten und passieren alle ihre Stempel. Komplett vs. Teile zusammen: A2 23,4 / 21,5 km, A5 26,0 / 13,6 km, B4 22,9 / 14,2 km, D2 21,4 / 20,5 km, D7 32,5 / 28,8 km, E3 21,8 / 20,5 km, G2 23,5 / 19,2 km.
 
 Abweichungen von der ursprünglichen Planung:
 - Die Kriterien im Skript sind gegenüber dem Entwurf angepasst:
@@ -384,8 +384,8 @@ Abweichungen von der ursprünglichen Planung:
    - Vorschlag: Die Tour bleibt „gelaufen“, es wird nur der Stempel entfernt.
 3. **Speicherort eigener Touren im Projekt.** Sollen eigene Touren auch als Dateien im Repo liegen können, z. B. `src/data/own/*.gpx` mit Namen aus dem GPX?
    - Vorschlag: Zunächst nur Browser + Export, später bei Bedarf.
-4. **Dateinamen beim Download.** „GPX-Track herunterladen“ speichert `HWN_<ID>.gpx`, das Projekt erwartet `<ID>.gpx`.
-   - Vorschlag: Auf `<ID>.gpx` umstellen.
+4. ✅ **Dateinamen beim Download.** „GPX-Track herunterladen“ speicherte `HWN_<ID>.gpx`, das Projekt erwartet `<ID>.gpx`.
+   - Umgesetzt am 05.10.2026: Der Download heißt jetzt `<ID>.gpx` (z. B. `A5a.gpx`). Der Test „every GPX file in src/data/tours belongs to a suggestion or part tour“ meldet falsch benannte Dateien.
 5. ✅ **Bekannter Verdacht im Routenabgleich, nicht geprüft.** *(Mit Schritt 4 behoben: alle Anfragen über den GeoJSON-Endpunkt, siehe dort.)* `decodePolyline` in `map.js` dekodiert 2D, obwohl die ORS-Anfragen `elevation: true` setzen. Das ist vor Schritt 4 zu prüfen, weil die Modal „Erweiterte Route“ dort Tracks liefert.
 
 ## Nicht im Umfang

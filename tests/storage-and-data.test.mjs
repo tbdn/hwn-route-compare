@@ -3,8 +3,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { setupBrowser, plan, stampByNumber } from './helpers/browser.mjs';
+import { setupBrowser, plan, stampByNumber, SRC } from './helpers/browser.mjs';
 
 setupBrowser();
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -61,4 +62,22 @@ test('the parts in tours.json are what scripts/suggest-tour-parts.js suggests', 
     const inPlan = plan.tours.filter(t => t.parts?.length).map(t => t.id).sort();
     assert.deepEqual(inPlan, suggested);
     assert.match(out, /^B3: .* → nicht teilen: Brocken/m);
+});
+
+// The app loads src/data/tours/<ID>.gpx; a file named differently (e.g. HWN_A5a.gpx) is silently ignored
+test('every GPX file in src/data/tours belongs to a suggestion or part tour', () => {
+    const ids = new Set(plan.tours.flatMap(t => [t.id, ...(t.parts || []).map(p => p.id)]));
+    const files = fs.readdirSync(SRC + 'data/tours').filter(f => f.endsWith('.gpx'));
+    assert.deepEqual(files.filter(f => !ids.has(f.replace(/\.gpx$/, ''))), []);
+});
+
+test('every project track passes all stamps of its tour', async () => {
+    const { analyzeTrack } = await import('../src/utils/tracks.js');
+    const units = plan.tours.flatMap(t => [t, ...(t.parts || [])]);
+    for (const unit of units) {
+        const file = `${SRC}data/tours/${unit.id}.gpx`;
+        if (!fs.existsSync(file)) continue;
+        const result = analyzeTrack(fs.readFileSync(file, 'utf8'), unit.stamps.map(n => stampByNumber.get(n)));
+        assert.deepEqual(result.missed.map(m => m.number), [], `${unit.id}.gpx`);
+    }
 });

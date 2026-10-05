@@ -1176,7 +1176,8 @@ function renderDetail(tour) {
     });
     bindDetailCommon(detail, tour, {
         gpx: tourGpx,
-        fileName: `HWN_${tour.id}`,
+        // Same name as the project file (src/data/tours/<ID>.gpx), so a download can be dropped in as is
+        fileName: tour.id,
         compareName: track ? `${unitLabel(tour)}: ${track.name}` : `${unitLabel(tour)} (Luftlinie)`
     });
 
