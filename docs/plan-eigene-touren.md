@@ -10,8 +10,8 @@ Stand: 05.10.2026
 | 1 | Fortschritt pro Stempel, Kennzeichnung als Vorschlag | ✅ erledigt (05.10.2026) |
 | 1b | Teilvorschläge für lange Touren | ✅ erledigt (05.10.2026) |
 | 2 | Eigene Touren | ✅ erledigt (05.10.2026) |
-| 3 | Vorschläge passen sich an | ⬜ offen, nächster Schritt |
-| 4 | Routenabgleich anbinden | ⬜ offen |
+| 3 | Vorschläge passen sich an | ✅ erledigt (05.10.2026) |
+| 4 | Routenabgleich anbinden | ⬜ offen, nächster Schritt |
 | 5 | Eigene Tour auf der Karte zusammenstellen (optional) | ⬜ offen |
 
 ## Ziel
@@ -295,7 +295,27 @@ Abweichungen von der ursprünglichen Planung:
 - Speichern, neu laden, exportieren und importieren.
 - Haken setzen: Die Stempel sind gesammelt, A1 steht auf 2/4.
 
-### Schritt 3: Vorschläge passen sich an
+### ✅ Schritt 3: Vorschläge passen sich an
+
+**Status: umgesetzt am 05.10.2026.**
+
+**Umgesetzt**
+- **Rest:** `restStamps()` liefert die Stempel, die weder gesammelt noch in einer geplanten eigenen Tour verplant sind (`plannedStampOwners()`). `restFigures()` berechnet die Kennzahlen dazu: unverändert → Track bzw. Schätzung, verkleinert → `estimateLoop()`, leer → 0.
+- **Detail:** Die Box „Stand dieses Vorschlags“ zeigt, was gesammelt ist, was in welcher eigenen Tour verplant ist (mit Link zu der Tour) und was übrig bleibt, samt geschätzten km, Hm und Niveau.
+- **Buttons:** „Rest auf Wanderwege legen“ erscheint ab 2 Rest-Stempeln und legt eine geplante eigene Tour „A1 – Rest“ an. „Als eigene Tour übernehmen“ steht in der Track-Box.
+- **Karte:** Ein verkleinerter Vorschlag wird blass gezeichnet, seine Rest-Runde gepunktet in der Regionsfarbe.
+- **Liste:** km, Std. und Hm zeigen den Rest mit „~“ und dem Tag „Rest“. Ist nichts mehr übrig, steht dort „–“. In der Stempelfolge sind gesammelte Stempel durchgestrichen, verplante kursiv.
+- **Statistik:** „km/Hm offen“ zählt nach Regel 4. Neu ist „davon verplant“ (nur sichtbar, wenn etwas verplant ist).
+- Ergebnis für das Beispiel 129/130: Mit geplanter eigener Tour zählt A1 nur noch die Rest-Runde 105/113 (~7,7 km) und die eigene Tour ihren Track. Nach „Rest auf Wanderwege legen“ ist A1 leer, und alles zählt über eigene Touren.
+
+**Abweichungen von der ursprünglichen Planung**
+- **Reihenfolge der Rest-Runde:** Sie folgt der Reihenfolge des Vorschlags (verplante und gesammelte Stempel fallen heraus), nicht `optimizeStampOrder`. Die Vorschlagsreihenfolge ist bereits eine optimierte Runde, und `optimizeStampOrder` braucht Positionen entlang einer Route.
+- **„Als eigene Tour übernehmen“** gibt es nur für Vorschläge mit Track. Eine Luftlinien-Runde als eigene Tour hätte echte km vorgetäuscht, ohne den Wege-Zuschlag. Komoot-Links des Vorschlags werden mit übernommen.
+- **Nur ein Rest-Stempel:** Es gibt keine Rest-Runde, sondern den Hinweis, ihn als Abstecher mitzunehmen.
+- **Keine eigene Spalte „Stempel 2/4“:** Der Zähler steht wie seit Schritt 1 unter dem Haken.
+- **„km/Hm zurückgelegt“** bleibt bei der Regel aus Schritt 2.
+
+**Ursprüngliche Planung:**
 
 **Rest berechnen**
 - `remainingStamps(tour)` = Stempel der Tour, die weder gesammelt noch in einer geplanten eigenen Tour verplant sind.
@@ -336,7 +356,7 @@ Abweichungen von der ursprünglichen Planung:
 
 ## Offene Fragen / Entscheidungen
 
-1. **Doppelt gezählte km bei „zurückgelegt“.** *(Übergangslösung mit Schritt 2 umgesetzt, siehe dort.)* Beispiel: Erst wird „Meine Runde“ (129, 130) gelaufen, später der Rest von A1.
+1. **Doppelt gezählte km bei „zurückgelegt“.** *(Übergangslösung mit Schritt 2 umgesetzt, siehe dort. Seit Schritt 3 zählt „offen“ exakt nach Regel 4; „zurückgelegt“ unterschätzt nur noch, wenn ein Vorschlag teils über eine eigene Tour und teils über seinen eigenen Haken erledigt wurde. Der Weg des Rests ist dann unbekannt; empfohlen ist, den Rest als eigene Tour zu planen und abzuhaken.)* Beispiel: Erst wird „Meine Runde“ (129, 130) gelaufen, später der Rest von A1.
    - Vorschlag: „zurückgelegt“ = Summe der Tracks aller gelaufenen eigenen Touren + Track bzw. Schätzung der Vorschläge, die **als Ganzes** abgehakt wurden.
    - Ein Vorschlag, der nur durch eigene Touren und einzelne Haken vollständig wurde, zählt keine km mehr.
    - Dafür braucht es zusätzlich zu den Stempeln die Liste „als Ganzes erledigte Vorschläge“. Sie wird nur für die Statistik verwendet, nicht für den Fortschritt.

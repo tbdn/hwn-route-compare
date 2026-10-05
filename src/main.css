@@ -1424,3 +1424,21 @@ footer a{color:var(--paper-2);}
 .own-walked input{ width:16px; height:16px; accent-color:var(--ink); }
 .own-confirm{ display:grid; gap:6px; margin-top:8px; }
 .own-confirm .hint{ margin:0; }
+
+/* Rest of a suggestion (collected / planned in own tours) */
+.rest-box{
+    display:grid;
+    gap:6px;
+    margin:10px 0;
+    padding:12px;
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    background:#FBF6EA;
+    font-size:13px;
+}
+.rest-box ul{ list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.rest-box .hint{ margin:0; }
+.rest-box .level{ margin-left:4px; }
+.seq-stop.got{ color:#9A958A; text-decoration:line-through; text-decoration-color:#9A958A; }
+.seq-stop.planned{ color:#3D2A6B; font-style:italic; }
+.rest-tag{ background:#FBEBD9; color:#8A4B12; }

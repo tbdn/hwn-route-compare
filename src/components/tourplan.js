@@ -24,6 +24,8 @@ const VARIANT_STORAGE = 'hwn-tour-variants';
 const PROGRESS_FORMAT = 'hwn-tourenplan-progress';
 // Start and end closer than this are shown as one "Start/Ziel" marker
 const LOOP_CLOSE_METERS = 250;
+// Straight line to path distance, the same factor as the estimates in tours.json
+const ROUTE_FACTOR = 1.4;
 
 // Region colors, readable on paper and on OSM tiles
 const REGION_COLORS = {
@@ -69,6 +71,7 @@ const loopLines = new Map();      // tourId -> visible polyline
 const hitLines = new Map();       // tourId -> wide invisible polyline for clicks
 const stampMarkers = new Map();   // stamp number -> circleMarker
 let loopLayer = null;
+let restLayer = null;             // straight-line loops of reduced suggestions
 let labelLayer = null;
 let endpointLayer = null;
 let draftLine = null;             // preview of the GPX in the own tour form
@@ -383,6 +386,53 @@ function setStampCollected(number, on) {
     saveCollected();
 }
 
+// Open stamps that a planned (not yet walked) own tour will cover, with the tour that covers them
+function plannedStampOwners() {
+    const owners = new Map();
+    ownUnits().filter(u => !isDone(u)).forEach(u => u.stamps.forEach(n => {
+        if (!collected.has(n) && !owners.has(n)) owners.set(n, u);
+    }));
+    return owners;
+}
+
+// What is left of a suggestion: stamps neither collected nor planned in an own tour (in the suggestion's order)
+function restStamps(tour, owners = plannedStampOwners()) {
+    return tour.stamps.filter(n => !collected.has(n) && !owners.has(n));
+}
+
+// Same estimate as tours.json: closed straight-line loop x 1.4, climbs between stamps, 4 km/h + 6 min per stamp
+function estimateLoop(stamps) {
+    let meters = 0;
+    let ascent = 0;
+    if (stamps.length > 1) {
+        stamps.forEach((s, i) => {
+            const next = stamps[(i + 1) % stamps.length];
+            meters += distanceMeters(s.lat, s.lon, next.lat, next.lon);
+            ascent += Math.max(0, (next.elevation || 0) - (s.elevation || 0));
+        });
+    }
+    const km = meters * ROUTE_FACTOR / 1000;
+    const eles = stamps.map(s => s.elevation).filter(Number.isFinite);
+    return {
+        km, hours: km / 4 + stamps.length * 0.1, ascent: Math.round(ascent),
+        minEle: eles.length ? Math.min(...eles) : 0, maxEle: eles.length ? Math.max(...eles) : 0
+    };
+}
+
+/**
+ * Figures for what is still to walk of a suggestion: the tour itself while nothing is collected
+ * or planned elsewhere, an estimate for the remaining loop otherwise, nothing when no stamp is left.
+ * @returns {Object} - tourFigures() fields plus {rest, reduced, empty}
+ */
+function restFigures(tour, owners = plannedStampOwners()) {
+    const rest = restStamps(tour, owners);
+    if (rest.length === tour.stamps.length) return { ...tourFigures(tour), rest, reduced: false, empty: false };
+    if (!rest.length) {
+        return { real: true, realAscent: true, km: 0, hours: 0, ascent: 0, minEle: 0, maxEle: 0, rest, reduced: true, empty: true };
+    }
+    return { ...estimateLoop(rest.map(n => stampsByNumber.get(n))), real: false, realAscent: false, rest, reduced: true, empty: false };
+}
+
 function tourStamps(tour) {
     return tour.stamps.map(n => stampsByNumber.get(n)).filter(Boolean);
 }
@@ -427,8 +477,7 @@ const LEVEL_RULES = {
 };
 const LEVEL_HIGH_ELE = 850;
 
-function tourLevel(tour) {
-    const f = tourFigures(tour);
+function tourLevel(tour, f = tourFigures(tour)) {
     const rule = f.realAscent ? LEVEL_RULES.track : LEVEL_RULES.estimate;
     const effort = f.km + f.ascent / 100;
     let level = 'leicht';
@@ -437,8 +486,8 @@ function tourLevel(tour) {
     return { level, effort, estimated: !f.realAscent };
 }
 
-function levelHtml(tour) {
-    const { level, effort, estimated } = tourLevel(tour);
+function levelHtml(tour, f = tourFigures(tour)) {
+    const { level, effort, estimated } = tourLevel(tour, f);
     const title = `${fmt1(effort)} Leistungs-km (km + Hm/100)${estimated ? ', aus geschätzten Werten' : ', aus dem GPX-Track'}`;
     return `<span class="level lv-${level}" title="${title}">${estimated ? '~' : ''}${level}</span>`;
 }
@@ -615,6 +664,7 @@ function initTourMap() {
     }).addTo(map);
 
     loopLayer = L.layerGroup().addTo(map);
+    restLayer = L.layerGroup().addTo(map);
     const pointLayer = L.layerGroup().addTo(map);
     draftLine = L.polyline([], { color: OWN_COLOR, weight: 4, opacity: 0.9, dashArray: '2 8', interactive: false }).addTo(map);
     endpointLayer = L.layerGroup().addTo(map);
@@ -783,14 +833,7 @@ function createTourRow(tour) {
     tr.tabIndex = 0;
     tr.dataset.id = tour.id;
 
-    const dash = '–';
     const f = tourFigures(tour);
-    const noFigures = tour.single && !f.real;
-    // Estimates are marked: "~" for distance/time, "≥" for ascent (only stamp-to-stamp climbs)
-    const est = f.real ? '' : '<span class="est">~</span>';
-    const seq = tourStamps(tour)
-        .map(s => `<span class="seq-stop"><span class="mono">${s.number}</span> ${escapeHtml(s.name)}</span>`)
-        .join(' → ') || '<span class="hint">Keine Stempel am Track</span>';
     const idCell = tour.own
         ? `<span class="own-name">${escapeHtml(tour.name)}</span>`
         : `${tour.parent ? '<span class="part-arrow" aria-hidden="true">↳</span>' : ''}${tour.id}${tour.parts?.length ? '<span class="gpx-tag parts-tag" title="Lässt sich in zwei Teilen gehen">2 Teile</span>' : ''}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}`;
@@ -798,12 +841,8 @@ function createTourRow(tour) {
     tr.innerHTML = `
         <td><input type="checkbox" class="tour-done" aria-label="${escapeHtml(unitLabel(tour))} ${tour.own ? 'gelaufen' : ': alle Stempel gesammelt'}"><span class="done-count mono"></span></td>
         <td class="tour-id mono">${idCell}${tourKomootLinks(tour).length ? '<span class="gpx-tag komoot-tag" title="Mit Komoot-Link">komoot</span>' : ''}</td>
-        <td class="r mono">${noFigures ? dash : est + fmt1(f.km)}</td>
-        <td class="r mono">${noFigures ? dash : est + fmt1(f.hours)}</td>
-        <td class="r mono">${noFigures ? dash : (f.realAscent ? '' : '<span class="est">≥</span>') + f.ascent}</td>
-        <td>${tour.single ? '' : `${levelHtml(tour)}<br>`}${tourTags(tour)
-            .map(g => `<span class="season" title="${escapeHtml(g.hint)}">${escapeHtml(g.label)}</span>`).join('')}</td>
-        <td class="seq">${tour.single ? '<span class="detour-tag">Abstecher</span> ' : ''}${tour.parent ? `<span class="part-name">${escapeHtml(tour.name)}:</span> ` : ''}${seq}</td>`;
+        <td class="r mono"></td><td class="r mono"></td><td class="r mono"></td><td></td><td class="seq"></td>`;
+    fillRowCells(tr, tour);
 
     const cb = tr.querySelector('.tour-done');
     syncDoneCheckbox(cb, tour);
@@ -822,6 +861,36 @@ function createTourRow(tour) {
         }
     });
     return tr;
+}
+
+/**
+ * Figures, level and stamps of a list row. An open suggestion shows what is left of it
+ * (estimated when stamps are collected or planned in an own tour).
+ */
+function fillRowCells(tr, tour, owners = plannedStampOwners()) {
+    const cells = tr.querySelectorAll('td');
+    const dash = '–';
+    const f = !tour.own && !isDone(tour) ? restFigures(tour, owners) : tourFigures(tour);
+    const noFigures = (tour.single && !f.real) || f.empty;
+    // Estimates are marked: "~" for distance/time, "≥" for ascent (only stamp-to-stamp climbs)
+    const est = f.real ? '' : '<span class="est">~</span>';
+    const restTitle = !f.reduced ? ''
+        : f.empty ? 'Alle offenen Stempel sind in eigenen Touren verplant' : `Rest: ${f.rest.join(', ')} (geschätzt)`;
+    const seq = tourStamps(tour)
+        .map(s => {
+            const state = collected.has(s.number) ? ' got' : owners.has(s.number) && !tour.own ? ' planned' : '';
+            const hint = state === ' got' ? ' title="gestempelt"' : state ? ` title="${escapeHtml(`verplant in „${owners.get(s.number).name}“`)}"` : '';
+            return `<span class="seq-stop${state}"${hint}><span class="mono">${s.number}</span> ${escapeHtml(s.name)}</span>`;
+        })
+        .join(' → ') || '<span class="hint">Keine Stempel am Track</span>';
+
+    cells[2].innerHTML = noFigures ? dash : est + fmt1(f.km);
+    cells[3].innerHTML = noFigures ? dash : est + fmt1(f.hours);
+    cells[4].innerHTML = noFigures ? dash : (f.realAscent ? '' : '<span class="est">≥</span>') + f.ascent;
+    [2, 3, 4].forEach(i => restTitle ? cells[i].setAttribute('title', restTitle) : cells[i].removeAttribute('title'));
+    cells[5].innerHTML = `${tour.single || f.empty ? '' : `${levelHtml(tour, f)}<br>`}${tourTags(tour)
+        .map(g => `<span class="season" title="${escapeHtml(g.hint)}">${escapeHtml(g.label)}</span>`).join('')}`;
+    cells[6].innerHTML = `${tour.single ? '<span class="detour-tag">Abstecher</span> ' : ''}${tour.parent ? `<span class="part-name">${escapeHtml(tour.name)}:</span> ` : ''}${f.reduced && !f.empty ? '<span class="gpx-tag rest-tag">Rest</span> ' : ''}${seq}`;
 }
 
 // Checked = all stamps collected, indeterminate = some; a click on a partial tour collects the rest
@@ -853,6 +922,8 @@ function render() {
         b.setAttribute('aria-pressed', String((b.dataset.code || null) === regionFilter)));
 
     const collected = collectedStamps();
+    const owners = plannedStampOwners();
+    restLayer.clearLayers();
     shownUnits().forEach(tour => {
         const visible = !regionFilter || tour.region === regionFilter;
         const done = isDone(tour);
@@ -860,14 +931,23 @@ function render() {
         const line = loopLines.get(tour.id);
         const isSel = isSelected(tour);
         const dim = !visible || (selectedId && !isSel);
+        // A suggestion that is partly collected or planned elsewhere fades; its rest is drawn as a dotted loop
+        const rest = tour.own || done ? null : restStamps(tour, owners);
+        const reduced = rest && rest.length < tour.stamps.length;
         // Real tracks are drawn stronger than straight-line estimates;
         // finished tours stay visible, but dashed so open tours stand out
         line.setStyle({
             weight: isSel ? 5 : (real ? 3.5 : 2.5),
-            opacity: dim ? 0.15 : (done && !isSel ? 0.6 : (real ? 0.95 : 0.75)),
+            opacity: dim ? 0.15 : (reduced && !isSel ? 0.35 : done && !isSel ? 0.6 : (real ? 0.95 : 0.75)),
             dashArray: done && !isSel ? '6 7' : null
         });
         if (isSel) line.bringToFront();
+        if (reduced && rest.length > 1) {
+            const latLngs = rest.map(n => stampsByNumber.get(n)).map(s => [s.lat, s.lon]);
+            L.polyline([...latLngs, latLngs[0]], {
+                color: unitColor(tour), weight: 3, opacity: dim ? 0.15 : 0.95, dashArray: '1 7', lineCap: 'round', interactive: false
+            }).addTo(restLayer);
+        }
     });
 
     // Stamp markers keep the color of their suggestion; dimmed when outside the selection or filter
@@ -915,6 +995,7 @@ function render() {
     el('tourList').querySelectorAll('.tour-row').forEach(row => {
         row.classList.toggle('selected', row.dataset.id === selectedId);
         const rowTour = unitById.get(row.dataset.id);
+        fillRowCells(row, rowTour, owners);
         row.classList.toggle('done', isDone(rowTour));
         row.classList.toggle('variant-off', !isShown(rowTour));
         const cb = row.querySelector('.tour-done');
@@ -928,15 +1009,20 @@ function render() {
 function renderStats() {
     const collected = collectedStamps();
     const openStamps = stampsByNumber.size - collected.size;
-    // Split tours count with the chosen variant (whole or parts), never both
-    const openList = suggestionUnits().filter(t => !isDone(t));
-    const openKm = openList.reduce((a, t) => a + tourFigures(t).km, 0);
-    const openKmEstimated = openList.some(t => !t.single && !tracks.has(t.id));
-    // Estimated ascent only counts climbs between stamps, so it's a lower bound ("≥")
-    const openHm = openList.reduce((a, t) => a + tourFigures(t).ascent, 0);
+    // Every open stamp counts once: planned own tours with their track, plus what is left of each
+    // open suggestion (split tours with the chosen variant, never both)
+    const owners = plannedStampOwners();
+    const openList = [
+        ...ownUnits().filter(u => !isDone(u)).map(u => ({ tour: u, f: tourFigures(u) })),
+        ...suggestionUnits().filter(t => !isDone(t)).map(t => ({ tour: t, f: restFigures(t, owners) }))
+    ];
+    const openKm = openList.reduce((a, x) => a + x.f.km, 0);
     // Single stamps (car detour) have no distance or ascent, so nothing there is estimated
+    const openKmEstimated = openList.some(x => !x.tour.single && !x.f.real);
+    // Estimated ascent only counts climbs between stamps, so it's a lower bound ("≥")
+    const openHm = openList.reduce((a, x) => a + x.f.ascent, 0);
+    const openHmEstimated = openList.some(x => !x.tour.single && !x.f.realAscent);
     const estimatedAscent = t => !t.single && !tourFigures(t).realAscent;
-    const openHmEstimated = openList.some(estimatedAscent);
 
     // Walked distance: walked own tours, plus finished suggestions (real track where there is one,
     // otherwise the estimate). A suggestion finished partly through own tours isn't counted again.
@@ -954,9 +1040,11 @@ function renderStats() {
 
     el('tourStats').innerHTML = `
         <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${collected.size}</div></div>
-        <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${openStamps}</div></div>
+        <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${openStamps}</div></div>`
+        + (owners.size ? `<div class="route-stat" title="Offene Stempel, die in geplanten eigenen Touren liegen"><div class="label">davon verplant</div><div class="value">${owners.size}</div></div>` : '')
+        + `
         <div class="route-stat"><div class="label">Rundtouren</div><div class="value">${plan.tours.filter(t => !t.single).length}</div></div>
-        <div class="route-stat"${openKmEstimated ? ' title="Teilweise geschätzt: nicht jede offene Tour hat einen GPX-Track"' : ''}><div class="label">km offen</div><div class="value">${openKmEstimated ? '~' : ''}${Math.round(openKm)}</div></div>
+        <div class="route-stat" title="Geplante eigene Touren plus der Rest der offenen Vorschläge${openKmEstimated ? '; teilweise geschätzt (ohne GPX-Track oder Rest-Runde)' : ''}"><div class="label">km offen</div><div class="value">${openKmEstimated ? '~' : ''}${Math.round(openKm)}</div></div>
         <div class="route-stat"${openHmEstimated ? ' title="Teilweise geschätzt (nur Anstiege von Stempel zu Stempel), echte Höhenmeter liegen meist höher"' : ''}><div class="label">Hm offen</div><div class="value">${openHmEstimated ? '≥' : ''}${hm(openHm)}</div></div>
         <div class="route-stat"${walkedEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track"' : ''}><div class="label">km zurückgelegt</div><div class="value highlight">${walkedEstimated ? '~' : ''}${fmt1(walkedKm)}</div></div>
         <div class="route-stat"${walkedHmEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track mit Höhendaten"' : ''}><div class="label">Hm zurückgelegt</div><div class="value highlight">${walkedHmEstimated ? '≥' : ''}${hm(walkedHm)}</div></div>
@@ -1052,6 +1140,7 @@ function renderDetail(tour) {
         <div class="tour-meta mono">${meta}<span>${f.minEle}–${f.maxEle} m ü. NN</span><span>${stamps.length} Stempel</span></div>
         ${tour.parent ? partInfoHtml(tour) : '<p class="hint suggestion-hint">Vorschlag aus dem Tourenplan: Du kannst ihn so gehen, mit eigenem GPX anpassen oder nur einzelne Stempel davon sammeln.</p>'}
         ${tour.parts?.length ? variantHtml(tour) : ''}
+        ${restHtml(tour)}
         ${tipsHtml(tour)}
         ${stopListHtml(stamps)}
         <p class="hint">${tour.single
@@ -1066,6 +1155,7 @@ function renderDetail(tour) {
             <div class="detail-actions">
                 <button type="button" class="calc-route-btn" id="trackUpload">${track ? 'GPX ersetzen' : 'GPX hinterlegen'}</button>
                 ${tour.single ? '' : `<button type="button" class="calc-route-btn" id="trackRoute" title="Runde durch die Stempel auf Wanderwegen berechnen (OpenRouteService)">${track ? 'Neu auf Wanderwege legen' : 'Auf Wanderwege legen'}</button>`}
+                ${track && !tour.single ? '<button type="button" class="calc-route-btn" id="tourAdopt" title="Kopiert Track und Stempel in eine eigene Tour, die du anpassen kannst">Als eigene Tour übernehmen</button>' : ''}
                 ${track?.source === 'upload' ? '<button type="button" class="detail-clear" id="trackRemove">Hochgeladenen Track entfernen</button>' : ''}
                 <input type="file" id="trackFile" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
             </div>
@@ -1098,11 +1188,53 @@ function renderDetail(tour) {
     });
     el('trackRemove')?.addEventListener('click', () => removeUploadedTrack(tour));
     el('trackRoute')?.addEventListener('click', e => routeTour(tour, e.currentTarget));
+    el('restRoute')?.addEventListener('click', e => routeRest(tour, e.currentTarget));
+    el('tourAdopt')?.addEventListener('click', e => adoptSuggestion(tour, e.currentTarget));
+    detail.querySelectorAll('[data-own]').forEach(btn =>
+        btn.addEventListener('click', () => select(btn.dataset.own)));
     el('tourParent')?.addEventListener('click', () => select(tour.parent.id));
     detail.querySelectorAll('input[name="tourVariant"]').forEach(radio =>
         radio.addEventListener('change', () => setVariant(tour, radio.value === 'parts')));
     detail.querySelectorAll('[data-part]').forEach(btn =>
         btn.addEventListener('click', () => select(btn.dataset.part)));
+}
+
+// What of a suggestion is collected, planned in own tours and still left, with an estimate for the rest
+function restHtml(tour) {
+    if (isDone(tour) || tour.single) return '';
+    const owners = plannedStampOwners();
+    const f = restFigures(tour, owners);
+    if (!f.reduced) return '';
+
+    const names = numbers => numbers.map(n => `<span class="mono">${n}</span> ${escapeHtml(stampsByNumber.get(n)?.name || '')}`).join(', ');
+    const got = tour.stamps.filter(n => collected.has(n));
+    const byOwner = new Map();
+    tour.stamps.filter(n => !collected.has(n) && owners.has(n)).forEach(n => {
+        const owner = owners.get(n);
+        byOwner.set(owner, [...(byOwner.get(owner) || []), n]);
+    });
+
+    const items = [
+        got.length && `<li><b>Gesammelt:</b> ${names(got)}</li>`,
+        ...[...byOwner].map(([owner, numbers]) =>
+            `<li><b>Verplant</b> in <button type="button" class="part-link" data-own="${owner.id}">„${escapeHtml(owner.name)}“</button>: ${names(numbers)}</li>`),
+        f.empty
+            ? '<li><b>Rest:</b> keiner, alle offenen Stempel sind in eigenen Touren verplant.</li>'
+            : `<li><b>Rest:</b> ${names(f.rest)}${f.rest.length > 1
+                ? ` <span class="mono">· ~${fmt1(f.km)} km · ≥${f.ascent} Hm</span> ${levelHtml(tour, f)}`
+                : ''}</li>`
+    ].filter(Boolean).join('');
+
+    const hint = f.empty ? ''
+        : f.rest.length === 1
+            ? 'Nur noch ein Stempel offen: am besten als Abstecher auf einer anderen Tour mitnehmen.'
+            : 'Die Rest-Werte sind geschätzt (Luftlinie × 1,4, Hm nur von Stempel zu Stempel). Auf der Karte ist die Rest-Runde gepunktet. „Rest auf Wanderwege legen“ berechnet sie auf echten Wegen und speichert sie als eigene Tour.';
+    return `<div class="rest-box">
+        <b>Stand dieses ${tour.parent ? 'Teils' : 'Vorschlags'}</b>
+        <ul>${items}</ul>
+        ${hint ? `<p class="hint">${hint}</p>` : ''}
+        ${f.rest.length > 1 ? '<div class="detail-actions"><button type="button" class="calc-route-btn" id="restRoute">Rest auf Wanderwege legen</button></div>' : ''}
+    </div>`;
 }
 
 function tipsHtml(tour) {
@@ -1218,7 +1350,7 @@ function renderOwnDetail(detail, tour) {
             <span class="hint">Markiert die Tour als gelaufen und sammelt ihre Stempel. Ohne Haken werden diese Stempel wieder entfernt, außer eine andere gelaufene eigene Tour enthält sie.</span>
         </div>
         <div class="track-box">
-            <p class="hint track-source"><b>Eigene Tour:</b> <span class="mono">${escapeHtml(tour.record.fileName || 'GPX')}</span> · im Browser gespeichert, wird mit exportiert</p>
+            <p class="hint track-source"><b>${track && isSuggestedTrack(track) ? 'Eigene Tour, Weg von OpenRouteService (ungeprüft)' : 'Eigene Tour'}:</b> <span class="mono">${escapeHtml(tour.record.fileName || 'GPX')}</span> · im Browser gespeichert, wird mit exportiert</p>
             ${error ? `<p class="hint track-warning">⚠ ${escapeHtml(error)}</p>` : ''}
             ${message}
             <div class="detail-actions">
@@ -1551,6 +1683,80 @@ async function routeTour(tour, button) {
         fitTo([tour]);
     } catch (e) {
         setMessage(`Route nicht gespeichert: ${e.message || 'Speichern fehlgeschlagen.'}`, true);
+    }
+}
+
+// Store a new own tour (from the rest of a suggestion or a copy of it) and open it
+async function createOwnTour(record, message) {
+    await saveOwnTour(record);
+    detailMessage = { tourId: record.id, text: message, isError: false };
+    setOwnTours([...ownTours, record]);
+    select(record.id);
+}
+
+// Route only the remaining stamps of a suggestion; the result becomes a planned own tour
+async function routeRest(tour, button) {
+    const setMessage = (text, isError) => {
+        detailMessage = { tourId: tour.id, text, isError };
+        render();
+    };
+    if (!hasApiKey()) {
+        setMessage('Dafür brauchst du einen OpenRouteService-API-Schlüssel. Hinterlege ihn im Tab Routenabgleich unter den API-Einstellungen.', true);
+        return;
+    }
+    const rest = restStamps(tour);
+    if (rest.length < 2) return;
+
+    button.disabled = true;
+    button.textContent = 'Berechne …';
+    const stamps = rest.map(n => stampsByNumber.get(n));
+    const result = await calculateHikingTrack([...stamps, stamps[0]]);
+    if (result.error) {
+        setMessage(`Rest-Runde nicht berechnet: ${result.error}`, true);
+        return;
+    }
+    const name = `${tour.id} – Rest`;
+    try {
+        await createOwnTour({
+            id: `own-${Date.now()}`,
+            name,
+            gpx: coordinatesToGPX(`OpenRouteService – ${name}`, result.coordinates),
+            fileName: '',
+            stamps: rest,
+            status: 'planned',
+            createdAt: new Date().toISOString()
+        }, `Rest-Runde von ${unitLabel(tour)} als eigene Tour gespeichert (geplant). Prüfe sie auf der Karte, ORS kennt nicht jeden Pfad.`);
+    } catch (e) {
+        setMessage(`Rest-Runde nicht gespeichert: ${e.message || 'Speichern fehlgeschlagen.'}`, true);
+    }
+}
+
+// Copy a suggestion with its track (and Komoot links) into an own tour that can then be edited
+async function adoptSuggestion(tour, button) {
+    const track = tracks.get(tour.id);
+    if (!track) return;
+    button.disabled = true;
+    const id = `own-${Date.now()}`;
+    const links = tourKomootLinks(tour).map(({ url, name }) => ({ url, name }));
+    try {
+        await createOwnTour({
+            id,
+            name: `${tour.id} – eigene Variante`,
+            gpx: track.gpx,
+            fileName: track.name,
+            stamps: [...tour.stamps],
+            status: 'planned',
+            createdAt: new Date().toISOString()
+        }, `${unitLabel(tour)} als eigene Tour übernommen. Mit „Bearbeiten“ passt du Name, Stempel oder GPX an.`);
+        if (links.length) {
+            komootLinks[id] = links;
+            saveKomootLinks();
+            renderList();
+            render();
+        }
+    } catch (e) {
+        detailMessage = { tourId: tour.id, text: `Nicht übernommen: ${e.message || 'Speichern fehlgeschlagen.'}`, isError: true };
+        render();
     }
 }
 
