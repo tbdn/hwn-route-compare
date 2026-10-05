@@ -126,7 +126,7 @@ function segmentAscent(points) {
  * Parse a GPX text and compute what the Tourenplan needs
  * @param {string} gpxText
  * @param {Array} stamps - Tour stamps {number, lat, lon}
- * @returns {Object} - {latLngs: [[[lat, lon], ...], ...] per segment, km, ascent, maxEle, minEle,
+ * @returns {Object} - {latLngs: [[[lat, lon], ...], ...] per segment, km, ascent (null without elevation), maxEle, minEle,
  *                      missed: [{number, distance}]}
  */
 export function analyzeTrack(gpxText, stamps) {
@@ -155,7 +155,8 @@ export function analyzeTrack(gpxText, stamps) {
     return {
         latLngs: segments.map(seg => seg.map(p => [p.lat, p.lon])),
         km: meters / 1000,
-        ascent: Math.round(ascent),
+        // Planning exports (e.g. routes without <ele>) have no elevation: null, not 0
+        ascent: eles.length ? Math.round(ascent) : null,
         maxEle: eles.length ? Math.round(Math.max(...eles)) : null,
         minEle: eles.length ? Math.round(Math.min(...eles)) : null,
         missed

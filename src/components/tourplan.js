@@ -186,13 +186,15 @@ function shortRegionName(code) {
 function tourFigures(tour) {
     const track = tracks.get(tour.id);
     if (!track) {
-        return { real: false, km: tour.km, hours: tour.hours, ascent: tour.ascent, minEle: tour.minEle, maxEle: tour.maxEle };
+        return { real: false, realAscent: false, km: tour.km, hours: tour.hours, ascent: tour.ascent, minEle: tour.minEle, maxEle: tour.maxEle };
     }
     return {
         real: true,
         km: track.km,
         hours: track.km / 4 + tour.stamps.length * 0.1,
-        ascent: track.ascent,
+        // A track without elevation keeps the plan's (lower-bound) ascent
+        realAscent: track.ascent !== null,
+        ascent: track.ascent ?? tour.ascent,
         minEle: track.minEle ?? tour.minEle,
         maxEle: track.maxEle ?? tour.maxEle
     };
@@ -476,7 +478,7 @@ function createTourRow(tour) {
         <td class="tour-id mono">${tour.id}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}${tourKomootLinks(tour).length ? '<span class="gpx-tag komoot-tag" title="Mit Komoot-Link">komoot</span>' : ''}</td>
         <td class="r mono">${noFigures ? dash : est + fmt1(f.km)}</td>
         <td class="r mono">${noFigures ? dash : est + fmt1(f.hours)}</td>
-        <td class="r mono">${noFigures ? dash : (f.real ? '' : '<span class="est">≥</span>') + f.ascent}</td>
+        <td class="r mono">${noFigures ? dash : (f.realAscent ? '' : '<span class="est">≥</span>') + f.ascent}</td>
         <td>${tour.single ? '' : `<span class="level lv-${tour.level}">${tour.level}</span><br>`}${tour.tags
             .map(g => `<span class="season" title="${escapeHtml(g.hint)}">${escapeHtml(g.label)}</span>`).join('')}</td>
         <td class="seq">${tour.single ? '<span class="detour-tag">Abstecher</span> ' : ''}${seq}</td>`;
@@ -569,6 +571,8 @@ function render() {
         row.classList.toggle('selected', row.dataset.id === selectedId);
         const done = isDone(plan.tours.find(t => t.id === row.dataset.id));
         row.classList.toggle('done', done);
+        const cb = row.querySelector('.tour-done');
+        if (cb) cb.checked = done;
         row.querySelector('.tour-done').checked = done;
     });
 
@@ -583,13 +587,14 @@ function renderStats() {
     const openKm = openList.reduce((a, t) => a + tourFigures(t).km, 0);
     // Estimated ascent only counts climbs between stamps, so it's a lower bound ("≥")
     const openHm = openList.reduce((a, t) => a + tourFigures(t).ascent, 0);
-    const openHmEstimated = openList.some(t => !tracks.has(t.id));
+    const openHmEstimated = openList.some(t => !tourFigures(t).realAscent);
 
     // Walked distance: real track where there is one, otherwise the plan's estimate
     const doneList = plan.tours.filter(isDone);
     const walkedKm = doneList.reduce((a, t) => a + tourFigures(t).km, 0);
     const walkedHm = doneList.reduce((a, t) => a + tourFigures(t).ascent, 0);
     const walkedEstimated = doneList.some(t => !tracks.has(t.id));
+    const walkedHmEstimated = doneList.some(t => !tourFigures(t).realAscent);
     const hm = n => Math.round(n).toLocaleString('de-DE');
 
     el('tourStats').innerHTML = `
@@ -599,7 +604,7 @@ function renderStats() {
         <div class="route-stat"><div class="label">km offen</div><div class="value">${Math.round(openKm)}</div></div>
         <div class="route-stat"${openHmEstimated ? ' title="Teilweise geschätzt (nur Anstiege von Stempel zu Stempel), echte Höhenmeter liegen meist höher"' : ''}><div class="label">Hm offen</div><div class="value">${openHmEstimated ? '≥' : ''}${hm(openHm)}</div></div>
         <div class="route-stat"${walkedEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track"' : ''}><div class="label">km zurückgelegt</div><div class="value highlight">${walkedEstimated ? '~' : ''}${fmt1(walkedKm)}</div></div>
-        <div class="route-stat"${walkedEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track"' : ''}><div class="label">Hm zurückgelegt</div><div class="value highlight">${walkedEstimated ? '≥' : ''}${hm(walkedHm)}</div></div>
+        <div class="route-stat"${walkedHmEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track mit Höhendaten"' : ''}><div class="label">Hm zurückgelegt</div><div class="value highlight">${walkedHmEstimated ? '≥' : ''}${hm(walkedHm)}</div></div>
         <div class="route-stat"><div class="label">Touren erledigt</div><div class="value highlight">${plan.tours.filter(isDone).length}</div></div>`;
 }
 
@@ -610,7 +615,8 @@ function trackInfoHtml(tour) {
 
     if (track) {
         const source = track.source === 'upload' ? 'im Browser hinterlegt' : 'Projektdatei';
-        parts.push(`<p class="hint track-source"><b>GPX-Track:</b> <span class="mono">${escapeHtml(track.name)}</span> · ${source}`
+        const kind = isDone(tour) ? 'Gelaufener Track' : 'Geplanter Track';
+        parts.push(`<p class="hint track-source"><b>${kind}:</b> <span class="mono">${escapeHtml(track.name)}</span> · ${source}`
             + (track.source === 'upload' && projectTracks[tour.id] ? ' (ersetzt die Projektdatei)' : '') + '</p>');
         if (track.missed.length) {
             const list = track.missed
@@ -619,7 +625,7 @@ function trackInfoHtml(tour) {
             parts.push(`<p class="hint track-warning">⚠ Nicht am Track (mehr als ${STAMP_ON_TRACK_METERS} m entfernt): ${list}</p>`);
         }
     } else {
-        parts.push(`<p class="hint">Noch kein GPX-Track. Lade die Tour aus Komoot hoch, dann zeigt die Karte den echten Weg statt der Luftlinie.</p>`);
+        parts.push(`<p class="hint">Noch kein GPX-Track. Lade eine geplante oder gelaufene Tour hoch (z. B. aus Komoot), dann zeigt die Karte den echten Weg statt der Luftlinie. Der Erledigt-Status ändert sich dadurch nicht.</p>`);
     }
     if (error) {
         parts.push(`<p class="hint track-warning">⚠ ${escapeHtml(error)}</p>`);
@@ -655,7 +661,7 @@ function renderDetail(tour) {
     const ca = f.real ? '' : 'ca. ';
     const meta = tour.single && !f.real
         ? '<span>Abstecher mit dem Auto</span>'
-        : `<span>${ca}${fmt1(f.km)} km</span><span>ca. ${fmt1(f.hours)} Std.</span><span>${f.real ? '' : 'mind. '}${f.ascent} Hm</span>`
+        : `<span>${ca}${fmt1(f.km)} km</span><span>ca. ${fmt1(f.hours)} Std.</span><span>${f.realAscent ? '' : 'mind. '}${f.ascent} Hm</span>`
             + (tour.single ? '' : `<span class="level lv-${tour.level}">${tour.level}</span>`);
 
     // Round trip: start and end at the first stamp, the others as waypoints
@@ -680,6 +686,10 @@ function renderDetail(tour) {
         <p class="hint">${tour.single
             ? 'Liegt zu abseits für eine Runde; nimm ihn auf dem Weg zu einer Nachbartour mit.'
             : 'Die Runde ist geschlossen, du kannst an jedem Stempel starten.'}</p>
+        <div class="done-box">
+            <label><input type="checkbox" id="tourDoneToggle"${isDone(tour) ? ' checked' : ''}> Tour erledigt</label>
+            <span class="hint">Nur dieser Haken zählt die Tour als zurückgelegt. Ein GPX-Track allein ist Planung.</span>
+        </div>
         <div class="track-box">
             ${trackInfoHtml(tour)}
             <div class="detail-actions">
@@ -727,6 +737,11 @@ function renderDetail(tour) {
         if (file) uploadTrack(tour, file);
     });
     el('trackRemove')?.addEventListener('click', () => removeUploadedTrack(tour));
+    el('tourDoneToggle').addEventListener('change', e => {
+        e.target.checked ? doneTours.add(tour.id) : doneTours.delete(tour.id);
+        saveDone();
+        render();
+    });
 
     el('komootForm').addEventListener('submit', e => {
         e.preventDefault();

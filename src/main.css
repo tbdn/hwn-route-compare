@@ -1233,6 +1233,21 @@ input:focus, button:focus, .file-btn:focus-within, input[type=range]:focus{
 }
 .track-source b{ color:#241E38; }
 
+.done-box{
+    display:grid;
+    gap:4px;
+    margin-bottom:10px;
+    font-size:13px;
+}
+.done-box label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:600;
+    cursor:pointer;
+}
+.done-box input{ width:16px; height:16px; accent-color:var(--ink); }
+.done-box .hint{ margin:0; }
 .komoot-box{
     display:grid;
     gap:8px;
