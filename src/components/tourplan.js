@@ -22,6 +22,7 @@ const LEGACY_EXTRA_STORAGE = 'hwn-stamps-extra';
 const KOMOOT_STORAGE = 'hwn-komoot-links';
 const VARIANT_STORAGE = 'hwn-tour-variants';
 const PROGRESS_FORMAT = 'hwn-tourenplan-progress';
+const DATES_STORAGE = 'hwn-stamp-dates';              // {number: 'YYYY-MM-DD'} when a stamp was collected
 const BACKUP_STORAGE = 'hwn-last-backup';             // {at, stamps} of the last export or import
 const CHANGES_STORAGE = 'hwn-changes-since-backup';   // number of progress changes since then
 const SNOOZE_STORAGE = 'hwn-backup-snooze';           // ISO time until which the reminder stays quiet
@@ -70,6 +71,7 @@ let map = null;
 let plan = null;
 let stampsByNumber = new Map();
 let collected = new Set();        // stamp numbers; the only source of progress
+let stampDates = new Map();       // stamp number -> 'YYYY-MM-DD' (local date); collected stamps may have none
 let variants = {};                // tourId -> 'parts' when a tour is walked as its part tours
 let units = [];                   // every walkable tour: suggestions, their part tours, own tours
 const unitById = new Map();
@@ -160,6 +162,7 @@ function sanitizeOwnRecord(r) {
         fileName: r.fileName ? String(r.fileName).slice(0, 200) : '',
         stamps: [...validStamps(r.stamps)],
         status: r.status === 'walked' ? 'walked' : 'planned',
+        ...(r.status === 'walked' && isValidDate(r.walkedAt) ? { walkedAt: r.walkedAt } : {}),
         createdAt: r.createdAt ? String(r.createdAt) : new Date().toISOString()
     };
 }
@@ -360,6 +363,11 @@ function loadCollected() {
 
 function saveCollected() {
     saveSet(COLLECTED_STORAGE, collected);
+    try {
+        localStorage.setItem(DATES_STORAGE, JSON.stringify(datesObject()));
+    } catch {
+        // ignore
+    }
     writeStorage(CHANGES_STORAGE, String(changesSinceBackup() + 1));
     if (collected.size) requestPersistentStorage();
     renderBackupHint();
@@ -428,13 +436,54 @@ function isPartial(tour) {
     return n > 0 && n < tour.stamps.length;
 }
 
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const isValidDate = d => typeof d === 'string' && DATE_PATTERN.test(d) && !Number.isNaN(Date.parse(d));
+
+/** Today as local 'YYYY-MM-DD' (toISOString() would be UTC) */
+export function today() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// The only place that collects or removes stamps: a new stamp gets the date, one already collected
+// keeps its date, a removed stamp loses it. Saving is up to the caller.
+function collectStamps(numbers, on, date = today()) {
+    numbers.forEach(n => {
+        if (on) {
+            if (!collected.has(n) && isValidDate(date)) stampDates.set(n, date);
+            collected.add(n);
+        } else {
+            collected.delete(n);
+            stampDates.delete(n);
+        }
+    });
+}
+
+function loadDates() {
+    let data = {};
+    try {
+        data = JSON.parse(localStorage.getItem(DATES_STORAGE) || '{}') || {};
+    } catch {
+        // storage unavailable or broken: no dates
+    }
+    return sanitizeDates(data);
+}
+
+// Dates only for collected stamps and in the right format
+function sanitizeDates(data) {
+    if (!data || typeof data !== 'object') return new Map();
+    return new Map(Object.entries(data).map(([n, d]) => [Number(n), d]).filter(([n, d]) => collected.has(n) && isValidDate(d)));
+}
+
+const datesObject = () => Object.fromEntries([...stampDates].sort((a, b) => a[0] - b[0]).map(([n, d]) => [String(n), d]));
+
 // The tour checkbox collects or removes all of its stamps (each stamp belongs to one suggestion)
 function setTourCollected(tour, on) {
     if (tour.own) {
         setOwnWalked(tour, on);
         return;
     }
-    tour.stamps.forEach(n => on ? collected.add(n) : collected.delete(n));
+    collectStamps(tour.stamps, on);
     saveCollected();
 }
 
@@ -443,10 +492,12 @@ function setTourCollected(tour, on) {
 function setOwnWalked(unit, on) {
     unit.record.status = on ? 'walked' : 'planned';
     if (on) {
-        unit.stamps.forEach(n => collected.add(n));
+        unit.record.walkedAt = today();
+        collectStamps(unit.stamps, true);
     } else {
+        delete unit.record.walkedAt;
         const keep = new Set(ownUnits().filter(u => u !== unit && isDone(u)).flatMap(u => u.stamps));
-        unit.stamps.filter(n => !keep.has(n)).forEach(n => collected.delete(n));
+        collectStamps(unit.stamps.filter(n => !keep.has(n)), false);
     }
     saveCollected();
     saveOwnTour(unit.record).catch(() => {
@@ -456,7 +507,7 @@ function setOwnWalked(unit, on) {
 }
 
 function setStampCollected(number, on) {
-    on ? collected.add(number) : collected.delete(number);
+    collectStamps([number], on);
     saveCollected();
 }
 
@@ -663,6 +714,7 @@ function loadPlanData(stamps) {
         prepareParts();
         buildUnits();
         collected = loadCollected();
+        stampDates = loadDates();
         variants = loadVariants();
         // Uploads and own tours come from IndexedDB; they belong to the progress (export) even without the map
         const [uploads, ownRecords] = await Promise.all([
@@ -696,11 +748,27 @@ export function suggestionOfStamp(number) {
     return tour ? { id: tour.id, region: tour.region, regionName: shortRegionName(tour.region), color: color(tour.region) } : null;
 }
 
-/** Collect or remove several stamps at once; the tour plan redraws when it is open */
-export function setStampsCollected(numbers, on) {
-    numbers.filter(n => stampsByNumber.has(n)).forEach(n => on ? collected.add(n) : collected.delete(n));
+/**
+ * Collect or remove several stamps at once; the tour plan redraws when it is open
+ * @param {Array<number>} numbers
+ * @param {boolean} on
+ * @param {string} date - 'YYYY-MM-DD' for newly collected stamps (default today)
+ */
+export function setStampsCollected(numbers, on, date = today()) {
+    collectStamps(numbers.filter(n => stampsByNumber.has(n)), on, date);
     saveCollected();
     if (initialized && map) render();
+}
+
+/** Date a stamp was collected ('YYYY-MM-DD') or null */
+export const stampDate = number => stampDates.get(number) || null;
+
+/** Change the date of a collected stamp; null or '' removes it (the stamp stays collected) */
+export function setStampDate(number, date) {
+    if (!collected.has(number)) return;
+    if (isValidDate(date)) stampDates.set(number, date);
+    else stampDates.delete(number);
+    saveCollected();
 }
 
 /** Select a tour in the (already shown) tour plan */
@@ -1765,6 +1833,7 @@ async function saveOwnDraft() {
         status: existing ? existing.status : (d.walked ? 'walked' : 'planned'),
         createdAt: existing?.createdAt || new Date().toISOString()
     };
+    if (record.status === 'walked') record.walkedAt = existing?.walkedAt || today();
     try {
         await saveOwnTour(record);
     } catch {
@@ -1774,7 +1843,7 @@ async function saveOwnDraft() {
     }
     // A walked tour collects its (possibly new) stamps
     if (record.status === 'walked') {
-        record.stamps.forEach(n => collected.add(n));
+        collectStamps(record.stamps, true, record.walkedAt);
         saveCollected();
     }
     ownDraft = null;
@@ -2055,10 +2124,12 @@ function exportProgress() {
     markBackup();
     downloadJSON({
         format: PROGRESS_FORMAT,
-        version: 3,
+        version: 4,
         exportedAt: new Date().toISOString(),
         // v3: stamps are authoritative; doneTours is derived and kept for older app versions
         stamps: [...collected].sort((a, b) => a - b),
+        // v4: date per collected stamp (stamps without a date are missing here)
+        stampDates: datesObject(),
         doneTours: plan.tours.filter(isDone).map(t => t.id),
         tracks: exportedTracks,
         komoot: komootLinks,
@@ -2091,6 +2162,8 @@ async function importProgress(text) {
     const imported = stampsOfTours(new Set(doneIds));
     data.stamps.forEach(n => imported.add(n));
     collected = validStamps(imported);
+    // v1-v3 have no dates: every imported stamp is "ohne Datum"
+    stampDates = sanitizeDates(data.stampDates);
     saveCollected();
 
     // Older exports have no tracks; then the uploaded tracks in the browser stay untouched

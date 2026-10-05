@@ -189,7 +189,7 @@
                 <p><b>Rest eines Vorschlags:</b> Sind Stempel eines Vorschlags schon gesammelt oder in einer geplanten eigenen Tour verplant, zeigt der Vorschlag nur noch seinen Rest: In der Liste stehen die geschätzten Werte der Rest-Runde (Luftlinie × 1,4, mit „Rest“ markiert), auf der Karte wird der Vorschlag blass und die Rest-Runde gepunktet. „km/Hm offen“ zählt jeden offenen Stempel genau einmal: geplante eigene Touren mit ihrem Track plus den Rest der Vorschläge. „Rest auf Wanderwege legen“ berechnet die Rest-Runde mit OpenRouteService und speichert sie als eigene Tour; „Als eigene Tour übernehmen“ kopiert einen Vorschlag samt Track, damit du ihn anpassen kannst.</p>
                 <p><b>Zu prüfen (⚠):</b> Die App bewertet die von OpenRouteService berechneten Tracks und markiert, was sich wahrscheinlich besser gehen lässt: Umwege zwischen zwei Stempeln (Weg mindestens dreimal so lang wie die Luftlinie und mindestens 1 km länger, auf der Karte orange), Runden, die zu mindestens 45 % auf demselben Weg zurückführen, Tracks mit mindestens 30 % und 2 km mehr als die Schätzung und Vorschläge, deren Teile zusammen deutlich kürzer sind. Dazu kommen Umbau-Hinweise aus <span class="mono">tours.json</span> (Feld <span class="mono">review</span>). Deine eigenen und gelaufenen Komoot-Tracks werden nicht bewertet, erledigte Touren nicht markiert. Der Chip „Zu prüfen“ zeigt alle Stellen auf einen Blick.</p>
                 <p><b>Komoot:</b> Jede Tour kann auf eine oder mehrere Komoot-Touren verlinken. Links aus <span class="mono">src/data/tours.json</span> (Feld <span class="mono">komoot</span>) sind fest im Projekt; über „Verlinken“ in der Tour-Ansicht hinzugefügte Links bleiben im Browser und werden mit exportiert. Lädst du einen GPX-Export von Komoot hoch, wird die Tour automatisch verlinkt.</p>
-                <p><b>Fortschritt:</b> Gezählt wird pro Stempel. Hake einzelne Stempel in der Tour-Ansicht ab, oder setze mit dem Haken eines Vorschlags alle seine Stempel auf einmal. Ein Vorschlag gilt als erledigt, wenn alle seine Stempel gesammelt sind; teilweise gesammelte zeigen z. B. „2/4“. Der Stand wird nur in diesem Browser gespeichert. Sichere ihn mit „Exportieren“ als Datei (oben im Tourenplan und auf „Meine Stempel“); „Importieren“ ersetzt den Stand im Browser durch den aus der Datei. Ältere Sicherungen funktionieren weiter. Hast du noch nie gesichert, oder liegt die letzte Sicherung 14 Tage oder 10 Änderungen zurück, erinnert ein Hinweis daran; „Später erinnern“ stellt ihn für 7 Tage still.</p>
+                <p><b>Fortschritt:</b> Gezählt wird pro Stempel. Hake einzelne Stempel in der Tour-Ansicht ab, oder setze mit dem Haken eines Vorschlags alle seine Stempel auf einmal. Ein Vorschlag gilt als erledigt, wenn alle seine Stempel gesammelt sind; teilweise gesammelte zeigen z. B. „2/4“. Der Stand wird nur in diesem Browser gespeichert. Sichere ihn mit „Exportieren“ als Datei (oben im Tourenplan und auf „Meine Stempel“); „Importieren“ ersetzt den Stand im Browser durch den aus der Datei. Ältere Sicherungen funktionieren weiter. Zu jedem Stempel merkt sich die App, wann du ihn gesammelt hast (beim Abhaken heute, bei „Mehrere eintragen“ das gewählte Datum); auf „Meine Stempel“ kannst du es per Klick ändern. Hast du noch nie gesichert, oder liegt die letzte Sicherung 14 Tage oder 10 Änderungen zurück, erinnert ein Hinweis daran; „Später erinnern“ stellt ihn für 7 Tage still.</p>
                 <p><b>Speicher schützen:</b> Beim ersten gesammelten Stempel bittet die App den Browser, ihren Speicher dauerhaft zu behalten. Ohne diese Erlaubnis darf der Browser die Daten bei Platzmangel löschen, Safari auch nach 7 Tagen ohne Besuch. Chrome und Firefox entscheiden selbst oder fragen nach; ist der Speicher geschützt, steht das im Hinweis über „Fortschritt sichern“. Gegen selbst gelöschte Browserdaten oder ein neues Gerät hilft nur die Sicherung als Datei.</p>
             </div>
         </details>
@@ -202,6 +202,7 @@
         <form class="pass-bulk" id="passBulk">
             <label class="progress-label" for="passBulkInput">Mehrere eintragen</label>
             <input type="text" id="passBulkInput" placeholder="z. B. 3, 17, 120-125" autocomplete="off" inputmode="numeric">
+            <label class="pass-bulk-date">am <input type="date" id="passBulkDate" aria-label="Gestempelt am"></label>
             <button type="submit" class="selection-btn primary">Als gestempelt eintragen</button>
             <span class="progress-status" id="passBulkStatus" role="status"></span>
             <button type="button" class="pass-undo" id="passUndo" hidden>Rückgängig</button>
@@ -214,11 +215,17 @@
                 <button type="button" class="region-chip" data-filter="open" aria-pressed="false">Offen <span class="mono"></span></button>
                 <button type="button" class="region-chip" data-filter="got" aria-pressed="false">Gestempelt <span class="mono"></span></button>
             </div>
+            <label class="pass-sort">Sortieren
+                <select id="passSort">
+                    <option value="number">nach Nummer</option>
+                    <option value="recent">zuletzt gestempelt</option>
+                </select>
+            </label>
         </div>
 
         <div class="pass-grid" id="passGrid"></div>
         <p class="pass-empty" id="passEmpty" hidden>Kein Stempel passt zur Suche.</p>
-        <p class="pass-hint">Das Kürzel rechts (z. B. A1) öffnet den Tourvorschlag mit diesem Stempel. Sichern und übertragen kannst du den Stand oben mit „Exportieren“ und „Importieren“.</p>
+        <p class="pass-hint">Das Kürzel rechts (z. B. A1) öffnet den Tourvorschlag mit diesem Stempel. Bei gestempelten Stempeln steht dort das Datum; ein Klick darauf ändert es. Sichern und übertragen kannst du den Stand oben mit „Exportieren“ und „Importieren“.</p>
         <div class="status error" id="passStatus"></div>
     </section>
 

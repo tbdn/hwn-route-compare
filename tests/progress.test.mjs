@@ -1,5 +1,5 @@
 // Progress per stamp (plan step 1): migration from tour-based storage, single stamps,
-// partially collected suggestions, suggestion wording, season tags, export v3 and import of older files.
+// partially collected suggestions, suggestion wording, season tags, export v4 and import of older files.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -74,11 +74,15 @@ test('a single-stamp suggestion is done with its stamp', async () => {
     assert.equal(rowState('G1').checked, true);
 });
 
-test('export v3 has the stamps and the derived finished suggestions', () => {
+test('export v4 has the stamps, their dates and the derived finished suggestions', () => {
     $('#progressExport').click();
     const data = JSON.parse(env.downloads.at(-1));
     assert.equal(data.format, 'hwn-tourenplan-progress');
-    assert.equal(data.version, 3);
+    assert.equal(data.version, 4);
+    // Migrated stamps have no date, the ones collected in this test today
+    assert.ok(Object.keys(data.stampDates).every(n => data.stamps.includes(Number(n))));
+    assert.ok(data.stampDates['96']);
+    assert.equal(data.stampDates['14'], undefined);
     assert.deepEqual(data.stamps, [...collectedInStore()].sort((a, b) => a - b));
     assert.deepEqual(data.doneTours, ['B7', 'B8', 'D8', 'G1']);
 });
