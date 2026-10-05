@@ -18,6 +18,10 @@
             <h1>Liegt dein Weg an einer <em>Stempelstelle</em>?</h1>
             <div class="sub">GPX-Track aus Komoot hochladen – der Abgleich läuft direkt im Browser gegen die offiziellen Koordinaten der HWN.</div>
         </div>
+        <div data-view-header="stamps" hidden>
+            <h1>Deine <em>Stempel</em> auf einen Blick</h1>
+            <div class="sub">Alle 222 Stempelstellen der Harzer Wandernadel. Hake ab, was in deinem Stempelheft steht, einzeln oder als Liste von Nummern. Der Stand gilt auch im Tourenplan.</div>
+        </div>
         <div data-view-header="tours" hidden>
             <h1>Tourenplan für die <em>offenen Stempel</em></h1>
             <div class="sub">Tourvorschläge für alle 222 Stempelstellen: Rundwanderungen, gruppiert nach Regionen und sortiert nach Entfernung von Hamburg. Die Vorschläge sind ein Startpunkt, gezählt wird jeder Stempel, den du abhakst.</div>
@@ -27,6 +31,7 @@
     <nav class="tabs" role="tablist" aria-label="Ansicht">
         <button type="button" class="tab" role="tab" id="tabCompare" data-view="compare" aria-controls="viewCompare" aria-selected="true">Routenabgleich</button>
         <button type="button" class="tab" role="tab" id="tabTours" data-view="tours" aria-controls="viewTours" aria-selected="false" tabindex="-1">Tourenplan</button>
+        <button type="button" class="tab" role="tab" id="tabStamps" data-view="stamps" aria-controls="viewStamps" aria-selected="false" tabindex="-1">Meine Stempel</button>
     </nav>
 
     <section id="viewCompare" role="tabpanel" aria-labelledby="tabCompare">
@@ -181,6 +186,32 @@
             </div>
         </details>
         <div class="status error" id="tourStatus"></div>
+    </section>
+
+    <section id="viewStamps" role="tabpanel" aria-labelledby="tabStamps" hidden>
+        <div class="route-comparison tour-stats" id="passStats"></div>
+
+        <form class="pass-bulk" id="passBulk">
+            <label class="progress-label" for="passBulkInput">Mehrere eintragen</label>
+            <input type="text" id="passBulkInput" placeholder="z. B. 3, 17, 120-125" autocomplete="off" inputmode="numeric">
+            <button type="submit" class="selection-btn primary">Als gestempelt eintragen</button>
+            <span class="progress-status" id="passBulkStatus" role="status"></span>
+            <button type="button" class="pass-undo" id="passUndo" hidden>Rückgängig</button>
+        </form>
+
+        <div class="pass-toolbar">
+            <input type="search" id="passSearch" placeholder="Nummer oder Name suchen" aria-label="Stempel suchen">
+            <div class="region-chips pass-filter" id="passFilter" role="group" aria-label="Stempel filtern">
+                <button type="button" class="region-chip" data-filter="all" aria-pressed="true">Alle <span class="mono"></span></button>
+                <button type="button" class="region-chip" data-filter="open" aria-pressed="false">Offen <span class="mono"></span></button>
+                <button type="button" class="region-chip" data-filter="got" aria-pressed="false">Gestempelt <span class="mono"></span></button>
+            </div>
+        </div>
+
+        <div class="pass-grid" id="passGrid"></div>
+        <p class="pass-empty" id="passEmpty" hidden>Kein Stempel passt zur Suche.</p>
+        <p class="pass-hint">Das Kürzel rechts (z. B. A1) öffnet den Tourvorschlag mit diesem Stempel. Sichern und übertragen kannst du den Stand im Tourenplan mit „Exportieren“.</p>
+        <div class="status error" id="passStatus"></div>
     </section>
 
     <footer>

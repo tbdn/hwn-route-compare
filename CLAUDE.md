@@ -46,7 +46,8 @@ src/                        # Serve this directory
 ├── app.js                  # Main application: UI handlers, rendering, orchestration
 ├── components/
 │   ├── map.js              # Leaflet map: init, display route/stamps, pan/zoom
-│   └── tourplan.js         # "Tourenplan" tab: tour map, list, progress export/import, GPX tracks
+│   ├── tourplan.js         # "Tourenplan" tab: tour map, list, progress export/import, GPX tracks
+│   └── stamppass.js        # "Meine Stempel" tab: all stamps, collected ones, toggle and list entry
 ├── data/
 │   ├── stamps.geojson      # 222 HWN stamps as GeoJSON FeatureCollection
 │   ├── tours.json          # Precomputed round tours (regions, stamp order, estimates)
@@ -147,6 +148,13 @@ Users can select stamps and add them to the route:
 - Extended route displayed on map as purple line with numbered stops
 - GPX export for import back to Komoot or other navigation apps
 - "Als eigene Tour speichern" in the modal hands the ORS track to the Tourenplan; the same button in the results header saves the compared route itself (stamps directly on the route and selected cards are preselected). `app.js` calls `openOwnTourDraft()` from `tourplan.js` after switching to the tab
+
+## Meine Stempel (third tab, `#stempel`)
+
+- Grid of all 222 stamps in number order (`stamppass.js`), collected ones filled; filter Alle/Offen/Gestempelt and search (digits = exact number, otherwise id/name/description)
+- Ticking a tile or "Mehrere eintragen" (`parseNumbers()`: `3, 17 120-125`, `HWN020`) changes the same progress as the Tourenplan, with "Rückgängig" for the last list entry
+- Progress stays owned by `tourplan.js`: `loadStampProgress()` loads tours.json and the progress without building the map, `setStampsCollected()` saves and redraws an open Tourenplan; `saveCollected()` dispatches `hwn:progress-changed`, which the stamp page syncs in place (focus stays, a stamp ticked under "Offen" stays visible until the filter changes)
+- The suggestion badge on a tile dispatches `hwn:show-tour` ({id}); `app.js` switches to the Tourenplan and calls `showTour()`. The "Stempel gesammelt" stat in the Tourenplan links to `#stempel`
 
 ## Tourenplan (second tab, `#touren`)
 

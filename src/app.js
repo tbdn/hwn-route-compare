@@ -3,7 +3,8 @@ import { findNearbyStamps } from "./utils/geo.js";
 import { loadStamps } from "./utils/stamps.js";
 import { analyzeDetours, getDetourEffort } from "./utils/detour.js";
 import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, displayRoutingResult, displayExtendedRoute, clearExtendedRoute, panToStamp, getMap } from "./components/map.js";
-import { showTourPlan, openOwnTourDraft } from "./components/tourplan.js";
+import { showTourPlan, openOwnTourDraft, showTour } from "./components/tourplan.js";
+import { showStampPass } from "./components/stamppass.js";
 import { coordinatesToGPX } from "./utils/tracks.js";
 import { setApiKey, hasApiKey, calculateDetourRoute, calculateMultiWaypointRoute, formatDuration, formatDistance } from "./utils/routing.js";
 import { optimizeStampOrder, calculateTotalDetour, generateGPX, downloadGPX } from "./utils/optimize.js";
@@ -605,9 +606,10 @@ async function getStamps(silent = false) {
     return stampsCache;
 }
 
-// View switching (Routenabgleich / Tourenplan)
-const VIEW_HASH = { compare: '', tours: '#touren' };
-const tabs = document.querySelectorAll('.tab');
+// View switching (Routenabgleich / Tourenplan / Meine Stempel)
+const VIEW_HASH = { compare: '', tours: '#touren', stamps: '#stempel' };
+const tabs = [...document.querySelectorAll('.tab')];
+const viewFromHash = () => Object.keys(VIEW_HASH).find(v => VIEW_HASH[v] && VIEW_HASH[v] === location.hash) || 'compare';
 
 async function switchView(view) {
     tabs.forEach(tab => {
@@ -617,12 +619,21 @@ async function switchView(view) {
     });
     el('viewCompare').hidden = view !== 'compare';
     el('viewTours').hidden = view !== 'tours';
+    el('viewStamps').hidden = view !== 'stamps';
     document.querySelectorAll('[data-view-header]').forEach(h => {
         h.hidden = h.dataset.viewHeader !== view;
     });
 
     if (view === 'compare') {
         getMap()?.invalidateSize();
+        return;
+    }
+    if (view === 'stamps') {
+        try {
+            await showStampPass(await getStamps(true));
+        } catch (e) {
+            el('passStatus').textContent = e.message || 'Stempel konnten nicht geladen werden.';
+        }
         return;
     }
     try {
@@ -632,7 +643,7 @@ async function switchView(view) {
     }
 }
 
-tabs.forEach(tab => {
+tabs.forEach((tab, i) => {
     tab.addEventListener('click', () => {
         const view = tab.dataset.view;
         history.replaceState(null, '', VIEW_HASH[view] || location.pathname + location.search);
@@ -640,14 +651,21 @@ tabs.forEach(tab => {
     });
     tab.addEventListener('keydown', e => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-        const other = [...tabs].find(t => t !== tab);
+        const other = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
         other.focus();
         other.click();
     });
 });
 
-window.addEventListener('hashchange', () => switchView(location.hash === VIEW_HASH.tours ? 'tours' : 'compare'));
-if (location.hash === VIEW_HASH.tours) switchView('tours');
+window.addEventListener('hashchange', () => switchView(viewFromHash()));
+if (viewFromHash() !== 'compare') switchView(viewFromHash());
+
+// "Meine Stempel" opens the suggestion of a stamp in the Tourenplan
+document.addEventListener('hwn:show-tour', async e => {
+    history.replaceState(null, '', VIEW_HASH.tours);
+    await switchView('tours');
+    showTour(e.detail.id);
+});
 
 // Main comparison handler
 goBtn.addEventListener('click', runComparison);

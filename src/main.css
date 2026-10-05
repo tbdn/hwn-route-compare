@@ -27,7 +27,8 @@ body{
 }
 [hidden]{display:none !important;}
 .wrap{max-width:880px; margin:0 auto;}
-.wrap:has(#viewTours:not([hidden])){max-width:1180px;}
+.wrap:has(#viewTours:not([hidden])),
+.wrap:has(#viewStamps:not([hidden])){max-width:1180px;}
 
 header{margin-bottom:28px;}
 .eyebrow{
@@ -879,6 +880,10 @@ input:focus, button:focus, .file-btn:focus-within, input[type=range]:focus{
     color:var(--ink);
 }
 .tab:focus-visible{ outline:2px solid var(--paper); outline-offset:2px; }
+.tab{ white-space:nowrap; }
+@media (max-width: 420px){
+    .tab{ padding:8px 11px; font-size:13.5px; }
+}
 
 /* Tourenplan */
 .tour-stats{
@@ -1470,3 +1475,162 @@ footer a{color:var(--paper-2);}
 /* Delete all uploaded tracks (development helper next to export/import) */
 .uploads-confirm{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:13px; }
 .uploads-confirm .selection-btn{ padding:6px 12px; }
+
+.stat-link{
+    display:inline-block;
+    margin-top:6px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-light);
+    text-underline-offset:3px;
+}
+.stat-link:hover{ color:var(--ink); }
+
+/* Meine Stempel */
+.route-stat .value small{ font-size:15px; font-weight:450; color:#5B5470; }
+.pass-progress{
+    height:6px;
+    margin-top:10px;
+    border-radius:3px;
+    background:rgba(61,53,99,0.15);
+    overflow:hidden;
+}
+.pass-progress i{ display:block; height:100%; background:var(--moss); }
+
+.pass-bulk{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin:-4px 0 18px;
+}
+.pass-bulk .selection-btn{ padding:8px 14px; }
+.pass-bulk input,
+.pass-toolbar input{
+    font-family:'Inter', system-ui, sans-serif;
+    font-size:14px;
+    padding:8px 12px;
+    border:1.5px solid transparent;
+    border-radius:8px;
+    background:var(--paper);
+    color:#241E38;
+    min-width:0;
+}
+.pass-bulk input{ width:220px; max-width:100%; }
+.pass-bulk input:focus,
+.pass-toolbar input:focus{ outline:none; border-color:var(--ink-light); }
+.pass-undo{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    background:none;
+    border:none;
+    padding:0;
+    color:var(--paper);
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:3px;
+}
+
+.pass-toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:12px;
+    margin-bottom:16px;
+}
+.pass-toolbar input{ flex:1 1 220px; max-width:340px; }
+.pass-filter{ margin:0; --c:var(--ink); }
+.pass-filter .region-chip{ padding:5px 12px; }
+
+.pass-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));
+    gap:8px;
+}
+.pass-stamp{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--paper);
+    color:#241E38;
+    border-radius:10px;
+    padding:8px 10px 8px 8px;
+    border-left:4px solid var(--c);
+    box-shadow:0 4px 12px rgba(0,0,0,0.18);
+    transition:background .15s ease;
+}
+.pass-stamp.got{ background:#DCE6D6; }
+.pass-check{
+    flex:1;
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    cursor:pointer;
+}
+.pass-check input{
+    position:absolute;
+    opacity:0;
+    width:1px; height:1px;
+}
+.pass-number{
+    flex-shrink:0;
+    width:36px; height:36px;
+    border-radius:50%;
+    border:1.5px dashed rgba(61,53,99,0.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink);
+    transition:background .15s ease, color .15s ease;
+}
+.pass-stamp.got .pass-number{
+    border:1.5px solid var(--moss);
+    background:var(--moss);
+    color:var(--paper);
+    transform:rotate(-8deg);
+}
+.pass-check:hover .pass-number{ border-color:var(--ink-light); }
+.pass-check input:focus-visible + .pass-number{ outline:2px solid var(--ink-light); outline-offset:2px; }
+.pass-name{
+    font-size:13px;
+    line-height:1.3;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+}
+.pass-meta{
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:3px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:#5B5470;
+}
+.pass-tour{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    font-weight:600;
+    padding:1px 6px;
+    border-radius:999px;
+    border:1px solid var(--c);
+    background:transparent;
+    color:var(--c);
+    cursor:pointer;
+}
+.pass-tour:hover{ background:var(--c); color:var(--paper); }
+.pass-empty,
+.pass-hint{
+    font-size:13px;
+    color:var(--paper-2);
+    opacity:.8;
+}
+.pass-hint{ margin-top:18px; }

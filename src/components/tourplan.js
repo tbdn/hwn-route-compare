@@ -349,6 +349,7 @@ function loadCollected() {
 
 function saveCollected() {
     saveSet(COLLECTED_STORAGE, collected);
+    document.dispatchEvent(new CustomEvent('hwn:progress-changed'));
 }
 
 function collectedStamps() {
@@ -593,6 +594,56 @@ function renderEndpoints() {
     });
 }
 
+// Plan and progress, shared by the tour plan and the stamp page ("Meine Stempel"); loaded once
+let planData = null;
+function loadPlanData(stamps) {
+    planData ??= (async () => {
+        const response = await fetch('./data/tours.json');
+        if (!response.ok) {
+            throw new Error('Konnte Tourenplan nicht laden');
+        }
+        plan = await response.json();
+        stampsByNumber = new Map(stamps.map(s => [s.number, s]));
+        prepareParts();
+        buildUnits();
+        collected = loadCollected();
+        variants = loadVariants();
+        // Own tours load later, so their links are kept by id pattern
+        komootLinks = sanitizeKomootLinks(loadKomootLinks(), id => unitById.has(id) || OWN_ID.test(id));
+    })();
+    planData.catch(() => { planData = null; });
+    return planData;
+}
+
+/**
+ * Load the progress without building the tour plan (for the stamp page).
+ * Every change of the progress dispatches `hwn:progress-changed` on document.
+ * @param {Array} stamps - All stamps in internal format
+ */
+export async function loadStampProgress(stamps) {
+    await loadPlanData(stamps);
+}
+
+export const isStampCollected = number => collected.has(number);
+
+/** The suggestion a stamp belongs to: {id, region, regionName, color} or null */
+export function suggestionOfStamp(number) {
+    const tour = plan?.tours.find(t => t.stamps.includes(number));
+    return tour ? { id: tour.id, region: tour.region, regionName: shortRegionName(tour.region), color: color(tour.region) } : null;
+}
+
+/** Collect or remove several stamps at once; the tour plan redraws when it is open */
+export function setStampsCollected(numbers, on) {
+    numbers.filter(n => stampsByNumber.has(n)).forEach(n => on ? collected.add(n) : collected.delete(n));
+    saveCollected();
+    if (initialized && map) render();
+}
+
+/** Select a tour in the (already shown) tour plan */
+export function showTour(id) {
+    if (initialized && map && unitById.has(id)) select(id, true);
+}
+
 /**
  * Show the tour plan. Loads data and builds the map on first call.
  * @param {Array} stamps - All stamps in internal format
@@ -603,19 +654,12 @@ export async function showTourPlan(stamps) {
         return;
     }
     initialized = true;
-
-    const response = await fetch('./data/tours.json');
-    if (!response.ok) {
-        throw new Error('Konnte Tourenplan nicht laden');
+    try {
+        await loadPlanData(stamps);
+    } catch (e) {
+        initialized = false;
+        throw e;
     }
-    plan = await response.json();
-    stampsByNumber = new Map(stamps.map(s => [s.number, s]));
-    prepareParts();
-    buildUnits();
-    collected = loadCollected();
-    variants = loadVariants();
-    // Own tours load later, so their links are kept by id pattern
-    komootLinks = sanitizeKomootLinks(loadKomootLinks(), id => unitById.has(id) || OWN_ID.test(id));
 
     initTourMap();
     initProgressTransfer();
@@ -1164,7 +1208,7 @@ function renderStats() {
     const hm = n => Math.round(n).toLocaleString('de-DE');
 
     el('tourStats').innerHTML = `
-        <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${collected.size}</div></div>
+        <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${collected.size}</div><a class="stat-link" href="#stempel">Alle Stempel ansehen</a></div>
         <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${openStamps}</div></div>`
         + (owners.size ? `<div class="route-stat" title="Offene Stempel, die in geplanten eigenen Touren liegen"><div class="label">davon verplant</div><div class="value">${owners.size}</div></div>` : '')
         + `
