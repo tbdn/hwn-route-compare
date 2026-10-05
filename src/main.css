@@ -1442,3 +1442,6 @@ footer a{color:var(--paper-2);}
 .seq-stop.got{ color:#9A958A; text-decoration:line-through; text-decoration-color:#9A958A; }
 .seq-stop.planned{ color:#3D2A6B; font-style:italic; }
 .rest-tag{ background:#FBEBD9; color:#8A4B12; }
+
+/* Routenabgleich: save the compared route as an own tour */
+.results-head #saveOwnTour{ margin-left:auto; padding:8px 14px; }

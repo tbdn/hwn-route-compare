@@ -3,7 +3,9 @@
 // User must provide their own API key
 
 const ORS_BASE_URL = 'https://api.openrouteservice.org/v2/directions/foot-hiking';
-const CACHE_KEY = 'hwn-routing-cache';
+// v2: geometry is stored as [lat, lon] points; older entries held encoded polylines
+const CACHE_KEY = 'hwn-routing-cache-v2';
+const LEGACY_CACHE_KEY = 'hwn-routing-cache';
 const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 let apiKey = null;
@@ -44,6 +46,7 @@ function loadCache() {
  */
 function saveToCache(key, result) {
     try {
+        localStorage.removeItem(LEGACY_CACHE_KEY);
         const cache = loadCache();
         cache[key] = {
             result,
@@ -86,7 +89,7 @@ function cacheKey(exitPoint, stamp) {
  * Calculate actual walking route from exit point to stamp and back
  * @param {Object} exitPoint - { lat, lon }
  * @param {Object} stamp - { lat, lon, id, ... }
- * @returns {Promise<Object>} - { distance, duration, geometry, error }
+ * @returns {Promise<Object>} - { distance, duration, ascent, descent, geometry: [[lat, lon], ...], error }
  */
 export async function calculateDetourRoute(exitPoint, stamp) {
     if (!apiKey) {
@@ -100,66 +103,96 @@ export async function calculateDetourRoute(exitPoint, stamp) {
         return { ...cached, fromCache: true };
     }
 
-    try {
-        // Request round-trip route: exit → stamp → exit
-        const coordinates = [
-            [exitPoint.lon, exitPoint.lat],
-            [stamp.lon, stamp.lat],
-            [exitPoint.lon, exitPoint.lat]
-        ];
+    // Round-trip route: exit → stamp → exit
+    const route = await requestRoute([exitPoint, stamp, exitPoint]);
+    if (route.error) return route;
 
-        const response = await fetch(ORS_BASE_URL, {
+    const result = {
+        // Total round-trip distance in meters, duration in seconds
+        distance: route.distance,
+        duration: route.duration,
+        ascent: route.ascent,
+        descent: route.descent,
+        // [lat, lon] points for map display
+        geometry: toLatLngs(route.coordinates)
+    };
+    saveToCache(key, result);
+    return result;
+}
+
+const toLatLngs = coordinates => coordinates.map(([lon, lat]) => [lat, lon]);
+
+// Climbs and descents from [lon, lat, ele] points, for responses without a summary
+function elevationChange(coordinates) {
+    let ascent = 0;
+    let descent = 0;
+    for (let i = 1; i < coordinates.length; i++) {
+        const diff = (coordinates[i][2] ?? 0) - (coordinates[i - 1][2] ?? 0);
+        if (diff > 0) ascent += diff;
+        else descent -= diff;
+    }
+    return { ascent, descent };
+}
+
+/**
+ * Hiking route through waypoints via the GeoJSON endpoint. It returns plain coordinates;
+ * the JSON endpoint encodes them as a polyline that holds a third value once elevation is requested.
+ * @param {Array} waypoints - {lat, lon} points in walking order
+ * @returns {Promise<Object>} - { distance, duration, ascent, descent, coordinates: [[lon, lat, ele], ...] } or { error }
+ */
+async function requestRoute(waypoints) {
+    if (!apiKey) {
+        return { error: 'API-Schlüssel nicht konfiguriert' };
+    }
+    if (waypoints.length < 2) {
+        return { error: 'Mindestens 2 Wegpunkte erforderlich' };
+    }
+
+    try {
+        const response = await fetch(`${ORS_BASE_URL}/geojson`, {
             method: 'POST',
             headers: {
                 'Authorization': apiKey,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                coordinates,
+                coordinates: waypoints.map(p => [p.lon, p.lat]),
                 elevation: true,
                 instructions: false
             })
         });
 
         if (!response.ok) {
-            if (response.status === 401) {
+            if (response.status === 401 || response.status === 403) {
                 return { error: 'Ungültiger API-Schlüssel' };
             }
             if (response.status === 429) {
                 return { error: 'API-Limit erreicht (max. 2000/Tag)' };
             }
-            if (response.status === 404) {
-                return { error: 'Keine Route gefunden (Stempel evtl. nicht erreichbar)' };
-            }
-            return { error: `API-Fehler: ${response.status}` };
+            // ORS explains unroutable points (e.g. no path within 350 m) in the body
+            const message = await response.json().then(d => d?.error?.message).catch(() => null);
+            if (message) return { error: `Keine Route gefunden: ${message}` };
+            return { error: response.status === 404 ? 'Keine Route gefunden' : `API-Fehler: ${response.status}` };
         }
 
         const data = await response.json();
-        const route = data.routes?.[0];
-
-        if (!route) {
+        const feature = data.features?.[0];
+        if (!feature?.geometry?.coordinates?.length) {
             return { error: 'Keine Route gefunden' };
         }
 
-        const result = {
-            // Total round-trip distance in meters
-            distance: Math.round(route.summary.distance),
-            // Total duration in seconds
-            duration: Math.round(route.summary.duration),
-            // Elevation gain in meters
-            ascent: Math.round(route.summary.ascent || 0),
-            descent: Math.round(route.summary.descent || 0),
-            // GeoJSON geometry for map display
-            geometry: route.geometry
+        const props = feature.properties || {};
+        const summary = props.summary || {};
+        const fallback = elevationChange(feature.geometry.coordinates);
+        return {
+            distance: Math.round(summary.distance || 0),
+            duration: Math.round(summary.duration || 0),
+            ascent: Math.round(props.ascent ?? summary.ascent ?? fallback.ascent),
+            descent: Math.round(props.descent ?? summary.descent ?? fallback.descent),
+            coordinates: feature.geometry.coordinates
         };
-
-        // Cache the result
-        saveToCache(key, result);
-
-        return result;
-
     } catch (err) {
-        if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        if (err.name === 'TypeError') {
             return { error: 'Netzwerkfehler - keine Verbindung zur API' };
         }
         return { error: err.message || 'Unbekannter Fehler' };
@@ -196,6 +229,7 @@ export function formatDistance(meters) {
 export function clearCache() {
     try {
         localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(LEGACY_CACHE_KEY);
     } catch {
         // ignore
     }
@@ -208,122 +242,26 @@ export function clearCache() {
  * @returns {Promise<Object>} - { distance, ascent, coordinates: [[lon, lat, ele], ...], error }
  */
 export async function calculateHikingTrack(waypoints) {
-    if (!apiKey) {
-        return { error: 'API-Schlüssel nicht konfiguriert' };
-    }
-    if (waypoints.length < 2) {
-        return { error: 'Mindestens 2 Wegpunkte erforderlich' };
-    }
-
-    try {
-        const response = await fetch(`${ORS_BASE_URL}/geojson`, {
-            method: 'POST',
-            headers: {
-                'Authorization': apiKey,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                coordinates: waypoints.map(p => [p.lon, p.lat]),
-                elevation: true,
-                instructions: false
-            })
-        });
-
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                return { error: 'Ungültiger API-Schlüssel' };
-            }
-            if (response.status === 429) {
-                return { error: 'API-Limit erreicht (max. 2000/Tag)' };
-            }
-            // ORS explains unroutable points (e.g. no path within 350 m) in the body
-            const message = await response.json().then(d => d?.error?.message).catch(() => null);
-            return { error: message ? `Keine Route gefunden: ${message}` : `API-Fehler: ${response.status}` };
-        }
-
-        const data = await response.json();
-        const feature = data.features?.[0];
-        if (!feature?.geometry?.coordinates?.length) {
-            return { error: 'Keine Route gefunden' };
-        }
-
-        const summary = feature.properties?.summary || {};
-        return {
-            distance: Math.round(summary.distance || 0),
-            ascent: Math.round(summary.ascent || 0),
-            coordinates: feature.geometry.coordinates
-        };
-    } catch (err) {
-        if (err.name === 'TypeError') {
-            return { error: 'Netzwerkfehler - keine Verbindung zur API' };
-        }
-        return { error: err.message || 'Unbekannter Fehler' };
-    }
+    const route = await requestRoute(waypoints);
+    if (route.error) return route;
+    return { distance: route.distance, ascent: route.ascent, coordinates: route.coordinates };
 }
 
 /**
  * Calculate a route through multiple waypoints
  * @param {Array} waypoints - Array of {lat, lon} points (start, stamps..., end)
- * @returns {Promise<Object>} - { distance, duration, geometry, error }
+ * @returns {Promise<Object>} - { distance, duration, ascent, descent, geometry: [[lat, lon], ...], coordinates, error }
  */
 export async function calculateMultiWaypointRoute(waypoints) {
-    if (!apiKey) {
-        return { error: 'API-Schlüssel nicht konfiguriert' };
-    }
-
-    if (waypoints.length < 2) {
-        return { error: 'Mindestens 2 Wegpunkte erforderlich' };
-    }
-
-    try {
-        // Convert to [lon, lat] format for ORS
-        const coordinates = waypoints.map(p => [p.lon, p.lat]);
-
-        const response = await fetch(ORS_BASE_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': apiKey,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                coordinates,
-                elevation: true,
-                instructions: false
-            })
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                return { error: 'Ungültiger API-Schlüssel' };
-            }
-            if (response.status === 429) {
-                return { error: 'API-Limit erreicht (max. 2000/Tag)' };
-            }
-            if (response.status === 404) {
-                return { error: 'Keine Route gefunden' };
-            }
-            return { error: `API-Fehler: ${response.status}` };
-        }
-
-        const data = await response.json();
-        const route = data.routes?.[0];
-
-        if (!route) {
-            return { error: 'Keine Route gefunden' };
-        }
-
-        return {
-            distance: Math.round(route.summary.distance),
-            duration: Math.round(route.summary.duration),
-            ascent: Math.round(route.summary.ascent || 0),
-            descent: Math.round(route.summary.descent || 0),
-            geometry: route.geometry
-        };
-
-    } catch (err) {
-        if (err.name === 'TypeError' && err.message.includes('fetch')) {
-            return { error: 'Netzwerkfehler - keine Verbindung zur API' };
-        }
-        return { error: err.message || 'Unbekannter Fehler' };
-    }
+    const route = await requestRoute(waypoints);
+    if (route.error) return route;
+    return {
+        distance: route.distance,
+        duration: route.duration,
+        ascent: route.ascent,
+        descent: route.descent,
+        // [lat, lon] points for the map; coordinates ([lon, lat, ele]) for a GPX track
+        geometry: toLatLngs(route.coordinates),
+        coordinates: route.coordinates
+    };
 }

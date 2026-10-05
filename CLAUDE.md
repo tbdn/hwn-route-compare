@@ -118,7 +118,8 @@ The app supports OpenRouteService for calculating actual hiking trail distances:
 - User provides their own API key (free tier: 2000 requests/day)
 - Key stored in localStorage
 - On-demand calculation via "🥾 Route berechnen" button
-- Results cached for 24 hours
+- All requests go to the GeoJSON endpoint (`requestRoute()` in `routing.js`), which returns plain `[lon, lat, ele]` coordinates; map functions get `[lat, lon]` arrays. (The JSON endpoint's encoded polyline carries a third value with `elevation: true`, which a 2D decoder garbles.)
+- Results cached for 24 hours (`hwn-routing-cache-v2`; the old `hwn-routing-cache` with encoded polylines is removed)
 
 ## Route Extension
 
@@ -129,6 +130,7 @@ Users can select stamps and add them to the route:
 - Modal shows total distance, duration, elevation gain/loss
 - Extended route displayed on map as purple line with numbered stops
 - GPX export for import back to Komoot or other navigation apps
+- "Als eigene Tour speichern" in the modal hands the ORS track to the Tourenplan; the same button in the results header saves the compared route itself (stamps directly on the route and selected cards are preselected). `app.js` calls `openOwnTourDraft()` from `tourplan.js` after switching to the tab
 
 ## Tourenplan (second tab, `#touren`)
 

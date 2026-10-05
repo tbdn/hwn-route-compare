@@ -11,8 +11,8 @@ Stand: 05.10.2026
 | 1b | Teilvorschläge für lange Touren | ✅ erledigt (05.10.2026) |
 | 2 | Eigene Touren | ✅ erledigt (05.10.2026) |
 | 3 | Vorschläge passen sich an | ✅ erledigt (05.10.2026) |
-| 4 | Routenabgleich anbinden | ⬜ offen, nächster Schritt |
-| 5 | Eigene Tour auf der Karte zusammenstellen (optional) | ⬜ offen |
+| 4 | Routenabgleich anbinden | ✅ erledigt (05.10.2026) |
+| 5 | Eigene Tour auf der Karte zusammenstellen (optional) | ⬜ offen, nächster Schritt |
 
 ## Ziel
 
@@ -343,7 +343,25 @@ Abweichungen von der ursprünglichen Planung:
 - Eigene geplante Tour über 129 und 130: A1-Rest = [105, 113], „km offen“ enthält Rest-Schätzung und eigene Tour, kein Stempel zählt doppelt.
 - Rest auf Wanderwege legen, mit nachgebautem ORS.
 
-### Schritt 4: Routenabgleich anbinden
+### ✅ Schritt 4: Routenabgleich anbinden
+
+**Status: umgesetzt am 05.10.2026.**
+
+**Umgesetzt**
+- **Nach dem Abgleich:** In der Kopfzeile „Treffer“ steht „Als eigene Tour speichern“. Der Button wechselt zum Tourenplan und öffnet das Formular aus Schritt 2 mit der verglichenen GPX und ihrem Dateinamen bzw. dem Namen aus dem Tourenplan. Vorausgewählt sind die Stempel am Track (≤ 150 m), die Stempel „Direkt an der Route“ und die im Abgleich angehakten Karten.
+- **Modal „Erweiterte Route“:** Hier gibt es ebenfalls „Als eigene Tour speichern“. Der Button wird aktiv, sobald die Route berechnet ist, und übergibt den ORS-Track (`coordinatesToGPX`) mit dem Namen „<Route> + n Stempel“. Vorausgewählt sind die hinzugefügten Stempel; was der Track sonst passiert, erkennt das Formular.
+- **Offene Frage 5 geklärt und behoben:**
+  - Alle ORS-Anfragen laufen jetzt über den GeoJSON-Endpunkt (`requestRoute()` in `routing.js`). Betroffen sind „🥾 Route berechnen“, „Zur Route hinzufügen“ und „Auf Wanderwege legen“.
+  - Die Karte bekommt `[lat, lon]`-Punkte, `decodePolyline` ist entfernt.
+  - Die Höhenmeter kommen aus der Antwort; fehlen sie dort, werden sie aus den Koordinaten berechnet.
+  - Der Routing-Cache heißt jetzt `hwn-routing-cache-v2`. Alte Einträge mit kodierten Linien werden gelöscht.
+
+**Abweichungen von der ursprünglichen Planung**
+- **Direkter Aufruf statt Event:** Statt eines Events `hwn:save-own-tour` ruft `app.js` direkt `openOwnTourDraft()` aus `tourplan.js` auf. `app.js` importiert den Tourenplan ohnehin, und so ist sicher, dass er geladen ist, bevor das Formular öffnet.
+- **Vorauswahl:** Vorausgewählt sind alle Stempel bis 150 m vom Track plus die übergebenen, nicht nur „Direkt an der Route“ (25 m). Das entspricht dem normalen Anlegen aus Schritt 2.
+- **Nicht umgesetzt:** Der Export „Als GPX exportieren“ der Modal liefert weiterhin nur die Stempel als Route, nicht den berechneten Weg. Das war nicht Teil des Schritts; über „Als eigene Tour speichern“ und dann „GPX-Track herunterladen“ bekommt man den Weg.
+
+**Ursprüngliche Planung:**
 
 - Nach dem Abgleich erscheint „Als eigene Tour speichern“. Die erkannten Stempel „Direkt an der Route“ werden vorausgewählt, die aus „In der Nähe“ sind auswählbar.
 - Aus der Modal „Erweiterte Route“ heraus gibt es „Als eigene Tour speichern“, mit dem ORS-Track.
@@ -366,7 +384,7 @@ Abweichungen von der ursprünglichen Planung:
    - Vorschlag: Zunächst nur Browser + Export, später bei Bedarf.
 4. **Dateinamen beim Download.** „GPX-Track herunterladen“ speichert `HWN_<ID>.gpx`, das Projekt erwartet `<ID>.gpx`.
    - Vorschlag: Auf `<ID>.gpx` umstellen.
-5. **Bekannter Verdacht im Routenabgleich, nicht geprüft.** `decodePolyline` in `map.js` dekodiert 2D, obwohl die ORS-Anfragen `elevation: true` setzen. Das ist vor Schritt 4 zu prüfen, weil die Modal „Erweiterte Route“ dort Tracks liefert.
+5. ✅ **Bekannter Verdacht im Routenabgleich, nicht geprüft.** *(Mit Schritt 4 behoben: alle Anfragen über den GeoJSON-Endpunkt, siehe dort.)* `decodePolyline` in `map.js` dekodiert 2D, obwohl die ORS-Anfragen `elevation: true` setzen. Das ist vor Schritt 4 zu prüfen, weil die Modal „Erweiterte Route“ dort Tracks liefert.
 
 ## Nicht im Umfang
 

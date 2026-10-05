@@ -219,57 +219,14 @@ export function getMap() {
 }
 
 /**
- * Decode an encoded polyline string (Google Polyline Algorithm)
- * Used by OpenRouteService for geometry encoding
- */
-function decodePolyline(encoded) {
-    const points = [];
-    let index = 0;
-    let lat = 0;
-    let lon = 0;
-
-    while (index < encoded.length) {
-        let b;
-        let shift = 0;
-        let result = 0;
-
-        do {
-            b = encoded.charCodeAt(index++) - 63;
-            result |= (b & 0x1f) << shift;
-            shift += 5;
-        } while (b >= 0x20);
-
-        const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
-        lat += dlat;
-
-        shift = 0;
-        result = 0;
-
-        do {
-            b = encoded.charCodeAt(index++) - 63;
-            result |= (b & 0x1f) << shift;
-            shift += 5;
-        } while (b >= 0x20);
-
-        const dlon = ((result & 1) ? ~(result >> 1) : (result >> 1));
-        lon += dlon;
-
-        points.push([lat / 1e5, lon / 1e5]);
-    }
-
-    return points;
-}
-
-/**
  * Display a calculated routing result on the map
  * @param {Object} stamp - The stamp with routing data
- * @param {string} geometry - Encoded polyline geometry from ORS
+ * @param {Array} geometry - [lat, lon] points of the walking route
  */
 export function displayRoutingResult(stamp, geometry) {
-    if (!map || !routingLayer || !geometry) return;
+    if (!map || !routingLayer || !Array.isArray(geometry)) return;
 
-    // Decode the polyline
-    const points = decodePolyline(geometry);
+    const points = geometry;
     if (!points.length) return;
 
     // Draw the actual walking route
@@ -299,17 +256,16 @@ export function clearRoutingLayer() {
 
 /**
  * Display an extended route on the map (route through selected stamps)
- * @param {string} geometry - Encoded polyline geometry from ORS
+ * @param {Array} geometry - [lat, lon] points of the route
  * @param {Array} stamps - Array of stamps included in the route
  */
 export function displayExtendedRoute(geometry, stamps) {
-    if (!map || !extendedRouteLayer || !geometry) return;
+    if (!map || !extendedRouteLayer || !Array.isArray(geometry)) return;
 
     // Clear previous extended route
     extendedRouteLayer.clearLayers();
 
-    // Decode the polyline
-    const points = decodePolyline(geometry);
+    const points = geometry;
     if (!points.length) return;
 
     // Draw the extended route as a distinct color

@@ -3,7 +3,8 @@ import { findNearbyStamps } from "./utils/geo.js";
 import { loadStamps } from "./utils/stamps.js";
 import { analyzeDetours, getDetourEffort } from "./utils/detour.js";
 import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, displayRoutingResult, displayExtendedRoute, clearExtendedRoute, panToStamp, getMap } from "./components/map.js";
-import { showTourPlan } from "./components/tourplan.js";
+import { showTourPlan, openOwnTourDraft } from "./components/tourplan.js";
+import { coordinatesToGPX } from "./utils/tracks.js";
 import { setApiKey, hasApiKey, calculateDetourRoute, calculateMultiWaypointRoute, formatDuration, formatDistance } from "./utils/routing.js";
 import { optimizeStampOrder, calculateTotalDetour, generateGPX, downloadGPX } from "./utils/optimize.js";
 
@@ -47,6 +48,8 @@ const optimizedStops = el('optimizedStops');
 const routeStatusEl = el('routeStatus');
 const showOnMapBtn = el('showOnMap');
 const exportGpxBtn = el('exportGpx');
+const saveExtendedOwnBtn = el('saveExtendedOwn');
+const saveOwnTourBtn = el('saveOwnTour');
 
 // Map state
 let mapInitialized = false;
@@ -60,8 +63,12 @@ let selectedStamps = new Set();
 // Store optimized route for export
 let optimizedRoute = null;
 
-// Store calculated route geometry
+// Store calculated route geometry ([lat, lon] for the map, [lon, lat, ele] for a GPX track)
 let calculatedRouteGeometry = null;
+let calculatedRouteCoordinates = null;
+
+// Name of the compared route (file name or the tour handed over from the Tourenplan)
+let currentRouteName = '';
 
 // Store original route points for route calculation
 let currentRoutePoints = [];
@@ -171,6 +178,8 @@ addToRouteBtn.addEventListener('click', async () => {
     optimizedRoute = sortedStamps;
 
     // Show modal immediately with loading state
+    calculatedRouteCoordinates = null;
+    saveExtendedOwnBtn.disabled = true;
     showExtendedRouteModal(sortedStamps, true);
 
     // Build waypoints: start point -> stamps (via exit points) -> end point
@@ -191,6 +200,8 @@ addToRouteBtn.addEventListener('click', async () => {
         showOnMapBtn.disabled = true;
     } else {
         calculatedRouteGeometry = result.geometry;
+        calculatedRouteCoordinates = result.coordinates;
+        saveExtendedOwnBtn.disabled = false;
 
         // Update modal with actual distances
         updateModalWithRouteData(sortedStamps, result);
@@ -295,6 +306,41 @@ showOnMapBtn.addEventListener('click', () => {
     closeModal();
 });
 
+// Hand a route over to the Tourenplan, which opens the own tour form with it
+async function saveAsOwnTour(route) {
+    history.replaceState(null, '', VIEW_HASH.tours);
+    await switchView('tours');
+    try {
+        openOwnTourDraft(route);
+    } catch (e) {
+        el('ownStatus').textContent = `Route nicht übernommen: ${e.message || 'unbekannter Fehler'}`;
+    }
+}
+
+// The compared route: stamps directly on it and the ones selected in the cards are preselected
+saveOwnTourBtn.addEventListener('click', () => {
+    if (!gpxContent) return;
+    const onRoute = currentResults.filter(s => s.distance <= ON_ROUTE_THRESHOLD);
+    saveAsOwnTour({
+        gpx: gpxContent,
+        fileName: currentRouteName,
+        stamps: [...onRoute, ...getSelectedStamps()].map(s => s.number)
+    });
+});
+
+// The extended route through the selected stamps, as calculated by OpenRouteService
+saveExtendedOwnBtn.addEventListener('click', () => {
+    if (!calculatedRouteCoordinates || !optimizedRoute) return;
+    closeModal();
+    const base = currentRouteName.replace(/\.gpx$/i, '');
+    const name = base ? `${base} + ${optimizedRoute.length} Stempel` : 'Erweiterte Route';
+    saveAsOwnTour({
+        gpx: coordinatesToGPX(`OpenRouteService – ${name}`, calculatedRouteCoordinates),
+        name,
+        stamps: optimizedRoute.map(s => s.number)
+    });
+});
+
 // GPX export handler
 exportGpxBtn.addEventListener('click', () => {
     if (!optimizedRoute || optimizedRoute.length === 0) return;
@@ -326,6 +372,7 @@ fileInput.addEventListener('change', (e) => {
 
     fileNameEl.textContent = file.name;
     fileNameEl.classList.add('has-file');
+    currentRouteName = file.name;
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -612,6 +659,7 @@ document.addEventListener('hwn:compare-route', e => {
     fileInput.value = '';
     fileNameEl.textContent = name;
     fileNameEl.classList.add('has-file');
+    currentRouteName = name;
     history.replaceState(null, '', location.pathname + location.search);
     switchView('compare');
     window.scrollTo({ top: 0, behavior: 'smooth' });

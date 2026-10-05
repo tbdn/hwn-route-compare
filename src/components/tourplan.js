@@ -1415,6 +1415,19 @@ function startOwnDraft(gpx, fileName, existing = null) {
     el('tourMapGrid').scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 
+/**
+ * Open the own tour form from outside (Routenabgleich). The stamps along the track are detected
+ * as usual; the given stamps (e.g. selected in the comparison) are preselected in addition.
+ * @param {Object} route - {gpx, fileName, name, stamps: [stamp numbers]}
+ */
+export function openOwnTourDraft({ gpx, fileName = '', name = '', stamps = [] }) {
+    if (!plan) throw new Error('Tourenplan ist noch nicht geladen.');
+    startOwnDraft(gpx, fileName);
+    if (name) ownDraft.name = name;
+    stamps.filter(n => stampsByNumber.has(n)).forEach(n => ownDraft.chosen.add(n));
+    render();
+}
+
 function renderOwnForm(detail) {
     const d = ownDraft;
     detail.style.setProperty('--c', OWN_COLOR);
