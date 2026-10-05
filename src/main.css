@@ -1337,3 +1337,47 @@ footer a{color:var(--paper-2);}
 .tour-detail .stop-item.collected .stop-name{ color:#5B5470; text-decoration:line-through; text-decoration-color:#9A958A; }
 .tour-detail .stop-item.collected .stop-number{ background:#9A958A; }
 .suggestion-hint{ font-style:italic; }
+
+/* Part tours of long suggestions */
+.part-row td{ background:#FBF8F0; }
+.part-row .tour-id{ padding-left:14px; }
+.part-arrow{ color:#9A958A; margin-right:3px; }
+.part-name{ font-weight:600; }
+.parts-tag{ background:#ECE6F6; color:#4A3B78; }
+/* Figures of the variant that isn't walked are faded */
+.tour-row.variant-off td.r,
+.tour-row.variant-off .level{ opacity:0.45; }
+.part-title{ font-family:'Fraunces', Georgia, serif; font-weight:450; font-size:0.85em; }
+.variant-box{
+    display:grid;
+    gap:8px;
+    margin:10px 0;
+    padding:12px;
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    background:#F5F1FA;
+    font-size:13px;
+}
+.variant-box .hint{ margin:0; }
+.variant-switch{ display:flex; flex-wrap:wrap; gap:6px 16px; }
+.variant-switch label{ display:flex; align-items:center; gap:6px; cursor:pointer; }
+.variant-switch input{ accent-color:var(--ink); }
+.variant-parts{
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:grid;
+    gap:6px;
+}
+.variant-parts li{ display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; }
+.part-link{
+    background:none;
+    border:none;
+    padding:0;
+    font:inherit;
+    color:var(--ink);
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+    text-align:left;
+}

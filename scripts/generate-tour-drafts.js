@@ -2,6 +2,7 @@
 /**
  * Writes a placeholder GPX per tour to draft/tours/<ID>.gpx as a starting point for planning
  * (e.g. import into Komoot, snap to trails, export again as src/data/tours/<ID>.gpx).
+ * Part tours from `parts` in tours.json get their own file (<ID>a.gpx, <ID>b.gpx).
  * Run: node scripts/generate-tour-drafts.js
  */
 
@@ -74,6 +75,10 @@ function tourGpx(tour) {
 `;
 }
 
+// Part tours (see scripts/suggest-tour-parts.js) get their own drafts, e.g. A5a.gpx
+const parts = plan.tours.flatMap(tour => (tour.parts || []).map(part => ({ ...part, region: tour.region, single: false })));
+const all = [...plan.tours, ...parts];
+
 fs.mkdirSync(outDir, { recursive: true });
-plan.tours.forEach(tour => fs.writeFileSync(path.join(outDir, `${tour.id}.gpx`), tourGpx(tour)));
-console.log(`${plan.tours.length} Platzhalter-GPX nach ${path.relative(root, outDir)}/ geschrieben`);
+all.forEach(tour => fs.writeFileSync(path.join(outDir, `${tour.id}.gpx`), tourGpx(tour)));
+console.log(`${all.length} Platzhalter-GPX nach ${path.relative(root, outDir)}/ geschrieben (davon ${parts.length} Teiltouren)`);

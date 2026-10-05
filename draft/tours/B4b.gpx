@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour B4b (Platzhalter)</name>
+        <desc>Brocken und Nationalpark Nord · Stempel HWN018, HWN156 · Luftlinie, geschätzt ca. 3 km / mind. 233 Hm</desc>
+    </metadata>
+    <wpt lat="51.7518251" lon="10.6324505">
+        <ele>739</ele>
+        <name>1. HWN018 Grenzweg am Kaffeehorst</name>
+        <desc>Grenzweg am Kaffeehorst</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7564333" lon="10.6186834">
+        <ele>972</ele>
+        <name>2. HWN156 Wurmberg-Baude</name>
+        <desc>Wurmberg-Baude</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour B4b (Platzhalter)</name>
+        <desc>Brocken und Nationalpark Nord · Stempel HWN018, HWN156 · Luftlinie, geschätzt ca. 3 km / mind. 233 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.7518251" lon="10.6324505"><ele>739</ele></trkpt>
+            <trkpt lat="51.7564333" lon="10.6186834"><ele>972</ele></trkpt>
+            <trkpt lat="51.7518251" lon="10.6324505"><ele>739</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

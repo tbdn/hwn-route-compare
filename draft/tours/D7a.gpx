@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour D7a (Platzhalter)</name>
+        <desc>Bodetal, Blankenburg, Wernigerode, Rübeland · Stempel HWN064, HWN063, HWN062, HWN065 · Luftlinie, geschätzt ca. 9,6 km / mind. 74 Hm</desc>
+    </metadata>
+    <wpt lat="51.7300325" lon="10.9495696">
+        <ele>406</ele>
+        <name>1. HWN064 Böser Kleef</name>
+        <desc>Böser Kleef (Aussichtspunkt)</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7297752" lon="10.9230879">
+        <ele>415</ele>
+        <name>2. HWN063 Schöneburg</name>
+        <desc>Schöneburg (Aussichtspunkt)</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7432165" lon="10.9192999">
+        <ele>366</ele>
+        <name>3. HWN062 Talsperre Wendefurth</name>
+        <desc>Talsperre Wendefurth (Bergseite)</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7370295" lon="10.9556708">
+        <ele>431</ele>
+        <name>4. HWN065 Gasthaus Todtenrode</name>
+        <desc>Gasthaus Todtenrode</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour D7a (Platzhalter)</name>
+        <desc>Bodetal, Blankenburg, Wernigerode, Rübeland · Stempel HWN064, HWN063, HWN062, HWN065 · Luftlinie, geschätzt ca. 9,6 km / mind. 74 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.7300325" lon="10.9495696"><ele>406</ele></trkpt>
+            <trkpt lat="51.7297752" lon="10.9230879"><ele>415</ele></trkpt>
+            <trkpt lat="51.7432165" lon="10.9192999"><ele>366</ele></trkpt>
+            <trkpt lat="51.7370295" lon="10.9556708"><ele>431</ele></trkpt>
+            <trkpt lat="51.7300325" lon="10.9495696"><ele>406</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

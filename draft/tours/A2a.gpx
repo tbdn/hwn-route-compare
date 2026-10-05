@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour A2a (Platzhalter)</name>
+        <desc>Nordwestharz: Goslar, Okertal, Clausthal, Bad Grund · Stempel HWN142, HWN106, HWN107 · Luftlinie, geschätzt ca. 10,2 km / mind. 65 Hm</desc>
+    </metadata>
+    <wpt lat="51.89504" lon="10.27904">
+        <ele>350</ele>
+        <name>1. HWN142 Mandolinenhütte</name>
+        <desc>Mandolinenhütte</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.876832" lon="10.292047">
+        <ele>400</ele>
+        <name>2. HWN106 Schöne Aussicht Bielstein</name>
+        <desc>Schöne Aussicht, Bielstein</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8635985" lon="10.2902365">
+        <ele>415</ele>
+        <name>3. HWN107 Maaßener Gaipel</name>
+        <desc>Maaßener Gaipel</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour A2a (Platzhalter)</name>
+        <desc>Nordwestharz: Goslar, Okertal, Clausthal, Bad Grund · Stempel HWN142, HWN106, HWN107 · Luftlinie, geschätzt ca. 10,2 km / mind. 65 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.89504" lon="10.27904"><ele>350</ele></trkpt>
+            <trkpt lat="51.876832" lon="10.292047"><ele>400</ele></trkpt>
+            <trkpt lat="51.8635985" lon="10.2902365"><ele>415</ele></trkpt>
+            <trkpt lat="51.89504" lon="10.27904"><ele>350</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

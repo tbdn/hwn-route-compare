@@ -2,6 +2,7 @@
 // Has its own Leaflet map so it doesn't interfere with the route comparison map.
 // Tours can carry a real GPX track (project file or browser upload) that replaces the straight-line loop.
 // Progress is stored per stamp; a tour counts as done when all of its stamps are collected.
+// Long tours can have two part tours ("parts" in tours.json); each tour is shown either whole or in parts.
 
 import { generateGPX, downloadGPX } from "../utils/optimize.js";
 import {
@@ -17,6 +18,7 @@ const COLLECTED_STORAGE = 'hwn-stamps-collected';
 const LEGACY_DONE_STORAGE = 'hwn-tours-done';
 const LEGACY_EXTRA_STORAGE = 'hwn-stamps-extra';
 const KOMOOT_STORAGE = 'hwn-komoot-links';
+const VARIANT_STORAGE = 'hwn-tour-variants';
 const PROGRESS_FORMAT = 'hwn-tourenplan-progress';
 // Start and end closer than this are shown as one "Start/Ziel" marker
 const LOOP_CLOSE_METERS = 250;
@@ -42,6 +44,9 @@ let map = null;
 let plan = null;
 let stampsByNumber = new Map();
 let collected = new Set();        // stamp numbers; the only source of progress
+let variants = {};                // tourId -> 'parts' when a tour is walked as its part tours
+let units = [];                   // every walkable tour: suggestions and their part tours
+const unitById = new Map();
 let regionFilter = null;
 let selectedId = null;
 
@@ -66,6 +71,81 @@ function escapeHtml(str) {
 
 const fmt1 = n => n.toFixed(1).replace('.', ',');
 const color = code => REGION_COLORS[code] || '#3D3563';
+
+function lighten(hex, amount) {
+    const n = parseInt(hex.slice(1), 16);
+    const channel = shift => {
+        const c = (n >> shift) & 255;
+        return Math.round(c + (255 - c) * amount);
+    };
+    return `rgb(${channel(16)}, ${channel(8)}, ${channel(0)})`;
+}
+
+// The second part of a split tour is drawn in a lighter shade of the region color
+const unitColor = unit => unit.parent && unit.index === 1 ? lighten(color(unit.region), 0.45) : color(unit.region);
+const unitLabel = unit => unit.parent ? `Teil ${unit.id}` : `Vorschlag ${unit.id}`;
+
+// Part tours behave like tours of their own (track, Komoot links, checkbox) and know their parent
+function buildUnits() {
+    plan.tours.forEach(tour => {
+        tour.parts = (tour.parts || []).map((part, index) => ({
+            ...part, region: tour.region, single: false, tags: tour.tags, parent: tour, index
+        }));
+    });
+    units = plan.tours.flatMap(t => [t, ...t.parts]);
+    unitById.clear();
+    units.forEach(u => unitById.set(u.id, u));
+}
+
+function usesParts(tour) {
+    return tour.parts?.length > 0 && variants[tour.id] === 'parts';
+}
+
+// What is walked: the whole tour, or its parts when that variant is chosen
+function isShown(unit) {
+    return unit.parent ? usesParts(unit.parent) : !usesParts(unit);
+}
+
+function shownUnits() {
+    return units.filter(isShown);
+}
+
+function isSelected(unit) {
+    return selectedId === unit.id || (!!unit.parent && selectedId === unit.parent.id);
+}
+
+function sanitizeVariants(data) {
+    const result = {};
+    Object.entries(data || {}).forEach(([id, v]) => {
+        if (v === 'parts' && unitById.get(id)?.parts?.length) result[id] = 'parts';
+    });
+    return result;
+}
+
+function loadVariants() {
+    try {
+        return sanitizeVariants(JSON.parse(localStorage.getItem(VARIANT_STORAGE) || '{}'));
+    } catch {
+        return {};
+    }
+}
+
+function saveVariants() {
+    try {
+        localStorage.setItem(VARIANT_STORAGE, JSON.stringify(variants));
+    } catch {
+        // ignore
+    }
+}
+
+function setVariant(tour, useParts) {
+    if (useParts) variants[tour.id] = 'parts';
+    else delete variants[tour.id];
+    saveVariants();
+    updateLines();
+    renderList();
+    render();
+}
 
 function loadSet(key) {
     try {
@@ -338,12 +418,12 @@ function tourEndpoints(tour) {
 
 function renderEndpoints() {
     endpointLayer.clearLayers();
-    const selected = plan.tours.find(t => t.id === selectedId);
-    // With a selection only that tour gets (large) markers; otherwise every visible tour gets small ones
-    const tours = selected ? [selected] : plan.tours.filter(t => !regionFilter || t.region === regionFilter);
+    const selected = shownUnits().filter(isSelected);
+    // With a selection only that tour (or its parts) gets large markers; otherwise every visible tour gets small ones
+    const tours = selected.length ? selected : shownUnits().filter(t => !regionFilter || t.region === regionFilter);
 
     tours.forEach(tour => {
-        const big = tour === selected;
+        const big = selected.includes(tour);
         tourEndpoints(tour).forEach(p => {
             const label = { start: 'S', end: 'Z', both: 'S/Z' }[p.kind];
             const marker = L.marker(p.latLng, {
@@ -359,7 +439,7 @@ function renderEndpoints() {
                 keyboard: false,
                 zIndexOffset: big ? 3000 : 0
             })
-                .bindTooltip(`Vorschlag ${tour.id} · ${p.title}`)
+                .bindTooltip(`${unitLabel(tour)} · ${p.title}`)
                 .on('click', () => select(tour.id))
                 .addTo(endpointLayer);
             if (isDone(tour) && !big) marker.setOpacity(0.6);
@@ -384,8 +464,10 @@ export async function showTourPlan(stamps) {
     }
     plan = await response.json();
     stampsByNumber = new Map(stamps.map(s => [s.number, s]));
+    buildUnits();
     collected = loadCollected();
-    komootLinks = sanitizeKomootLinks(loadKomootLinks(), new Set(plan.tours.map(t => t.id)));
+    variants = loadVariants();
+    komootLinks = sanitizeKomootLinks(loadKomootLinks(), new Set(units.map(u => u.id)));
 
     initTourMap();
     initProgressTransfer();
@@ -395,7 +477,7 @@ export async function showTourPlan(stamps) {
 
     // Tracks load in the background; the straight-line plan is usable meanwhile
     [projectTracks, uploadedTracks] = await Promise.all([
-        loadProjectTracks(plan.tours.map(t => t.id)),
+        loadProjectTracks(units.map(u => u.id)),
         loadUploadedTracks()
     ]);
     refreshTracks();
@@ -405,7 +487,7 @@ export async function showTourPlan(stamps) {
 function refreshTracks() {
     tracks.clear();
     trackErrors.clear();
-    plan.tours.forEach(tour => {
+    units.forEach(tour => {
         const upload = uploadedTracks[tour.id];
         const project = projectTracks[tour.id];
         const candidates = [
@@ -423,13 +505,18 @@ function refreshTracks() {
         }
     });
 
-    plan.tours.forEach(tour => {
-        const latLngs = loopLatLngs(tour);
-        loopLines.get(tour.id).setLatLngs(latLngs);
-        hitLines.get(tour.id).setLatLngs(latLngs);
-    });
+    updateLines();
     renderList();
     render();
+}
+
+// Only the chosen variant of each tour is drawn (and clickable)
+function updateLines() {
+    units.forEach(unit => {
+        const latLngs = isShown(unit) ? loopLatLngs(unit) : [];
+        loopLines.get(unit.id).setLatLngs(latLngs);
+        hitLines.get(unit.id).setLatLngs(latLngs);
+    });
 }
 
 function initTourMap() {
@@ -445,11 +532,11 @@ function initTourMap() {
     endpointLayer = L.layerGroup().addTo(map);
     labelLayer = L.layerGroup().addTo(map);
 
-    plan.tours.forEach(tour => {
-        const latLngs = loopLatLngs(tour);
+    units.forEach(tour => {
+        const latLngs = isShown(tour) ? loopLatLngs(tour) : [];
 
         const line = L.polyline(latLngs, {
-            color: color(tour.region),
+            color: unitColor(tour),
             weight: 3,
             opacity: 0.85,
             lineJoin: 'round',
@@ -460,7 +547,7 @@ function initTourMap() {
         const hit = L.polyline(latLngs, { weight: 16, opacity: 0 })
             .bindTooltip(() => {
                 const f = tourFigures(tour);
-                return `Vorschlag ${tour.id} · ${tour.stamps.length} Stempel · ${f.real ? '' : 'ca. '}${fmt1(f.km)} km`
+                return `${unitLabel(tour)} · ${tour.stamps.length} Stempel · ${f.real ? '' : 'ca. '}${fmt1(f.km)} km`
                     + (f.real ? ' · GPX' : '')
                     + (isDone(tour) ? ' · erledigt' : isPartial(tour) ? ` · ${collectedCount(tour)}/${tour.stamps.length} gestempelt` : '');
             }, { sticky: true })
@@ -488,12 +575,14 @@ function initTourMap() {
             `<span class="stamp-id">${stamp.id}</span>${escapeHtml(stamp.name)}`
             + (collectedStamps().has(number) ? ' · gestempelt' : tour ? ` · Vorschlag ${tour.id}` : '')
         );
-        if (tour) marker.on('click', () => select(tour.id));
+        // A split tour shown in parts selects the part that contains the stamp
+        if (tour) marker.on('click', () => select(
+            (usesParts(tour) && tour.parts.find(p => p.stamps.includes(number))?.id) || tour.id));
         marker.addTo(pointLayer);
         stampMarkers.set(number, marker);
     });
 
-    fitTo(plan.tours);
+    fitTo(shownUnits());
 }
 
 function fitTo(tours) {
@@ -514,7 +603,7 @@ function renderChips() {
             regionFilter = code;
             if (selectedId && code && !selectedId.startsWith(code)) selectedId = null;
             render();
-            fitTo(code ? plan.tours.filter(t => t.region === code) : plan.tours);
+            fitTo(shownUnits().filter(t => !code || t.region === code));
         });
         chips.appendChild(b);
     };
@@ -529,9 +618,10 @@ function renderList() {
     plan.regions.forEach(region => {
         const tours = plan.tours.filter(t => t.region === region.code);
         if (!tours.length) return;
-        const km = tours.reduce((a, t) => a + tourFigures(t).km, 0);
+        const shown = shownUnits().filter(t => t.region === region.code);
+        const km = shown.reduce((a, t) => a + tourFigures(t).km, 0);
         const count = tours.reduce((a, t) => a + t.stamps.length, 0);
-        const withTrack = tours.filter(t => tracks.has(t.id)).length;
+        const withTrack = shown.filter(t => tracks.has(t.id)).length;
 
         const sec = document.createElement('section');
         sec.className = 'card region-card';
@@ -554,14 +644,14 @@ function renderList() {
             </div>`;
 
         const tbody = sec.querySelector('tbody');
-        tours.forEach(tour => tbody.appendChild(createTourRow(tour)));
+        tours.forEach(tour => [tour, ...tour.parts].forEach(unit => tbody.appendChild(createTourRow(unit))));
         list.appendChild(sec);
     });
 }
 
 function createTourRow(tour) {
     const tr = document.createElement('tr');
-    tr.className = 'tour-row';
+    tr.className = tour.parent ? 'tour-row part-row' : 'tour-row';
     tr.tabIndex = 0;
     tr.dataset.id = tour.id;
 
@@ -575,14 +665,14 @@ function createTourRow(tour) {
         .join(' → ');
 
     tr.innerHTML = `
-        <td><input type="checkbox" class="tour-done" aria-label="Alle Stempel von Vorschlag ${tour.id} gesammelt"><span class="done-count mono"></span></td>
-        <td class="tour-id mono">${tour.id}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}${tourKomootLinks(tour).length ? '<span class="gpx-tag komoot-tag" title="Mit Komoot-Link">komoot</span>' : ''}</td>
+        <td><input type="checkbox" class="tour-done" aria-label="Alle Stempel von ${unitLabel(tour)} gesammelt"><span class="done-count mono"></span></td>
+        <td class="tour-id mono">${tour.parent ? '<span class="part-arrow" aria-hidden="true">↳</span>' : ''}${tour.id}${tour.parts?.length ? '<span class="gpx-tag parts-tag" title="Lässt sich in zwei Teilen gehen">2 Teile</span>' : ''}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}${tourKomootLinks(tour).length ? '<span class="gpx-tag komoot-tag" title="Mit Komoot-Link">komoot</span>' : ''}</td>
         <td class="r mono">${noFigures ? dash : est + fmt1(f.km)}</td>
         <td class="r mono">${noFigures ? dash : est + fmt1(f.hours)}</td>
         <td class="r mono">${noFigures ? dash : (f.realAscent ? '' : '<span class="est">≥</span>') + f.ascent}</td>
         <td>${tour.single ? '' : `${levelHtml(tour)}<br>`}${tourTags(tour)
             .map(g => `<span class="season" title="${escapeHtml(g.hint)}">${escapeHtml(g.label)}</span>`).join('')}</td>
-        <td class="seq">${tour.single ? '<span class="detour-tag">Abstecher</span> ' : ''}${seq}</td>`;
+        <td class="seq">${tour.single ? '<span class="detour-tag">Abstecher</span> ' : ''}${tour.parent ? `<span class="part-name">${escapeHtml(tour.name)}:</span> ` : ''}${seq}</td>`;
 
     const cb = tr.querySelector('.tour-done');
     syncDoneCheckbox(cb, tour);
@@ -611,11 +701,18 @@ function syncDoneCheckbox(cb, tour) {
 }
 
 function select(id, scrollToMap = false) {
+    const tour = unitById.get(id);
+    // Opening a part switches its tour to the part variant
+    if (tour?.parent && !usesParts(tour.parent)) {
+        variants[tour.parent.id] = 'parts';
+        saveVariants();
+        updateLines();
+        renderList();
+    }
     selectedId = id;
-    const tour = plan.tours.find(t => t.id === id);
     if (tour && regionFilter && tour.region !== regionFilter) regionFilter = null;
     render();
-    if (tour) fitTo([tour]);
+    if (tour) fitTo(usesParts(tour) ? tour.parts : [tour]);
     if (scrollToMap) el('tourMapGrid').scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 
@@ -624,12 +721,12 @@ function render() {
         b.setAttribute('aria-pressed', String((b.dataset.code || null) === regionFilter)));
 
     const collected = collectedStamps();
-    plan.tours.forEach(tour => {
+    shownUnits().forEach(tour => {
         const visible = !regionFilter || tour.region === regionFilter;
         const done = isDone(tour);
         const real = tracks.has(tour.id);
         const line = loopLines.get(tour.id);
-        const isSel = selectedId === tour.id;
+        const isSel = isSelected(tour);
         const dim = !visible || (selectedId && !isSel);
         // Real tracks are drawn stronger than straight-line estimates;
         // finished tours stay visible, but dashed so open tours stand out
@@ -656,29 +753,32 @@ function render() {
     renderEndpoints();
 
     labelLayer.clearLayers();
-    const tour = plan.tours.find(t => t.id === selectedId);
-    if (tour) {
-        tourStamps(tour).forEach((s, i) => {
+    const tour = unitById.get(selectedId);
+    // Stop numbers of the selection; parts are prefixed with their letter (a1, a2, b1, ...)
+    shownUnits().filter(isSelected).forEach(unit => {
+        const prefix = unit.parent ? 'ab'[unit.index] : '';
+        tourStamps(unit).forEach((s, i) => {
             L.marker([s.lat, s.lon], {
                 icon: L.divIcon({
                     className: 'stop-marker',
-                    html: `<div class="stop-marker-inner" style="background:${color(tour.region)}">${i + 1}</div>`,
+                    html: `<div class="stop-marker-inner" style="background:${unitColor(unit)}">${prefix}${i + 1}</div>`,
                     iconSize: [28, 28],
                     iconAnchor: [14, 14]
                 }),
-                title: `${i + 1}. ${s.name}`,
+                title: `${prefix}${i + 1}. ${s.name}`,
                 zIndexOffset: 2000
             }).addTo(labelLayer);
         });
-    }
+    });
 
     el('tourList').querySelectorAll('.region-card').forEach(sec => {
         sec.hidden = !!regionFilter && sec.dataset.code !== regionFilter;
     });
     el('tourList').querySelectorAll('.tour-row').forEach(row => {
         row.classList.toggle('selected', row.dataset.id === selectedId);
-        const rowTour = plan.tours.find(t => t.id === row.dataset.id);
+        const rowTour = unitById.get(row.dataset.id);
         row.classList.toggle('done', isDone(rowTour));
+        row.classList.toggle('variant-off', !isShown(rowTour));
         const cb = row.querySelector('.tour-done');
         if (cb) syncDoneCheckbox(cb, rowTour);
     });
@@ -690,8 +790,10 @@ function render() {
 function renderStats() {
     const collected = collectedStamps();
     const openStamps = stampsByNumber.size - collected.size;
-    const openList = plan.tours.filter(t => !isDone(t));
+    // Split tours count with the chosen variant (whole or parts), never both
+    const openList = shownUnits().filter(t => !isDone(t));
     const openKm = openList.reduce((a, t) => a + tourFigures(t).km, 0);
+    const openKmEstimated = openList.some(t => !t.single && !tracks.has(t.id));
     // Estimated ascent only counts climbs between stamps, so it's a lower bound ("≥")
     const openHm = openList.reduce((a, t) => a + tourFigures(t).ascent, 0);
     // Single stamps (car detour) have no distance or ascent, so nothing there is estimated
@@ -699,7 +801,7 @@ function renderStats() {
     const openHmEstimated = openList.some(estimatedAscent);
 
     // Walked distance: real track where there is one, otherwise the plan's estimate
-    const doneList = plan.tours.filter(isDone);
+    const doneList = shownUnits().filter(isDone);
     const walkedKm = doneList.reduce((a, t) => a + tourFigures(t).km, 0);
     const walkedHm = doneList.reduce((a, t) => a + tourFigures(t).ascent, 0);
     const walkedEstimated = doneList.some(t => !t.single && !tracks.has(t.id));
@@ -710,7 +812,7 @@ function renderStats() {
         <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${collected.size}</div></div>
         <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${openStamps}</div></div>
         <div class="route-stat"><div class="label">Rundtouren</div><div class="value">${plan.tours.filter(t => !t.single).length}</div></div>
-        <div class="route-stat"><div class="label">km offen</div><div class="value">${Math.round(openKm)}</div></div>
+        <div class="route-stat"${openKmEstimated ? ' title="Teilweise geschätzt: nicht jede offene Tour hat einen GPX-Track"' : ''}><div class="label">km offen</div><div class="value">${openKmEstimated ? '~' : ''}${Math.round(openKm)}</div></div>
         <div class="route-stat"${openHmEstimated ? ' title="Teilweise geschätzt (nur Anstiege von Stempel zu Stempel), echte Höhenmeter liegen meist höher"' : ''}><div class="label">Hm offen</div><div class="value">${openHmEstimated ? '≥' : ''}${hm(openHm)}</div></div>
         <div class="route-stat"${walkedEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track"' : ''}><div class="label">km zurückgelegt</div><div class="value highlight">${walkedEstimated ? '~' : ''}${fmt1(walkedKm)}</div></div>
         <div class="route-stat"${walkedHmEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track mit Höhendaten"' : ''}><div class="label">Hm zurückgelegt</div><div class="value highlight">${walkedHmEstimated ? '≥' : ''}${hm(walkedHm)}</div></div>
@@ -751,7 +853,8 @@ function renderDetail(tour) {
         detail.style.removeProperty('--c');
         const tours = regionFilter ? plan.tours.filter(t => t.region === regionFilter) : plan.tours;
         const count = tours.reduce((a, t) => a + t.stamps.length, 0);
-        const km = Math.round(tours.reduce((a, t) => a + tourFigures(t).km, 0));
+        const km = Math.round(shownUnits().filter(t => !regionFilter || t.region === regionFilter)
+            .reduce((a, t) => a + tourFigures(t).km, 0));
         detail.innerHTML = `
             <h3>${regionFilter ? escapeHtml(regionName(regionFilter)) : 'Tour auswählen'}</h3>
             <p class="hint">${regionFilter
@@ -764,7 +867,7 @@ function renderDetail(tour) {
     const stamps = tourStamps(tour);
     const f = tourFigures(tour);
     const track = tracks.get(tour.id);
-    detail.style.setProperty('--c', color(tour.region));
+    detail.style.setProperty('--c', unitColor(tour));
 
     const ca = f.real ? '' : 'ca. ';
     const meta = tour.single && !f.real
@@ -781,11 +884,12 @@ function renderDetail(tour) {
 
     detail.innerHTML = `
         <span class="region-tag">${escapeHtml(regionName(tour.region))}</span>
-        <h3>Vorschlag <span class="mono">${tour.id}</span>${isDone(tour)
+        <h3>${tour.parent ? 'Teil' : 'Vorschlag'} <span class="mono">${tour.id}</span>${tour.parent ? ` <span class="part-title">${escapeHtml(tour.name)}</span>` : ''}${isDone(tour)
             ? ' <span class="level lv-leicht">✓ erledigt</span>'
             : isPartial(tour) ? ` <span class="level lv-mittel">${collectedCount(tour)}/${stamps.length} gestempelt</span>` : ''}</h3>
         <div class="tour-meta mono">${meta}<span>${f.minEle}–${f.maxEle} m ü. NN</span><span>${stamps.length} Stempel</span></div>
-        <p class="hint suggestion-hint">Vorschlag aus dem Tourenplan: Du kannst ihn so gehen, mit eigenem GPX anpassen oder nur einzelne Stempel davon sammeln.</p>
+        ${tour.parent ? partInfoHtml(tour) : '<p class="hint suggestion-hint">Vorschlag aus dem Tourenplan: Du kannst ihn so gehen, mit eigenem GPX anpassen oder nur einzelne Stempel davon sammeln.</p>'}
+        ${tour.parts?.length ? variantHtml(tour) : ''}
         <ul class="tips">${tourTags(tour).map(g => `<li><b>${escapeHtml(g.label)}:</b> ${escapeHtml(g.hint)}</li>`).join('')}</ul>
         <ol class="stop-list">${stamps.map((s, i) => `
             <li class="stop-item${collected.has(s.number) ? ' collected' : ''}">
@@ -800,7 +904,7 @@ function renderDetail(tour) {
             : 'Die Runde ist geschlossen, du kannst an jedem Stempel starten.'}</p>
         <div class="done-box">
             <label><input type="checkbox" id="tourDoneToggle"> Alle Stempel gesammelt</label>
-            <span class="hint">Setzt oder entfernt die Haken aller Stempel dieses Vorschlags. Einzelne Stempel hakst du in der Liste oben ab. Ein GPX-Track allein ändert am Fortschritt nichts.</span>
+            <span class="hint">Setzt oder entfernt die Haken aller Stempel ${tour.parent ? 'dieses Teils' : 'dieses Vorschlags'}. Einzelne Stempel hakst du in der Liste oben ab. Ein GPX-Track allein ändert am Fortschritt nichts.</span>
         </div>
         <div class="track-box">
             ${trackInfoHtml(tour)}
@@ -836,13 +940,13 @@ function renderDetail(tour) {
     // app.js owns the comparison view; hand the route over without importing it here
     el('tourCompare').addEventListener('click', () => {
         document.dispatchEvent(new CustomEvent('hwn:compare-route', {
-            detail: { gpx: tourGpx(), name: track ? `Vorschlag ${tour.id}: ${track.name}` : `Vorschlag ${tour.id} (Luftlinie)` }
+            detail: { gpx: tourGpx(), name: track ? `${unitLabel(tour)}: ${track.name}` : `${unitLabel(tour)} (Luftlinie)` }
         }));
     });
     el('tourClear').addEventListener('click', () => {
         selectedId = null;
         render();
-        fitTo(regionFilter ? plan.tours.filter(t => t.region === regionFilter) : plan.tours);
+        fitTo(shownUnits().filter(t => !regionFilter || t.region === regionFilter));
     });
 
     const fileInput = el('trackFile');
@@ -859,6 +963,11 @@ function renderDetail(tour) {
         setTourCollected(tour, e.target.checked);
         render();
     });
+    el('tourParent')?.addEventListener('click', () => select(tour.parent.id));
+    detail.querySelectorAll('input[name="tourVariant"]').forEach(radio =>
+        radio.addEventListener('change', () => setVariant(tour, radio.value === 'parts')));
+    detail.querySelectorAll('[data-part]').forEach(btn =>
+        btn.addEventListener('click', () => select(btn.dataset.part)));
     detail.querySelectorAll('.stamp-done').forEach(cb =>
         cb.addEventListener('change', () => {
             setStampCollected(Number(cb.dataset.stamp), cb.checked);
@@ -886,6 +995,37 @@ function renderDetail(tour) {
             renderList();
             render();
         }));
+}
+
+function partInfoHtml(part) {
+    const sibling = part.parent.parts.find(p => p !== part);
+    return `<p class="hint suggestion-hint">Teil von Vorschlag ${part.parent.id}: eine eigene Runde. Zusammen mit
+        Teil ${sibling.id} (${escapeHtml(sibling.name)}) deckt er alle Stempel des Vorschlags ab.</p>
+        <button type="button" class="detail-clear" id="tourParent">← Zu Vorschlag ${part.parent.id}</button>`;
+}
+
+// Choose between walking a long tour whole or as its two part tours
+function variantHtml(tour) {
+    const parts = usesParts(tour);
+    const whole = tourFigures(tour);
+    const partRows = tour.parts.map(p => {
+        const f = tourFigures(p);
+        const est = f.real ? '' : '~';
+        return `<li>
+            <button type="button" class="part-link" data-part="${p.id}"><span class="mono">${p.id}</span> ${escapeHtml(p.name)}</button>
+            <span class="mono">${est}${fmt1(f.km)} km · ${f.realAscent ? '' : '≥'}${f.ascent} Hm</span>${levelHtml(p)}
+        </li>`;
+    }).join('');
+    return `<div class="variant-box">
+        <b>Gehen als</b>
+        <div class="variant-switch" role="radiogroup" aria-label="Variante">
+            <label><input type="radio" name="tourVariant" value="whole"${parts ? '' : ' checked'}> Komplett (${whole.real ? '' : '~'}${fmt1(whole.km)} km)</label>
+            <label><input type="radio" name="tourVariant" value="parts"${parts ? ' checked' : ''}> In zwei Teilen</label>
+        </div>
+        <ul class="variant-parts">${partRows}</ul>
+        <p class="hint">Die Teile sind eigene Runden mit eigenem Track; öffne einen Teil, um ihn abzuhaken oder einen Track zu hinterlegen.
+            Karte und „km/Hm offen“ zeigen die gewählte Variante.${parts ? ' Track und Downloads unten gelten für die komplette Runde.' : ''}</p>
+    </div>`;
 }
 
 function komootHtml(tour) {
@@ -936,7 +1076,7 @@ async function routeTour(tour, button) {
         return;
     }
     const existing = tracks.get(tour.id);
-    if (existing && !confirm(`Vorschlag ${tour.id} hat schon einen Track (${existing.name}). Durch die berechnete Route ersetzen?`
+    if (existing && !confirm(`${unitLabel(tour)} hat schon einen Track (${existing.name}). Durch die berechnete Route ersetzen?`
         + (existing.source === 'project' ? '\nDie Projektdatei bleibt erhalten und gilt wieder, wenn du den hochgeladenen Track entfernst.' : ''))) {
         return;
     }
@@ -1010,7 +1150,8 @@ function exportProgress() {
         stamps: [...collected].sort((a, b) => a - b),
         doneTours: plan.tours.filter(isDone).map(t => t.id),
         tracks: exportedTracks,
-        komoot: komootLinks
+        komoot: komootLinks,
+        variants
     }, `hwn-fortschritt-${today}.json`);
     const n = Object.keys(exportedTracks).length;
     setTransferStatus(`Fortschritt exportiert${n ? ` (mit ${n} GPX-Track${n > 1 ? 's' : ''})` : ''}.`);
@@ -1028,7 +1169,7 @@ async function importProgress(text) {
         throw new Error('Datei ist kein HWN-Fortschritt-Export.');
     }
 
-    const tourIds = new Set(plan.tours.map(t => t.id));
+    const tourIds = new Set(units.map(u => u.id));
     const doneIds = data.doneTours || [];
     const unknownTours = doneIds.filter(id => !tourIds.has(id));
 
@@ -1054,6 +1195,11 @@ async function importProgress(text) {
     if (data.komoot && typeof data.komoot === 'object') {
         komootLinks = sanitizeKomootLinks(data.komoot, tourIds);
         saveKomootLinks();
+    }
+    // Same for the chosen variants of split tours
+    if (data.variants && typeof data.variants === 'object') {
+        variants = sanitizeVariants(data.variants);
+        saveVariants();
     }
     refreshTracks();
 

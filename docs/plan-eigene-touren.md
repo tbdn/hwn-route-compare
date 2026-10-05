@@ -2,13 +2,25 @@
 
 Stand: 05.10.2026
 
+## Status
+
+| Schritt | Inhalt | Status |
+|---|---|---|
+| – | Niveau-Berechnung aus aktuellen Werten | ✅ erledigt (05.10.2026) |
+| 1 | Fortschritt pro Stempel, Kennzeichnung als Vorschlag | ✅ erledigt (05.10.2026) |
+| 1b | Teilvorschläge für lange Touren | ✅ erledigt (05.10.2026) |
+| 2 | Eigene Touren | ⬜ offen, nächster Schritt |
+| 3 | Vorschläge passen sich an | ⬜ offen |
+| 4 | Routenabgleich anbinden | ⬜ offen |
+| 5 | Eigene Tour auf der Karte zusammenstellen (optional) | ⬜ offen |
+
 ## Ziel
 
 - Die Touren aus `tours.json` und die Tracks in `src/data/tours/` sind **Vorschläge**. Das muss in der App klar erkennbar sein.
 - Man kann **eigene Touren** anlegen, mit beliebigen Stempeln, z. B. nur 129 und 130.
 - Der Fortschritt stimmt immer. Gesammelt ist, wo man wirklich war, und die Vorschläge passen sich an das an, was schon erledigt oder anders geplant ist.
 
-## Ausgangslage (Ist-Zustand)
+## Ausgangslage (vor Schritt 1)
 
 - Der Fortschritt hängt an **Touren**:
   - Erledigte Touren stehen in `hwn-tours-done`.
@@ -59,7 +71,7 @@ Stand: 05.10.2026
 3. Nach der Wanderung hakt man „Meine Runde“ ab. 129 und 130 sind gesammelt, auf der Karte grau. „km/Hm zurückgelegt“ kommt aus dem Track der eigenen Tour.
 4. A1 zeigt „2 von 4 Stempeln offen“. „km offen“ enthält nur die Restrunde.
 
-## Niveau-Berechnung (umgesetzt am 05.10.2026, gilt für alle künftigen Touren)
+## ✅ Niveau-Berechnung (umgesetzt am 05.10.2026, gilt für alle künftigen Touren)
 
 Das Niveau ist kein gespeicherter Wert mehr. `tours.json` hat kein Feld `level`. Die App berechnet es mit `tourLevel()` in `tourplan.js` aus den aktuellen Werten (`tourFigures()`):
 
@@ -93,7 +105,7 @@ Das Niveau ist kein gespeicherter Wert mehr. `tours.json` hat kein Feld `level`.
 
 Jeder Schritt ist für sich nutzbar und testbar.
 
-### Schritt 1: Fortschritt pro Stempel und Kennzeichnung als Vorschlag
+### ✅ Schritt 1: Fortschritt pro Stempel und Kennzeichnung als Vorschlag
 
 **Status: umgesetzt am 05.10.2026.** Abweichungen von der ursprünglichen Planung:
 - Die Rückfrage beim Entfernen des Hakens ist entfallen. Jeder Stempel gehört zu genau einem Vorschlag, der Haken kann also keine Stempel anderer Touren entfernen.
@@ -137,7 +149,24 @@ Jeder Schritt ist für sich nutzbar und testbar.
 - Teilweise erledigte Tour, Tour-Haken setzen und entfernen.
 - Import einer v2-Datei (`draft/hwn-fortschritt.json`), Export v3.
 
-### Schritt 1b: Teilvorschläge für lange Touren
+### ✅ Schritt 1b: Teilvorschläge für lange Touren
+
+**Status: umgesetzt am 05.10.2026.**
+- `scripts/suggest-tour-parts.js` hat die Teilungen berechnet und mit `--write` in `tours.json` geschrieben. Geteilt sind **A2, A5, B4, D2, D7, E3 und G2**, je in Teil a und b.
+- Die Platzhalter liegen in `draft/tours/<ID>a.gpx` / `<ID>b.gpx`.
+- Die Teile haben noch **keine Tracks**. Ihre Werte sind geschätzt („~“, „≥“), deshalb zeigt „km offen“ ein „~“, sobald ein Teil ohne Track gezählt wird. Nächster Handgriff: Für jeden Teil „Auf Wanderwege legen“ ausführen oder einen Komoot-Track als `src/data/tours/<ID>a.gpx` ablegen.
+
+Abweichungen von der ursprünglichen Planung:
+- Die Kriterien im Skript sind gegenüber dem Entwurf angepasst:
+  - Ein Teil darf kürzer als 5 km sein, wenn er mindestens 3 km vom anderen Teil entfernt in einem eigenen Gebiet liegt.
+  - Dadurch kommen A5 (Goslar-Teil) und B4 (18, 156) dazu.
+  - B2 fällt wegen 5 km Mehrweg heraus.
+  - B3 ist ausdrücklich ausgenommen (`NO_SPLIT`, Brockenbahn).
+- Die Teile sind auf der Karte nicht über die Strichart unterscheidbar, denn gestrichelt bedeutet schon „erledigt“. Stattdessen wird Teil b in einer helleren Regionsfarbe gezeichnet, und die Stempelnummern auf der Karte tragen den Teil-Buchstaben (a1, a2, b1, …).
+- Die Teil-Zeilen stehen in der Liste immer unter ihrem Vorschlag. Die Kennzahlen der nicht gewählten Variante sind blass.
+- Wählt man einen Teil aus (Liste, Karte, Detail), wechselt der Vorschlag automatisch auf „In zwei Teilen“.
+
+**Ursprüngliche Planung:**
 
 **Ziel:** Lange Vorschläge lassen sich wahlweise komplett oder in zwei Teilen gehen. Der Vorschlag bleibt bestehen, die Teile sind eine Variante.
 
@@ -161,20 +190,26 @@ Jeder Schritt ist für sich nutzbar und testbar.
 - Gesucht wird die beste Teilung der Stempelreihenfolge in zwei zusammenhängende Gruppen. Ziel ist eine möglichst kurze längere Hälfte bei wenig Mehrweg.
 - Aufgenommen wird eine Teilung nur, wenn jeder Teil mindestens 2 Stempel und rund 8 km hat und der Mehrweg höchstens ~3 km beträgt.
 - Das Skript schreibt `parts` in `tours.json` und die Platzhalter-GPX nach `draft/tours/<ID>a.gpx` / `<ID>b.gpx`.
-- Ergebnis der Analyse vom 05.10.2026 (km geschätzt, auf den Track-Faktor der Tour hochgerechnet):
+- Ergebnis des Skripts vom 05.10.2026. Die km sind geschätzt und auf den Track-Faktor der Tour hochgerechnet; „Abstand“ ist die kürzeste Entfernung zwischen den beiden Teilen.
 
-| Tour | Teil a | Teil b | Empfehlung |
-|---|---|---|---|
-| A5 | 117, 118, 116, 119 Okertal (~10 km) | 91, 114 Goslar (~3–5 km) | teilen, zwei getrennte Gebiete 4 km auseinander |
-| D7 | 64, 63, 62, 65 (~14 km) | 70, 68, 67, 69, 66 (~16 km) | teilen, 9 Stempel, längste Tour |
-| B2 | 169, 1, 2, 3 (~15 km) | 4, 170, 122, 121 (~15 km) | optional, ~5 km Mehrweg |
-| A2 | 142, 106, 107 (~12 km) | 103, 104, 102 (~14 km) | optional, ~2,5 km Mehrweg |
-| D2, E3, G2 | je ~10 km | je ~10 km | optional, kaum Mehrweg |
+| Tour | Teil a | Teil b | Mehrweg | Abstand | Ergebnis |
+|---|---|---|---|---|---|
+| A2 | 142, 106, 107 (~11,9 km) | 103, 104, 102 (~14,0 km) | 2,4 km | 2,3 km | geteilt |
+| A5 | 117, 118, 116, 119 Okertal (~10,2 km) | 91, 114 Goslar (~2,2 km) | −13,7 km | 4,0 km | geteilt (eigene Gebiete) |
+| B4 | 22, 15, 17, 13 (~13,5 km) | 18, 156 (~3,2 km) | −6,2 km | 3,4 km | geteilt (eigene Gebiete) |
+| D2 | 33, 32, 31 (~10,3 km) | 35, 36, 34 (~9,7 km) | −1,4 km | 2,2 km | geteilt |
+| D7 | 64, 63, 62, 65 (~14,4 km) | 70, 68, 67, 69, 66 (~16,2 km) | −1,9 km | 1,4 km | geteilt |
+| E3 | 162, 163, 160 (~10,5 km) | 58, 165, 90, 164 (~9,4 km) | −1,9 km | 1,4 km | geteilt |
+| G2 | 99, 98, 218 (~11,6 km) | 92, 93, 95 (~10,7 km) | −1,2 km | 2,2 km | geteilt |
+| B2 | 169, 1, 2, 3 (~15,5 km) | 4, 170, 122, 121 (~14,9 km) | 5,2 km | 1,8 km | nicht geteilt (Mehrweg) |
+| C4 | 151, 101 (~2,2 km) | 150, 115, 152 (~13,4 km) | −4,9 km | 2,8 km | nicht geteilt (Mini-Teil ohne eigenes Gebiet) |
+
+- Ein negativer Mehrweg heißt: Die beiden Runden sind zusammen kürzer als die ganze Tour, dafür fährt man zwischen ihnen mit dem Auto.
 
 **Nicht teilen:**
 - C5 (2 Stempel) und C7 (3 Stempel mit 6 bis 7 km Abstand): in Komoot prüfen.
 - B3 (Brocken): eher als Streckenwanderung mit der Brockenbahn.
-- B4: Der zweite Teil hätte nur ~3 km; 18 und 156 besser als Abstecher mit dem Auto.
+- ~~B4: 18 und 156 besser als Abstecher mit dem Auto.~~ Inzwischen doch geteilt: Der kurze Teil liegt 3,4 km entfernt in einem eigenen Gebiet.
 
 **Erst prüfen:** Bei D7, A5, C5, B3 und B2 ist der ORS-Track 1,3- bis 1,6-mal so lang wie die Schätzung. Das deutet auf Umwege hin. Diese Touren vor dem Teilen in Komoot prüfen.
 
@@ -291,6 +326,6 @@ Jeder Schritt ist für sich nutzbar und testbar.
 
 ## Nicht im Umfang
 
-- Änderungen an `tours.json` selbst (Neuaufteilung der Vorschläge).
+- Neuaufteilung der Vorschläge selbst (die Teilvorschläge aus Schritt 1b ergänzen sie nur).
 - Synchronisation zwischen Geräten. Das bleibt bei Export/Import.
 - Build-Schritt oder npm-Abhängigkeiten. Es bleibt bei reinen ES-Modulen.

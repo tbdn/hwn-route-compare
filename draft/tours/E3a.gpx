@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour E3a (Platzhalter)</name>
+        <desc>Südwestharz: Walkenried, Zorge, Benneckenstein · Stempel HWN162, HWN163, HWN160 · Luftlinie, geschätzt ca. 9,5 km / mind. 232 Hm</desc>
+    </metadata>
+    <wpt lat="51.62819" lon="10.58487">
+        <ele>380</ele>
+        <name>1. HWN162 Kreuztalsklippe</name>
+        <desc>Kreuztalsklippe</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6532667" lon="10.6008834">
+        <ele>612</ele>
+        <name>2. HWN163 Gipfelblick am Kaiserweg</name>
+        <desc>Gipfelblick am Kaiserweg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6422562" lon="10.610767">
+        <ele>549</ele>
+        <name>3. HWN160 Helenenruh</name>
+        <desc>Helenenruh</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour E3a (Platzhalter)</name>
+        <desc>Südwestharz: Walkenried, Zorge, Benneckenstein · Stempel HWN162, HWN163, HWN160 · Luftlinie, geschätzt ca. 9,5 km / mind. 232 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.62819" lon="10.58487"><ele>380</ele></trkpt>
+            <trkpt lat="51.6532667" lon="10.6008834"><ele>612</ele></trkpt>
+            <trkpt lat="51.6422562" lon="10.610767"><ele>549</ele></trkpt>
+            <trkpt lat="51.62819" lon="10.58487"><ele>380</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour A5a (Platzhalter)</name>
+        <desc>Nordwestharz: Goslar, Okertal, Clausthal, Bad Grund · Stempel HWN117, HWN118, HWN116, HWN119 · Luftlinie, geschätzt ca. 7 km / mind. 307 Hm</desc>
+    </metadata>
+    <wpt lat="51.8718329" lon="10.48139">
+        <ele>479</ele>
+        <name>1. HWN117 Treppenstein</name>
+        <desc>Treppenstein</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.868798" lon="10.485786">
+        <ele>595</ele>
+        <name>2. HWN118 Kästehaus</name>
+        <desc>Kästehaus</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8672478" lon="10.4740782">
+        <ele>342</ele>
+        <name>3. HWN116 Verlobungsinsel</name>
+        <desc>Verlobungsinsel in der Oker</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8541166" lon="10.4678667">
+        <ele>533</ele>
+        <name>4. HWN119 Hallesche Hütte</name>
+        <desc>Hallesche Hütte an den Ahrensberger Klippen</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour A5a (Platzhalter)</name>
+        <desc>Nordwestharz: Goslar, Okertal, Clausthal, Bad Grund · Stempel HWN117, HWN118, HWN116, HWN119 · Luftlinie, geschätzt ca. 7 km / mind. 307 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.8718329" lon="10.48139"><ele>479</ele></trkpt>
+            <trkpt lat="51.868798" lon="10.485786"><ele>595</ele></trkpt>
+            <trkpt lat="51.8672478" lon="10.4740782"><ele>342</ele></trkpt>
+            <trkpt lat="51.8541166" lon="10.4678667"><ele>533</ele></trkpt>
+            <trkpt lat="51.8718329" lon="10.48139"><ele>479</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

@@ -53,7 +53,8 @@ data/
 
 scripts/
 ├── convert-gpx-to-json.js  # Node.js script to regenerate src/data/stamps.geojson
-└── generate-tour-drafts.js # Placeholder GPX per tour → draft/tours/<ID>.gpx (straight-line loop + stamp waypoints)
+├── generate-tour-drafts.js # Placeholder GPX per tour and part tour → draft/tours/<ID>.gpx (straight-line loop + stamp waypoints)
+└── suggest-tour-parts.js   # Splits long tours into two part tours (`parts` in tours.json, --write)
 ```
 
 ### Data Flow
@@ -136,6 +137,8 @@ Users can select stamps and add them to the route:
 - Progress is stored per stamp in localStorage (`hwn-stamps-collected`); a tour is done when all its stamps are collected. The tour checkbox sets/clears all of its stamps (indeterminate when partial), single stamps are toggled in the detail list. Legacy keys `hwn-tours-done` / `hwn-stamps-extra` are only read once for migration
 - A track (planned or walked) never changes progress
 - Season tags (ganzjährig/Apr–Nov/Mai–Okt) are computed from `tourFigures().maxEle` (`SEASON_TAGS`); `tours.json` `tags` only holds thematic hints
+- Part tours: long tours have `parts` in `tours.json` (ids like `A5a`, own stamp order and estimate). They are "units" like tours (tracks `data/tours/A5a.gpx`, uploads, Komoot links keyed by part id). Per tour the variant whole/parts is stored in localStorage (`hwn-tour-variants`) and exported as `variants`; map, region sums and "km/Hm offen/zurückgelegt" use the chosen variant (`shownUnits()`)
+- `scripts/suggest-tour-parts.js` computes the splits (≥30 Leistungs-km, see thresholds in the script) and with `--write` updates `parts` in `tours.json`; `generate-tour-drafts.js` also writes drafts for parts
 - Plan for own tours, part tours and next steps: `docs/plan-eigene-touren.md`
 - "Auf Wanderwege legen" routes the closed stamp loop via ORS GeoJSON endpoint (`calculateHikingTrack`), converts it with `coordinatesToGPX` and stores it as an uploaded track
 - "Im Routenabgleich prüfen" dispatches `hwn:compare-route` ({gpx, name}) on `document`; `app.js` switches to the compare tab and runs the comparison
