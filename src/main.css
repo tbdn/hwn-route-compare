@@ -1466,3 +1466,7 @@ footer a{color:var(--paper-2);}
 .review-list .hint{ margin:0; display:block; }
 .review-mark{ color:#C26A00; }
 .tour-legend .legend-line.review{ border-top:6px solid rgba(194, 106, 0, .5); }
+
+/* Delete all uploaded tracks (development helper next to export/import) */
+.uploads-confirm{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:13px; }
+.uploads-confirm .selection-btn{ padding:6px 12px; }

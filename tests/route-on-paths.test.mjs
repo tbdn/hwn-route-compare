@@ -53,3 +53,26 @@ test('single stamps cannot be routed', async () => {
     await tick();
     assert.equal($('#trackRoute'), null);
 });
+
+test('all uploaded tracks can be deleted at once; the project files apply again', async () => {
+    assert.equal($('#uploadsClear').hidden, false);
+    assert.equal(text($('#uploadsClear')), 'Browser-Tracks löschen (1)');
+
+    $('#uploadsClear').click();
+    assert.equal($('#uploadsConfirm').hidden, false);
+    assert.match(text($('#uploadsConfirmText')), /^1 im Browser hinterlegten Track löschen\? Projektdateien, eigene Touren, Komoot-Links und Fortschritt bleiben\./);
+    $('#uploadsClearNo').click();
+    assert.equal($('#uploadsConfirm').hidden, true);
+    assert.deepEqual(Object.keys(await loadUploadedTracks()), ['A2']);
+
+    $('#uploadsClear').click();
+    $('#uploadsClearYes').click();
+    await tick(150);
+    assert.deepEqual(await loadUploadedTracks(), {});
+    assert.equal($('#progressStatus').textContent, '1 Browser-Track gelöscht. Es gelten wieder die Projektdateien.');
+    assert.equal($('#uploadsClear').hidden, true);
+
+    row('A2').click();
+    await tick();
+    assert.match(text($('#tourDetail .track-source')), /· Projektdatei$/);
+});

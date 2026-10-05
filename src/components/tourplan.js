@@ -619,6 +619,7 @@ export async function showTourPlan(stamps) {
 
     initTourMap();
     initProgressTransfer();
+    initUploadsClear();
     initOwnTours();
     renderChips();
     renderList();
@@ -659,6 +660,7 @@ function refreshTracks() {
     });
 
     computeReviews();
+    updateUploadsButton();
     updateLines();
     renderChips();
     renderList();
@@ -2029,6 +2031,39 @@ async function importProgress(text) {
     if (ownCount !== null) msg += `, ${ownCount} eigene ${ownCount === 1 ? 'Tour' : 'Touren'}`;
     msg += '.';
     setTransferStatus(unknownTours.length ? `${msg} Unbekannte Touren ignoriert: ${unknownTours.join(', ')}` : msg);
+}
+
+// Uploaded tracks override the project files; during development they hide changes to those files
+function updateUploadsButton() {
+    const count = Object.keys(uploadedTracks).length;
+    el('uploadsClear').hidden = !count;
+    el('uploadsClear').textContent = `Browser-Tracks löschen (${count})`;
+    if (!count) el('uploadsConfirm').hidden = true;
+}
+
+function initUploadsClear() {
+    el('uploadsClear').addEventListener('click', () => {
+        const count = Object.keys(uploadedTracks).length;
+        el('uploadsConfirmText').textContent = `${count} im Browser hinterlegte${count === 1 ? 'n Track' : ' Tracks'} löschen? `
+            + 'Projektdateien, eigene Touren, Komoot-Links und Fortschritt bleiben.';
+        el('uploadsConfirm').hidden = false;
+    });
+    el('uploadsClearNo').addEventListener('click', () => {
+        el('uploadsConfirm').hidden = true;
+    });
+    el('uploadsClearYes').addEventListener('click', async () => {
+        const count = Object.keys(uploadedTracks).length;
+        try {
+            await clearUploadedTracks();
+        } catch {
+            setTransferStatus('Browser-Tracks konnten nicht gelöscht werden.', true);
+            return;
+        }
+        uploadedTracks = {};
+        el('uploadsConfirm').hidden = true;
+        setTransferStatus(`${count} Browser-Track${count === 1 ? '' : 's'} gelöscht. Es gelten wieder die Projektdateien.`);
+        refreshTracks();
+    });
 }
 
 function initProgressTransfer() {
