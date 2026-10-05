@@ -1766,7 +1766,25 @@ footer a{color:var(--paper-2);}
     margin:-4px 0 18px;
     box-shadow:0 6px 18px rgba(0,0,0,0.22);
 }
-.badge-head{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; margin-bottom:12px; }
+.badge-head{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:6px 14px;
+    cursor:pointer;
+    list-style:none;
+}
+.badge-head::-webkit-details-marker{ display:none; }
+.badge-head::before{
+    content:"▸";
+    align-self:center;
+    font-size:12px;
+    color:#5B5470;
+    transition:transform .15s ease;
+}
+.pass-badges[open] > .badge-head{ margin-bottom:12px; }
+.pass-badges[open] > .badge-head::before{ transform:rotate(90deg); }
+.badge-head:focus-visible{ outline:2px solid var(--ink-light); outline-offset:4px; border-radius:4px; }
 .pass-badges h3{
     font-family:'Fraunces', serif;
     font-size:18px;

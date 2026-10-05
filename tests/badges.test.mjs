@@ -94,6 +94,19 @@ test('"Meine Stempel" shows the ladder, the next level and the collections', asy
     assert.match(text(row.querySelector('.badge-theme-count')), new RegExp(`^${got} / ${nph.stamps.length}`));
 });
 
+test('the badge box folds in and out and remembers it', async () => {
+    const box = $('#passBadges');
+    // linkedom has no details.open property; the attribute is what the browser toggles
+    assert.ok(box.hasAttribute('open'), 'open by default');
+    box.removeAttribute('open');
+    box.dispatchEvent(new Event('toggle'));
+    assert.equal(localStorage.getItem('hwn-badges-open'), '0');
+    assert.equal(text($('#passBadgesNext')), 'noch 50 Stempel bis Harzer Kaiserrucksack', 'next level stays visible');
+    box.setAttribute('open', '');
+    box.dispatchEvent(new Event('toggle'));
+    assert.equal(localStorage.getItem('hwn-badges-open'), '1');
+});
+
 test('a collection filters the grid', () => {
     const grenzweg = badges.themes.find(t => t.id === 'grenzweg');
     $('.badge-theme-name[data-theme="grenzweg"]').click();

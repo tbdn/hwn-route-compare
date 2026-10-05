@@ -200,7 +200,13 @@
 
     <section id="viewStamps" role="tabpanel" aria-labelledby="tabStamps" hidden>
         <div class="route-comparison tour-stats" id="passStats"></div>
-        <section class="pass-badges" id="passBadges" aria-label="Abzeichen" hidden></section>
+        <details class="pass-badges" id="passBadges" open hidden>
+            <summary class="badge-head">
+                <h3>Abzeichen</h3>
+                <span class="badge-next" id="passBadgesNext"></span>
+            </summary>
+            <div id="passBadgesBody"></div>
+        </details>
 
         <form class="pass-bulk" id="passBulk">
             <label class="progress-label" for="passBulkInput">Mehrere eintragen</label>

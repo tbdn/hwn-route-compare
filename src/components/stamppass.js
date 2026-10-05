@@ -10,6 +10,7 @@ import {
 import { loadBadges, badgeProgress, remainingText } from "../utils/badges.js";
 
 const el = id => document.getElementById(id);
+const BADGES_OPEN_STORAGE = 'hwn-badges-open';   // '0' when the badge box was folded in (per browser)
 
 let initialized = false;
 let allStamps = [];
@@ -104,7 +105,20 @@ function bindControls() {
         theme = el('passTheme').value;
         applyFilter();
     });
-    el('passBadges').addEventListener('click', e => {
+    // Folded in or out stays as chosen; the summary keeps the next level visible
+    try {
+        if (localStorage.getItem(BADGES_OPEN_STORAGE) === '0') el('passBadges').removeAttribute('open');
+    } catch {
+        // storage unavailable: open
+    }
+    el('passBadges').addEventListener('toggle', () => {
+        try {
+            localStorage.setItem(BADGES_OPEN_STORAGE, el('passBadges').hasAttribute('open') ? '1' : '0');
+        } catch {
+            // ignore
+        }
+    });
+    el('passBadgesBody').addEventListener('click', e => {
         const b = e.target.closest('[data-theme]');
         if (!b) return;
         showTheme(b.dataset.theme);
@@ -207,11 +221,8 @@ function renderBadges() {
                 ${t.note ? `<span class="badge-theme-note">${escapeHtml(t.note)}</span>` : ''}
             </li>`).join('');
     box.hidden = false;
-    box.innerHTML = `
-        <div class="badge-head">
-            <h3>Abzeichen</h3>
-            <span class="badge-next">${progress.next ? escapeHtml(remainingText(progress.next)) : 'Alle Leistungsabzeichen erreicht'}</span>
-        </div>
+    el('passBadgesNext').textContent = progress.next ? remainingText(progress.next) : 'Alle Leistungsabzeichen erreicht';
+    el('passBadgesBody').innerHTML = `
         <ol class="badge-ladder">${levels}</ol>
         <h3 class="badge-sub">Sammlungen</h3>
         <ul class="badge-themes">${themes}</ul>
