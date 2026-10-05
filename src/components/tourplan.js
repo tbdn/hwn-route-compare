@@ -48,6 +48,11 @@ const OWN_ID = /^own-[\w-]{1,40}$/;
 // Filter chip for suggestions with something to check
 const REVIEW_FILTER = 'review';
 const REVIEW_COLOR = '#C26A00';
+// Filter chip for what is planned: open units with a Komoot (or other) track and planned own tours
+const PLANNED_FILTER = 'planned';
+const PLANNED_COLOR = '#2E6B8A';
+// Filters by state rather than region
+const STATE_FILTERS = new Set([REVIEW_FILTER, PLANNED_FILTER]);
 // When an OpenRouteService track is worth checking (e.g. in Komoot)
 const REVIEW_RULES = {
     legFactor: 3,        // a leg between two stamps is this many times the straight line ...
@@ -108,7 +113,8 @@ function escapeHtml(str) {
 }
 
 const fmt1 = n => n.toFixed(1).replace('.', ',');
-const color = code => code === OWN_REGION ? OWN_COLOR : code === REVIEW_FILTER ? REVIEW_COLOR : REGION_COLORS[code] || '#3D3563';
+const color = code => code === OWN_REGION ? OWN_COLOR : code === REVIEW_FILTER ? REVIEW_COLOR : code === PLANNED_FILTER ? PLANNED_COLOR
+    : REGION_COLORS[code] || '#3D3563';
 
 function lighten(hex, amount) {
     const n = parseInt(hex.slice(1), 16);
@@ -657,6 +663,9 @@ function matchVerdict(m) {
     return 'differs';
 }
 
+// Planned to walk: a planned own tour, or an open suggestion or part (chosen variant) with a checked track
+const isPlannedUnit = unit => isShown(unit) && !isDone(unit) && (unit.own || hasCheckedTrack(unit));
+
 const plannedCount = (planning = stampPlanningMap()) => [...planning.values()].filter(p => p.status === 'planned').length;
 
 // What is left of a suggestion: stamps neither collected nor planned in an own tour (in the suggestion's order)
@@ -753,7 +762,8 @@ function tourLevel(tour, f = tourFigures(tour)) {
 function levelHtml(tour, f = tourFigures(tour)) {
     const { level, effort, estimated } = tourLevel(tour, f);
     const title = `${fmt1(effort)} Leistungs-km (km + Hm/100)${estimated ? ', aus geschätzten Werten' : ', aus dem GPX-Track'}`;
-    return `<span class="level lv-${level}" title="${title}">${estimated ? '~' : ''}${level}</span>`;
+    return `<span class="level lv-${level}" title="${title}">${estimated ? '~' : ''}${level}</span>`
+        + ` <span class="effort" title="Leistungs-km = km + Höhenmeter / 100: so anstrengend wie diese Strecke in der Ebene">${estimated ? '~' : ''}${fmt1(effort)} Leistungs-km</span>`;
 }
 
 // Season tag from the current highest point first, then the tour's own hints from tours.json
@@ -1057,6 +1067,7 @@ function openReview(unit) {
 function matchesFilter(unit) {
     if (!regionFilter || !unit) return true;
     if (regionFilter === REVIEW_FILTER) return openReview(unit).length > 0;
+    if (regionFilter === PLANNED_FILTER) return isPlannedUnit(unit);
     return unit.region === regionFilter;
 }
 
@@ -1186,7 +1197,7 @@ function renderChips() {
         b.className = 'region-chip';
         b.dataset.code = code || '';
         b.style.setProperty('--c', code ? color(code) : 'var(--ink)');
-        b.innerHTML = (code === OWN_REGION ? '<i></i>' : code === REVIEW_FILTER ? '<span class="review-mark" aria-hidden="true">⚠</span> '
+        b.innerHTML = (code === OWN_REGION || code === PLANNED_FILTER ? '<i></i>' : code === REVIEW_FILTER ? '<span class="review-mark" aria-hidden="true">⚠</span> '
             : code ? `<i></i><span class="mono">${code}</span> ` : '') + `<span class="chip-label">${escapeHtml(label)}</span>`;
         b.addEventListener('click', () => {
             regionFilter = code;
@@ -1197,6 +1208,7 @@ function renderChips() {
         chips.appendChild(b);
     };
     make(null, 'Alle Regionen');
+    make(PLANNED_FILTER, 'Geplant');
     if (reviews.size) make(REVIEW_FILTER, 'Zu prüfen');
     if (ownTours.length) make(OWN_REGION, 'Eigene Touren');
     plan.regions.forEach(r => make(r.code, shortRegionName(r.code)));
@@ -1374,6 +1386,7 @@ function render() {
         b.setAttribute('aria-pressed', String((b.dataset.code || null) === regionFilter)));
     const reviewChip = el('tourChips').querySelector(`[data-code="${REVIEW_FILTER}"] .chip-label`);
     if (reviewChip) reviewChip.textContent = `Zu prüfen (${units.filter(u => openReview(u).length).length})`;
+    el('tourChips').querySelector(`[data-code="${PLANNED_FILTER}"] .chip-label`).textContent = `Geplant (${units.filter(isPlannedUnit).length})`;
 
     const collected = collectedStamps();
     const owners = ownTourStampOwners();
@@ -1409,11 +1422,13 @@ function render() {
     const selectedStamps = new Set(shownUnits().filter(isSelected).flatMap(u => u.stamps));
     const ownStamps = new Set(ownUnits().flatMap(u => u.stamps));
     const reviewStamps = new Set(units.filter(u => openReview(u).length).flatMap(u => u.stamps));
+    const plannedStamps = new Set(units.filter(isPlannedUnit).flatMap(u => u.stamps));
     plan.tours.forEach(tour => tour.stamps.forEach(n => {
         const m = stampMarkers.get(n);
         if (!m) return;
         const visible = !regionFilter || tour.region === regionFilter
-            || (regionFilter === OWN_REGION && ownStamps.has(n)) || (regionFilter === REVIEW_FILTER && reviewStamps.has(n));
+            || (regionFilter === OWN_REGION && ownStamps.has(n)) || (regionFilter === REVIEW_FILTER && reviewStamps.has(n))
+            || (regionFilter === PLANNED_FILTER && plannedStamps.has(n));
         const dim = !visible || (selectedId && !selectedStamps.has(n));
         const got = collected.has(n);
         m.setRadius(got ? 4 : 5.5);
@@ -1450,8 +1465,8 @@ function render() {
     el('tourList').querySelectorAll('.tour-row').forEach(row => {
         row.classList.toggle('selected', row.dataset.id === selectedId);
         const rowTour = unitById.get(row.dataset.id);
-        // The review filter shows only rows with something to check (and their suggestion)
-        row.hidden = regionFilter === REVIEW_FILTER && !matchesFilter(rowTour)
+        // State filters show only matching rows (and the suggestion of a matching part)
+        row.hidden = STATE_FILTERS.has(regionFilter) && !matchesFilter(rowTour)
             && !(rowTour.parts || []).some(matchesFilter);
         fillRowCells(row, rowTour, owners, planning);
         row.classList.toggle('done', isDone(rowTour));
@@ -1460,7 +1475,7 @@ function render() {
         if (cb) syncDoneCheckbox(cb, rowTour);
     });
     el('tourList').querySelectorAll('.region-card').forEach(sec => {
-        sec.hidden = regionFilter === REVIEW_FILTER
+        sec.hidden = STATE_FILTERS.has(regionFilter)
             ? ![...sec.querySelectorAll('.tour-row')].some(r => !r.hidden)
             : !!regionFilter && sec.dataset.code !== regionFilter;
     });
@@ -1569,6 +1584,23 @@ function renderDetail(tour) {
                 <button type="button" class="part-link" data-unit="${u.id}">${escapeHtml(unitLabel(u))}</button>
                 <span class="hint">${openReview(u).map(r => ({ note: 'Umbau', detour: 'Umweg', backtrack: 'Hin und zurück', longer: 'länger als geschätzt', parts: 'Teile kürzer' })[r.kind]).join(' · ')}</span>
             </li>`).join('')}</ul>`;
+        detail.querySelectorAll('[data-unit]').forEach(btn => btn.addEventListener('click', () => select(btn.dataset.unit)));
+        return;
+    }
+    if (!tour && regionFilter === PLANNED_FILTER) {
+        detail.style.setProperty('--c', PLANNED_COLOR);
+        const planned = units.filter(isPlannedUnit);
+        const stampCount = new Set(planned.flatMap(u => u.stamps.filter(n => !collected.has(n)))).size;
+        const km = planned.reduce((a, u) => a + tourFigures(u).km, 0);
+        detail.innerHTML = `
+            <h3>Geplant</h3>
+            <p class="hint">${planned.length
+                ? `${planned.length} ${planned.length === 1 ? 'Tour' : 'Touren'} mit ${stampCount} offenen Stempeln, zusammen etwa ${Math.round(km)} km.`
+                : 'Noch nichts geplant.'} Geplant sind eigene Touren, die noch nicht gelaufen sind, und offene Vorschläge mit Komoot-Track (oder Track aus einem anderen Dienst).</p>
+            ${planned.length ? `<ul class="review-list">${planned.map(u => `<li>
+                <button type="button" class="part-link" data-unit="${u.id}">${escapeHtml(unitLabel(u))}</button>
+                <span class="hint">${fmt1(tourFigures(u).km)} km · ${u.stamps.filter(n => !collected.has(n)).length} offene Stempel</span>
+            </li>`).join('')}</ul>` : ''}`;
         detail.querySelectorAll('[data-unit]').forEach(btn => btn.addEventListener('click', () => select(btn.dataset.unit)));
         return;
     }
