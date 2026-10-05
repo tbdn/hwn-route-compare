@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour E5 (Platzhalter)</name>
+        <desc>Südwestharz: Walkenried, Zorge, Benneckenstein · Stempel HWN097, HWN048, HWN047, HWN049, HWN050, HWN051 · Luftlinie, geschätzt ca. 18,7 km / mind. 156 Hm</desc>
+    </metadata>
+    <wpt lat="51.6325883" lon="10.7909633">
+        <ele>526</ele>
+        <name>1. HWN097 Ziegenalm Sophienhof</name>
+        <desc>Ziegenalm Sophienhof</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.641085" lon="10.757109">
+        <ele>556</ele>
+        <name>2. HWN048 Stierbergsteich</name>
+        <desc>Stierbergsteich</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.65288" lon="10.74871">
+        <ele>581</ele>
+        <name>3. HWN047 Oberharzblick am Buchenberg</name>
+        <desc>Oberharzblick am Buchenberg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6766016" lon="10.7553331">
+        <ele>525</ele>
+        <name>4. HWN049 Grüntal</name>
+        <desc>Grüntal</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.661033" lon="10.767211">
+        <ele>525</ele>
+        <name>5. HWN050 Walzenhütte</name>
+        <desc>Walzenhütte</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6564075" lon="10.7970617">
+        <ele>626</ele>
+        <name>6. HWN051 Carlsturm</name>
+        <desc>Carlsturm</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour E5 (Platzhalter)</name>
+        <desc>Südwestharz: Walkenried, Zorge, Benneckenstein · Stempel HWN097, HWN048, HWN047, HWN049, HWN050, HWN051 · Luftlinie, geschätzt ca. 18,7 km / mind. 156 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.6325883" lon="10.7909633"><ele>526</ele></trkpt>
+            <trkpt lat="51.641085" lon="10.757109"><ele>556</ele></trkpt>
+            <trkpt lat="51.65288" lon="10.74871"><ele>581</ele></trkpt>
+            <trkpt lat="51.6766016" lon="10.7553331"><ele>525</ele></trkpt>
+            <trkpt lat="51.661033" lon="10.767211"><ele>525</ele></trkpt>
+            <trkpt lat="51.6564075" lon="10.7970617"><ele>626</ele></trkpt>
+            <trkpt lat="51.6325883" lon="10.7909633"><ele>526</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

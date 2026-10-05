@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour C1 (Platzhalter)</name>
+        <desc>Oberharz: Altenau, St. Andreasberg, Bad Lauterberg · Stempel HWN131, HWN141, HWN139, HWN140 · Luftlinie, geschätzt ca. 16,3 km / mind. 100 Hm</desc>
+    </metadata>
+    <wpt lat="51.7920833" lon="10.2757333">
+        <ele>570</ele>
+        <name>1. HWN131 Kaysereiche</name>
+        <desc>Kaysereiche (Schutzhütte)</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.78475" lon="10.286183">
+        <ele>561</ele>
+        <name>2. HWN141 Oberen Hahnebalzer Teich</name>
+        <desc>Oberen Hahnebalzer Teich</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7663166" lon="10.3138334">
+        <ele>561</ele>
+        <name>3. HWN139 Kuckholzklippe</name>
+        <desc>Kuckholzklippe</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7462044" lon="10.3014774">
+        <ele>470</ele>
+        <name>4. HWN140 Eselplatz</name>
+        <desc>Eselplatz</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour C1 (Platzhalter)</name>
+        <desc>Oberharz: Altenau, St. Andreasberg, Bad Lauterberg · Stempel HWN131, HWN141, HWN139, HWN140 · Luftlinie, geschätzt ca. 16,3 km / mind. 100 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.7920833" lon="10.2757333"><ele>570</ele></trkpt>
+            <trkpt lat="51.78475" lon="10.286183"><ele>561</ele></trkpt>
+            <trkpt lat="51.7663166" lon="10.3138334"><ele>561</ele></trkpt>
+            <trkpt lat="51.7462044" lon="10.3014774"><ele>470</ele></trkpt>
+            <trkpt lat="51.7920833" lon="10.2757333"><ele>570</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

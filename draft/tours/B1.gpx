@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour B1 (Platzhalter)</name>
+        <desc>Brocken und Nationalpark Nord · Stempel HWN168, HWN136, HWN148, HWN075, HWN012 · Luftlinie, geschätzt ca. 21 km / mind. 297 Hm</desc>
+    </metadata>
+    <wpt lat="51.7813333" lon="10.58055">
+        <ele>878</ele>
+        <name>1. HWN168 Dreieckiger Pfahl</name>
+        <desc>Dreieckiger Pfahl</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7877167" lon="10.5864166">
+        <ele>899</ele>
+        <name>2. HWN136 Eckersprung</name>
+        <desc>Eckersprung</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.72311" lon="10.58188">
+        <ele>620</ele>
+        <name>3. HWN148 Naturmythenpfad</name>
+        <desc>Naturmythenpfad</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7373876" lon="10.5658869">
+        <ele>751</ele>
+        <name>4. HWN075 Hahnenkleeklippen</name>
+        <desc>Hahnenkleeklippen</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.76145" lon="10.5691333">
+        <ele>896</ele>
+        <name>5. HWN012 Achtermannshöhe</name>
+        <desc>Achtermannshöhe</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour B1 (Platzhalter)</name>
+        <desc>Brocken und Nationalpark Nord · Stempel HWN168, HWN136, HWN148, HWN075, HWN012 · Luftlinie, geschätzt ca. 21 km / mind. 297 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.7813333" lon="10.58055"><ele>878</ele></trkpt>
+            <trkpt lat="51.7877167" lon="10.5864166"><ele>899</ele></trkpt>
+            <trkpt lat="51.72311" lon="10.58188"><ele>620</ele></trkpt>
+            <trkpt lat="51.7373876" lon="10.5658869"><ele>751</ele></trkpt>
+            <trkpt lat="51.76145" lon="10.5691333"><ele>896</ele></trkpt>
+            <trkpt lat="51.7813333" lon="10.58055"><ele>878</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

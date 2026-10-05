@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour A6 (Platzhalter)</name>
+        <desc>Nordwestharz: Goslar, Okertal, Clausthal, Bad Grund · Stempel HWN108, HWN120 · Luftlinie, geschätzt ca. 16 km / mind. 102 Hm</desc>
+    </metadata>
+    <wpt lat="51.91484" lon="10.46775">
+        <ele>342</ele>
+        <name>1. HWN108 Sudmerberger Warte</name>
+        <desc>Sudmerberger Warte</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8791" lon="10.5272334">
+        <ele>444</ele>
+        <name>2. HWN120 Elfenstein</name>
+        <desc>Elfenstein</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour A6 (Platzhalter)</name>
+        <desc>Nordwestharz: Goslar, Okertal, Clausthal, Bad Grund · Stempel HWN108, HWN120 · Luftlinie, geschätzt ca. 16 km / mind. 102 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.91484" lon="10.46775"><ele>342</ele></trkpt>
+            <trkpt lat="51.8791" lon="10.5272334"><ele>444</ele></trkpt>
+            <trkpt lat="51.91484" lon="10.46775"><ele>342</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

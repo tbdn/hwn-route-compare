@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour G3 (Platzhalter)</name>
+        <desc>Südharz: Ilfeld, Neustadt, Stolberg · Stempel HWN214, HWN198 · Luftlinie, geschätzt ca. 18,5 km / mind. 36 Hm</desc>
+    </metadata>
+    <wpt lat="51.49778" lon="10.94777">
+        <ele>270</ele>
+        <name>1. HWN214 Reesbergdoline</name>
+        <desc>Reesbergdoline</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.5176833" lon="10.85805">
+        <ele>306</ele>
+        <name>2. HWN198 Glockensteine</name>
+        <desc>Glockensteine</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour G3 (Platzhalter)</name>
+        <desc>Südharz: Ilfeld, Neustadt, Stolberg · Stempel HWN214, HWN198 · Luftlinie, geschätzt ca. 18,5 km / mind. 36 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.49778" lon="10.94777"><ele>270</ele></trkpt>
+            <trkpt lat="51.5176833" lon="10.85805"><ele>306</ele></trkpt>
+            <trkpt lat="51.49778" lon="10.94777"><ele>270</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

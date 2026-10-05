@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour C7 (Platzhalter)</name>
+        <desc>Oberharz: Altenau, St. Andreasberg, Bad Lauterberg · Stempel HWN153, HWN123, HWN155 · Luftlinie, geschätzt ca. 21,8 km / mind. 196 Hm</desc>
+    </metadata>
+    <wpt lat="51.6884" lon="10.47205">
+        <ele>600</ele>
+        <name>1. HWN153 Goedeckenplatz</name>
+        <desc>Goedeckenplatz</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7162666" lon="10.5624">
+        <ele>488</ele>
+        <name>2. HWN123 Gasttätte  Rinderstall</name>
+        <desc>Gasttätte  Rinderstall</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.72925" lon="10.5380666">
+        <ele>684</ele>
+        <name>3. HWN155 Rehberger Grabenhaus</name>
+        <desc>Rehberger Grabenhaus</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour C7 (Platzhalter)</name>
+        <desc>Oberharz: Altenau, St. Andreasberg, Bad Lauterberg · Stempel HWN153, HWN123, HWN155 · Luftlinie, geschätzt ca. 21,8 km / mind. 196 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.6884" lon="10.47205"><ele>600</ele></trkpt>
+            <trkpt lat="51.7162666" lon="10.5624"><ele>488</ele></trkpt>
+            <trkpt lat="51.72925" lon="10.5380666"><ele>684</ele></trkpt>
+            <trkpt lat="51.6884" lon="10.47205"><ele>600</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

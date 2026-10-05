@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour F1 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN196, HWN184, HWN190, HWN191, HWN057, HWN189 · Luftlinie, geschätzt ca. 24,9 km / mind. 199 Hm</desc>
+    </metadata>
+    <wpt lat="51.6849332" lon="11.1123166">
+        <ele>416</ele>
+        <name>1. HWN196 Bremer Teich</name>
+        <desc>Bremer Teich</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6822186" lon="11.0958856">
+        <ele>466</ele>
+        <name>2. HWN184 Bärendenkmal</name>
+        <desc>Bärendenkmal</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6794833" lon="11.065">
+        <ele>490</ele>
+        <name>3. HWN190 Bergrat-Müller-Teich</name>
+        <desc>Bergrat-Müller-Teich</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6723832" lon="11.0364999">
+        <ele>431</ele>
+        <name>4. HWN191 Laubtalblick</name>
+        <desc>Laubtalblick</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6902" lon="10.98933">
+        <ele>455</ele>
+        <name>5. HWN057 Echowiese Allrode</name>
+        <desc>Echowiese Allrode</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6848834" lon="11.0792833">
+        <ele>556</ele>
+        <name>6. HWN189 Große Teufelsmühle</name>
+        <desc>Große Teufelsmühle</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour F1 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN196, HWN184, HWN190, HWN191, HWN057, HWN189 · Luftlinie, geschätzt ca. 24,9 km / mind. 199 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.6849332" lon="11.1123166"><ele>416</ele></trkpt>
+            <trkpt lat="51.6822186" lon="11.0958856"><ele>466</ele></trkpt>
+            <trkpt lat="51.6794833" lon="11.065"><ele>490</ele></trkpt>
+            <trkpt lat="51.6723832" lon="11.0364999"><ele>431</ele></trkpt>
+            <trkpt lat="51.6902" lon="10.98933"><ele>455</ele></trkpt>
+            <trkpt lat="51.6848834" lon="11.0792833"><ele>556</ele></trkpt>
+            <trkpt lat="51.6849332" lon="11.1123166"><ele>416</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

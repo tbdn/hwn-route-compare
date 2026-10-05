@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour H2 (Platzhalter)</name>
+        <desc>Mansfelder Land und Sangerhausen · Stempel HWN219, HWN193 · Luftlinie, geschätzt ca. 16,1 km / mind. 117 Hm</desc>
+    </metadata>
+    <wpt lat="51.56972" lon="11.19266">
+        <ele>300</ele>
+        <name>1. HWN219 Wippertalsperre</name>
+        <desc>Wippertalsperre Bank am Rundweg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.60795" lon="11.1367167">
+        <ele>417</ele>
+        <name>2. HWN193 Stahlquelle</name>
+        <desc>Stahlquelle</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour H2 (Platzhalter)</name>
+        <desc>Mansfelder Land und Sangerhausen · Stempel HWN219, HWN193 · Luftlinie, geschätzt ca. 16,1 km / mind. 117 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.56972" lon="11.19266"><ele>300</ele></trkpt>
+            <trkpt lat="51.60795" lon="11.1367167"><ele>417</ele></trkpt>
+            <trkpt lat="51.56972" lon="11.19266"><ele>300</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

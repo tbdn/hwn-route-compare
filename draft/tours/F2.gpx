@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour F2 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN188, HWN187, HWN073 · Luftlinie, geschätzt ca. 12,1 km / mind. 267 Hm</desc>
+    </metadata>
+    <wpt lat="51.7560306" lon="11.0873374">
+        <ele>141</ele>
+        <name>1. HWN188 Teufelsmauer Weddersleben</name>
+        <desc>Teufelsmauer Weddersleben</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.726318" lon="11.080713">
+        <ele>330</ele>
+        <name>2. HWN187 Lauenburg</name>
+        <desc>Lauenburg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7291176" lon="11.0571325">
+        <ele>408</ele>
+        <name>3. HWN073 Glockenstein</name>
+        <desc>Glockenstein</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour F2 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN188, HWN187, HWN073 · Luftlinie, geschätzt ca. 12,1 km / mind. 267 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.7560306" lon="11.0873374"><ele>141</ele></trkpt>
+            <trkpt lat="51.726318" lon="11.080713"><ele>330</ele></trkpt>
+            <trkpt lat="51.7291176" lon="11.0571325"><ele>408</ele></trkpt>
+            <trkpt lat="51.7560306" lon="11.0873374"><ele>141</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

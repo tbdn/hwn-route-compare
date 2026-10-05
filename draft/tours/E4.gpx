@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour E4 (Platzhalter)</name>
+        <desc>Südwestharz: Walkenried, Zorge, Benneckenstein · Stempel HWN157, HWN206, HWN045, HWN046 · Luftlinie, geschätzt ca. 20,7 km / mind. 170 Hm</desc>
+    </metadata>
+    <wpt lat="51.6907139" lon="10.5957357">
+        <ele>590</ele>
+        <name>1. HWN157 Kapellenfleck</name>
+        <desc>Kapellenfleck</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6753833" lon="10.6415832">
+        <ele>600</ele>
+        <name>2. HWN206 Hahnstein</name>
+        <desc>Hahnstein</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.65725" lon="10.6480667">
+        <ele>430</ele>
+        <name>3. HWN045 Dicke Tannen</name>
+        <desc>Dicke Tannen</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6936" lon="10.6667">
+        <ele>553</ele>
+        <name>4. HWN046 Grenzmuseum (Ring der Erinnerung)</name>
+        <desc>Grenzmuseum (Ring der Erinnerung)</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour E4 (Platzhalter)</name>
+        <desc>Südwestharz: Walkenried, Zorge, Benneckenstein · Stempel HWN157, HWN206, HWN045, HWN046 · Luftlinie, geschätzt ca. 20,7 km / mind. 170 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.6907139" lon="10.5957357"><ele>590</ele></trkpt>
+            <trkpt lat="51.6753833" lon="10.6415832"><ele>600</ele></trkpt>
+            <trkpt lat="51.65725" lon="10.6480667"><ele>430</ele></trkpt>
+            <trkpt lat="51.6936" lon="10.6667"><ele>553</ele></trkpt>
+            <trkpt lat="51.6907139" lon="10.5957357"><ele>590</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

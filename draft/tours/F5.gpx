@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour F5 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN203, HWN197, HWN179, HWN182 · Luftlinie, geschätzt ca. 15,9 km / mind. 274 Hm</desc>
+    </metadata>
+    <wpt lat="51.6791166" lon="11.2325665">
+        <ele>216</ele>
+        <name>1. HWN203 Mettenberg</name>
+        <desc>Schutzhütte am Mettenberg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6680675" lon="11.1931794">
+        <ele>378</ele>
+        <name>2. HWN197 Burgruine Anhalt</name>
+        <desc>Burgruine Anhalt</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.668571" lon="11.1658099">
+        <ele>258</ele>
+        <name>3. HWN179 IV. Friedrichshammer</name>
+        <desc>IV. Friedrichshammer</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.69141" lon="11.18253">
+        <ele>370</ele>
+        <name>4. HWN182 Schirm Ballenstedt</name>
+        <desc>Schirm Ballenstedt</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour F5 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN203, HWN197, HWN179, HWN182 · Luftlinie, geschätzt ca. 15,9 km / mind. 274 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.6791166" lon="11.2325665"><ele>216</ele></trkpt>
+            <trkpt lat="51.6680675" lon="11.1931794"><ele>378</ele></trkpt>
+            <trkpt lat="51.668571" lon="11.1658099"><ele>258</ele></trkpt>
+            <trkpt lat="51.69141" lon="11.18253"><ele>370</ele></trkpt>
+            <trkpt lat="51.6791166" lon="11.2325665"><ele>216</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

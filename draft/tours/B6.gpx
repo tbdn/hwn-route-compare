@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour B6 (Platzhalter)</name>
+        <desc>Brocken und Nationalpark Nord · Stempel HWN085, HWN029, HWN040, HWN174, HWN027 · Luftlinie, geschätzt ca. 20,2 km / mind. 300 Hm</desc>
+    </metadata>
+    <wpt lat="51.80851" lon="10.728537">
+        <ele>355</ele>
+        <name>1. HWN085 Wasserkunst Thumkuhlental</name>
+        <desc>Wasserkunst Thumkuhlental</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8044443" lon="10.7347223">
+        <ele>471</ele>
+        <name>2. HWN029 Elversstein</name>
+        <desc>Elversstein</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.751006" lon="10.753066">
+        <ele>448</ele>
+        <name>3. HWN040 Königshütter Wasserfall</name>
+        <desc>Königshütter Wasserfall</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.775363" lon="10.719201">
+        <ele>418</ele>
+        <name>4. HWN174 Hohnehof</name>
+        <desc>Hohnehof</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.796689" lon="10.7119521">
+        <ele>602</ele>
+        <name>5. HWN027 Ottofelsen</name>
+        <desc>Ottofelsen</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour B6 (Platzhalter)</name>
+        <desc>Brocken und Nationalpark Nord · Stempel HWN085, HWN029, HWN040, HWN174, HWN027 · Luftlinie, geschätzt ca. 20,2 km / mind. 300 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.80851" lon="10.728537"><ele>355</ele></trkpt>
+            <trkpt lat="51.8044443" lon="10.7347223"><ele>471</ele></trkpt>
+            <trkpt lat="51.751006" lon="10.753066"><ele>448</ele></trkpt>
+            <trkpt lat="51.775363" lon="10.719201"><ele>418</ele></trkpt>
+            <trkpt lat="51.796689" lon="10.7119521"><ele>602</ele></trkpt>
+            <trkpt lat="51.80851" lon="10.728537"><ele>355</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

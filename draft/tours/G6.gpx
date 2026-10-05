@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour G6 (Platzhalter)</name>
+        <desc>Südharz: Ilfeld, Neustadt, Stolberg · Stempel HWN215, HWN211, HWN173 · Luftlinie, geschätzt ca. 18,1 km / mind. 148 Hm</desc>
+    </metadata>
+    <wpt lat="51.5806143" lon="11.0055309">
+        <ele>564</ele>
+        <name>1. HWN215 Josephshöhe</name>
+        <desc>Josephshöhe (Auerberg)</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.60758" lon="11.01495">
+        <ele>450</ele>
+        <name>2. HWN211 Kiliansteiche</name>
+        <desc>Kiliansteiche</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.63769" lon="11.02274">
+        <ele>416</ele>
+        <name>3. HWN173 Hirschbüchenkopf</name>
+        <desc>Waldwiese Hirschbüchenkopf</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour G6 (Platzhalter)</name>
+        <desc>Südharz: Ilfeld, Neustadt, Stolberg · Stempel HWN215, HWN211, HWN173 · Luftlinie, geschätzt ca. 18,1 km / mind. 148 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.5806143" lon="11.0055309"><ele>564</ele></trkpt>
+            <trkpt lat="51.60758" lon="11.01495"><ele>450</ele></trkpt>
+            <trkpt lat="51.63769" lon="11.02274"><ele>416</ele></trkpt>
+            <trkpt lat="51.5806143" lon="11.0055309"><ele>564</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

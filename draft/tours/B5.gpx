@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour B5 (Platzhalter)</name>
+        <desc>Brocken und Nationalpark Nord · Stempel HWN005, HWN024, HWN028, HWN026, HWN025 · Luftlinie, geschätzt ca. 18,5 km / mind. 191 Hm</desc>
+    </metadata>
+    <wpt lat="51.8519155" lon="10.6545704">
+        <ele>523</ele>
+        <name>1. HWN005 Froschfelsen</name>
+        <desc>Froschfelsen</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8194709" lon="10.670517">
+        <ele>699</ele>
+        <name>2. HWN024 Wolfsklippe</name>
+        <desc>Wolfsklippe</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8049419" lon="10.6997721">
+        <ele>533</ele>
+        <name>3. HWN028 Gasthaus Steinerne Renne</name>
+        <desc>Gasthaus Steinerne Renne</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8178253" lon="10.7078852">
+        <ele>508</ele>
+        <name>4. HWN026 Mönchsbuche</name>
+        <desc>Mönchsbuche</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8252754" lon="10.6883964">
+        <ele>522</ele>
+        <name>5. HWN025 Oberförster-Koch-Denkmal</name>
+        <desc>Oberförster-Koch-Denkmal</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour B5 (Platzhalter)</name>
+        <desc>Brocken und Nationalpark Nord · Stempel HWN005, HWN024, HWN028, HWN026, HWN025 · Luftlinie, geschätzt ca. 18,5 km / mind. 191 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.8519155" lon="10.6545704"><ele>523</ele></trkpt>
+            <trkpt lat="51.8194709" lon="10.670517"><ele>699</ele></trkpt>
+            <trkpt lat="51.8049419" lon="10.6997721"><ele>533</ele></trkpt>
+            <trkpt lat="51.8178253" lon="10.7078852"><ele>508</ele></trkpt>
+            <trkpt lat="51.8252754" lon="10.6883964"><ele>522</ele></trkpt>
+            <trkpt lat="51.8519155" lon="10.6545704"><ele>523</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

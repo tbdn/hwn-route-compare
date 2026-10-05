@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour C6 (Platzhalter)</name>
+        <desc>Oberharz: Altenau, St. Andreasberg, Bad Lauterberg · Stempel HWN132, HWN149, HWN134, HWN135, HWN217, HWN221, HWN133 · Luftlinie, geschätzt ca. 21,5 km / mind. 405 Hm</desc>
+    </metadata>
+    <wpt lat="51.8059444" lon="10.4455833">
+        <ele>542</ele>
+        <name>1. HWN132 Schwarzenberg</name>
+        <desc>Schwarzenberg, Hütte Brockenblick</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.803286" lon="10.450144">
+        <ele>490</ele>
+        <name>2. HWN149 Mühlenberg Altenauer Herzweg</name>
+        <desc>Mühlenberg Altenauer Herzweg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.78544" lon="10.46754">
+        <ele>715</ele>
+        <name>3. HWN134 Gustav-Baumann-Weg</name>
+        <desc>Gustav-Baumann-Weg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.79044" lon="10.503696">
+        <ele>895</ele>
+        <name>4. HWN135 Wolfswarte</name>
+        <desc>Wolfswarte</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.77944" lon="10.53248">
+        <ele>740</ele>
+        <name>5. HWN217 Sonnenkappe</name>
+        <desc>Sonnenkappe
+Oderteich (NPH)</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8042" lon="10.5138167">
+        <ele>650</ele>
+        <name>6. HWN221 Jungfernklippe</name>
+        <desc>Jungfernklippe</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8034667" lon="10.4878333">
+        <ele>621</ele>
+        <name>7. HWN133 Förster-Ludwig-Platz</name>
+        <desc>Förster-Ludwig-Platz</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour C6 (Platzhalter)</name>
+        <desc>Oberharz: Altenau, St. Andreasberg, Bad Lauterberg · Stempel HWN132, HWN149, HWN134, HWN135, HWN217, HWN221, HWN133 · Luftlinie, geschätzt ca. 21,5 km / mind. 405 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.8059444" lon="10.4455833"><ele>542</ele></trkpt>
+            <trkpt lat="51.803286" lon="10.450144"><ele>490</ele></trkpt>
+            <trkpt lat="51.78544" lon="10.46754"><ele>715</ele></trkpt>
+            <trkpt lat="51.79044" lon="10.503696"><ele>895</ele></trkpt>
+            <trkpt lat="51.77944" lon="10.53248"><ele>740</ele></trkpt>
+            <trkpt lat="51.8042" lon="10.5138167"><ele>650</ele></trkpt>
+            <trkpt lat="51.8034667" lon="10.4878333"><ele>621</ele></trkpt>
+            <trkpt lat="51.8059444" lon="10.4455833"><ele>542</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

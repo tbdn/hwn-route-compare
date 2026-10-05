@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour F3 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN195, HWN177, HWN194, HWN175, HWN176 · Luftlinie, geschätzt ca. 19,6 km / mind. 57 Hm</desc>
+    </metadata>
+    <wpt lat="51.6609" lon="11.126267">
+        <ele>380</ele>
+        <name>1. HWN195 Köthener Hütte</name>
+        <desc>Köthener Hütte</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.64635" lon="11.1147833">
+        <ele>333</ele>
+        <name>2. HWN177 Verlobungsurne Alexisbad</name>
+        <desc>Verlobungsurne Alexisbad</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.6179146" lon="11.0813299">
+        <ele>350</ele>
+        <name>3. HWN194 Hellergrund</name>
+        <desc>Hellergrund</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.61185" lon="11.0651">
+        <ele>371</ele>
+        <name>4. HWN175 Schaubergwerk Glasebach Stollen</name>
+        <desc>Schaubergwerk Glasebach Stollen</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.632179" lon="11.082955">
+        <ele>361</ele>
+        <name>5. HWN176 Uhlenköpfe Hänichen</name>
+        <desc>Uhlenköpfe Hänichen</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour F3 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN195, HWN177, HWN194, HWN175, HWN176 · Luftlinie, geschätzt ca. 19,6 km / mind. 57 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.6609" lon="11.126267"><ele>380</ele></trkpt>
+            <trkpt lat="51.64635" lon="11.1147833"><ele>333</ele></trkpt>
+            <trkpt lat="51.6179146" lon="11.0813299"><ele>350</ele></trkpt>
+            <trkpt lat="51.61185" lon="11.0651"><ele>371</ele></trkpt>
+            <trkpt lat="51.632179" lon="11.082955"><ele>361</ele></trkpt>
+            <trkpt lat="51.6609" lon="11.126267"><ele>380</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

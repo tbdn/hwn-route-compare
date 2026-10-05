@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour D3 (Platzhalter)</name>
+        <desc>Bodetal, Blankenburg, Wernigerode, Rübeland · Stempel HWN087, HWN089, HWN088, HWN039, HWN038, HWN037 · Luftlinie, geschätzt ca. 20,8 km / mind. 94 Hm</desc>
+    </metadata>
+    <wpt lat="51.7873333" lon="10.8733167">
+        <ele>435</ele>
+        <name>1. HWN087 Volkmars Keller</name>
+        <desc>Volkmars Keller</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7597333" lon="10.8504667">
+        <ele>455</ele>
+        <name>2. HWN089 Schornsteinberg</name>
+        <desc>Schornsteinberg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7537" lon="10.8462167">
+        <ele>422</ele>
+        <name>3. HWN088 Hoher Kleef</name>
+        <desc>Aussichtspavillon Hoher Kleef</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7599656" lon="10.8018373">
+        <ele>483</ele>
+        <name>4. HWN039 Tagebau Felswerke</name>
+        <desc>Tagebau Felswerke</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7737968" lon="10.8167666">
+        <ele>496</ele>
+        <name>5. HWN038 Galgenberg</name>
+        <desc>Galgenberg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.791039" lon="10.818419">
+        <ele>480</ele>
+        <name>6. HWN037 Büchenberg</name>
+        <desc>Büchenberg</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour D3 (Platzhalter)</name>
+        <desc>Bodetal, Blankenburg, Wernigerode, Rübeland · Stempel HWN087, HWN089, HWN088, HWN039, HWN038, HWN037 · Luftlinie, geschätzt ca. 20,8 km / mind. 94 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.7873333" lon="10.8733167"><ele>435</ele></trkpt>
+            <trkpt lat="51.7597333" lon="10.8504667"><ele>455</ele></trkpt>
+            <trkpt lat="51.7537" lon="10.8462167"><ele>422</ele></trkpt>
+            <trkpt lat="51.7599656" lon="10.8018373"><ele>483</ele></trkpt>
+            <trkpt lat="51.7737968" lon="10.8167666"><ele>496</ele></trkpt>
+            <trkpt lat="51.791039" lon="10.818419"><ele>480</ele></trkpt>
+            <trkpt lat="51.7873333" lon="10.8733167"><ele>435</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

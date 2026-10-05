@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour D5 (Platzhalter)</name>
+        <desc>Bodetal, Blankenburg, Wernigerode, Rübeland · Stempel HWN081, HWN080, HWN082, HWN083, HWN084 · Luftlinie, geschätzt ca. 21,9 km / mind. 149 Hm</desc>
+    </metadata>
+    <wpt lat="51.8172055" lon="10.9658359">
+        <ele>181</ele>
+        <name>1. HWN081 Sandhöhlen im Heers</name>
+        <desc>Sandhöhlen im Heers</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8138622" lon="10.9583552">
+        <ele>262</ele>
+        <name>2. HWN080 Burgruine Regenstein</name>
+        <desc>Burgruine Regenstein</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8165332" lon="10.9488334">
+        <ele>219</ele>
+        <name>3. HWN082 Regenstein-Mühle</name>
+        <desc>Regenstein-Mühle</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.83771" lon="10.85929">
+        <ele>287</ele>
+        <name>4. HWN083 Austbergturm</name>
+        <desc>Austbergturm</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.8269262" lon="10.9113007">
+        <ele>257</ele>
+        <name>5. HWN084 Altenburg</name>
+        <desc>Altenburg (bei Heimburg)</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour D5 (Platzhalter)</name>
+        <desc>Bodetal, Blankenburg, Wernigerode, Rübeland · Stempel HWN081, HWN080, HWN082, HWN083, HWN084 · Luftlinie, geschätzt ca. 21,9 km / mind. 149 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.8172055" lon="10.9658359"><ele>181</ele></trkpt>
+            <trkpt lat="51.8138622" lon="10.9583552"><ele>262</ele></trkpt>
+            <trkpt lat="51.8165332" lon="10.9488334"><ele>219</ele></trkpt>
+            <trkpt lat="51.83771" lon="10.85929"><ele>287</ele></trkpt>
+            <trkpt lat="51.8269262" lon="10.9113007"><ele>257</ele></trkpt>
+            <trkpt lat="51.8172055" lon="10.9658359"><ele>181</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>

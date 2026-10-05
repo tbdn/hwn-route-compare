@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="HWN Route Compare"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>HWN Tour F4 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN181, HWN061, HWN183, HWN186, HWN185 · Luftlinie, geschätzt ca. 20,7 km / mind. 146 Hm</desc>
+    </metadata>
+    <wpt lat="51.71611" lon="11.21">
+        <ele>254</ele>
+        <name>1. HWN181 Forstmeister Tannen</name>
+        <desc>Forstmeister
+Tannen</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.71355" lon="11.17952">
+        <ele>328</ele>
+        <name>2. HWN061 Harzer Grauwacke Riede</name>
+        <desc>Harzer Grauwacke
+Riede</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.717686" lon="11.1308999">
+        <ele>295</ele>
+        <name>3. HWN183 Försterblick Gernrode</name>
+        <desc>Försterblick Gernrode</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.7163429" lon="11.1055779">
+        <ele>367</ele>
+        <name>4. HWN186 Anhaltinischer Saalstein</name>
+        <desc>Anhaltinischer Saalstein</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <wpt lat="51.72378" lon="11.11917">
+        <ele>268</ele>
+        <name>5. HWN185 Preußenturm</name>
+        <desc>Preußenturm</desc>
+        <sym>Flag</sym>
+    </wpt>
+    <trk>
+        <name>HWN Tour F4 (Platzhalter)</name>
+        <desc>Selketal und Unterharz · Stempel HWN181, HWN061, HWN183, HWN186, HWN185 · Luftlinie, geschätzt ca. 20,7 km / mind. 146 Hm</desc>
+        <trkseg>
+            <trkpt lat="51.71611" lon="11.21"><ele>254</ele></trkpt>
+            <trkpt lat="51.71355" lon="11.17952"><ele>328</ele></trkpt>
+            <trkpt lat="51.717686" lon="11.1308999"><ele>295</ele></trkpt>
+            <trkpt lat="51.7163429" lon="11.1055779"><ele>367</ele></trkpt>
+            <trkpt lat="51.72378" lon="11.11917"><ele>268</ele></trkpt>
+            <trkpt lat="51.71611" lon="11.21"><ele>254</ele></trkpt>
+        </trkseg>
+    </trk>
+</gpx>
