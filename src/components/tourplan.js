@@ -579,15 +579,27 @@ function render() {
 function renderStats() {
     const collected = collectedStamps();
     const openStamps = stampsByNumber.size - collected.size;
-    const openKm = plan.tours
-        .filter(t => !isDone(t))
-        .reduce((a, t) => a + tourFigures(t).km, 0);
+    const openList = plan.tours.filter(t => !isDone(t));
+    const openKm = openList.reduce((a, t) => a + tourFigures(t).km, 0);
+    // Estimated ascent only counts climbs between stamps, so it's a lower bound ("≥")
+    const openHm = openList.reduce((a, t) => a + tourFigures(t).ascent, 0);
+    const openHmEstimated = openList.some(t => !tracks.has(t.id));
+
+    // Walked distance: real track where there is one, otherwise the plan's estimate
+    const doneList = plan.tours.filter(isDone);
+    const walkedKm = doneList.reduce((a, t) => a + tourFigures(t).km, 0);
+    const walkedHm = doneList.reduce((a, t) => a + tourFigures(t).ascent, 0);
+    const walkedEstimated = doneList.some(t => !tracks.has(t.id));
+    const hm = n => Math.round(n).toLocaleString('de-DE');
 
     el('tourStats').innerHTML = `
         <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${collected.size}</div></div>
         <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${openStamps}</div></div>
         <div class="route-stat"><div class="label">Rundtouren</div><div class="value">${plan.tours.filter(t => !t.single).length}</div></div>
         <div class="route-stat"><div class="label">km offen</div><div class="value">${Math.round(openKm)}</div></div>
+        <div class="route-stat"${openHmEstimated ? ' title="Teilweise geschätzt (nur Anstiege von Stempel zu Stempel), echte Höhenmeter liegen meist höher"' : ''}><div class="label">Hm offen</div><div class="value">${openHmEstimated ? '≥' : ''}${hm(openHm)}</div></div>
+        <div class="route-stat"${walkedEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track"' : ''}><div class="label">km zurückgelegt</div><div class="value highlight">${walkedEstimated ? '~' : ''}${fmt1(walkedKm)}</div></div>
+        <div class="route-stat"${walkedEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track"' : ''}><div class="label">Hm zurückgelegt</div><div class="value highlight">${walkedEstimated ? '≥' : ''}${hm(walkedHm)}</div></div>
         <div class="route-stat"><div class="label">Touren erledigt</div><div class="value highlight">${plan.tours.filter(isDone).length}</div></div>`;
 }
 
