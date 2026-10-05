@@ -98,6 +98,6 @@ test('the Tourenplan opened afterwards shows the own tour and the uploaded track
     assert.match(text($('.own-card .tour-row')), /Meine Runde/);
     row('A1').click();
     await tick();
-    assert.match(text($('#tourDetail .track-source')), /^Geplanter Track/);
+    assert.match(text($('#tourDetail .track-source')), /^Track aus anderem Dienst: A1-komoot\.gpx · im Browser hinterlegt/);
     assert.equal($('#uploadsClear').hidden, false);
 });

@@ -28,6 +28,8 @@ function estimateKm(numbers) {
 }
 
 const startKm = openKm();
+// Komoot project tracks (B7, D8) already make their open stamps "verplant"
+const plannedBefore = Number(stats()['davon verplant'] || 0);
 const a1Km = parseDe(rowCells('A1').km);
 
 test('a planned own tour leaves only the rest of the suggestion', async () => {
@@ -35,7 +37,8 @@ test('a planned own tour leaves only the rest of the suggestion', async () => {
     $('#ownForm').dispatchEvent(new Event('submit'));
     await tick();
 
-    assert.equal(stats()['davon verplant'], '2');
+    assert.ok(plannedBefore > 0);
+    assert.equal(stats()['davon verplant'], String(plannedBefore + 2));
     assert.ok(Math.abs(parseDe(rowCells('A1').km) - estimateKm([105, 113])) < 0.1);
     assert.match(rowCells('A1').km, /^~/);
     assert.equal(row('A1').querySelectorAll('td')[2].getAttribute('title'), 'Rest: 105, 113 (geschätzt)');

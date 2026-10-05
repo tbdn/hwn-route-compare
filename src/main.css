@@ -1465,6 +1465,7 @@ footer a{color:var(--paper-2);}
 .rest-box .level{ margin-left:4px; }
 .seq-stop.got{ color:#9A958A; text-decoration:line-through; text-decoration-color:#9A958A; }
 .seq-stop.planned{ color:#3D2A6B; font-style:italic; }
+.seq-stop.planned.unchecked{ color:#5B5470; }
 .rest-tag{ background:#FBEBD9; color:#8A4B12; }
 
 /* Routenabgleich: save the compared route as an own tour */
@@ -1726,3 +1727,22 @@ footer a{color:var(--paper-2);}
     background:#FBF6EA;
     width:118px;
 }
+
+.pass-plan{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    font-weight:600;
+    padding:1px 6px;
+    border-radius:999px;
+    border:1px solid #3D2A6B;
+    background:#3D2A6B;
+    color:var(--paper);
+    cursor:pointer;
+}
+.pass-plan.unchecked{
+    background:transparent;
+    color:#5B5470;
+    border:1px dashed #5B5470;
+    font-weight:500;
+}
+.pass-stamp.planned .pass-number{ border-style:solid; border-color:#3D2A6B; }

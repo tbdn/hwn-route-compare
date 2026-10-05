@@ -48,10 +48,10 @@ test('the suggestion checkbox collects and removes all of its stamps', async () 
     assert.ok(tourById('A1').stamps.every(n => !collectedInStore().includes(n)));
 });
 
-test('project tracks from Komoot are labelled as project tracks', async () => {
+test('project tracks from Komoot are labelled as Komoot tracks', async () => {
     row('B7').click();
     await tick();
-    assert.match(text($('#tourDetail .track-source')), /^Track aus dem Projekt/);
+    assert.match(text($('#tourDetail .track-source')), /^Komoot-Track, gelaufen: B7\.gpx · Projektdatei/);
 });
 
 test('season tag follows the highest point of the track', async () => {

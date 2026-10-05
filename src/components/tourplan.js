@@ -9,7 +9,7 @@ import { generateGPX, downloadGPX } from "../utils/optimize.js";
 import {
     analyzeTrack, loadProjectTracks, loadUploadedTracks, saveUploadedTrack,
     deleteUploadedTrack, clearUploadedTracks, coordinatesToGPX, STAMP_ON_TRACK_METERS,
-    loadOwnTours, saveOwnTour, deleteOwnTour, clearOwnTours, stampsAlongTrack, gpxName, reviewTrack
+    loadOwnTours, saveOwnTour, deleteOwnTour, clearOwnTours, stampsAlongTrack, gpxName, reviewTrack, trackOrigin
 } from "../utils/tracks.js";
 import { calculateHikingTrack, hasApiKey } from "../utils/routing.js";
 import { distanceMeters } from "../utils/geo.js";
@@ -235,6 +235,7 @@ function setVariant(tour, useParts) {
     updateLines();
     renderList();
     render();
+    notifyChange();
 }
 
 function loadSet(key) {
@@ -371,7 +372,7 @@ function saveCollected() {
     writeStorage(CHANGES_STORAGE, String(changesSinceBackup() + 1));
     if (collected.size) requestPersistentStorage();
     renderBackupHint();
-    document.dispatchEvent(new CustomEvent('hwn:progress-changed'));
+    notifyChange();
 }
 
 function readStorage(key) {
@@ -511,8 +512,10 @@ function setStampCollected(number, on) {
     saveCollected();
 }
 
-// Open stamps that a planned (not yet walked) own tour will cover, with the tour that covers them
-function plannedStampOwners() {
+// Open stamps that a planned (not yet walked) own tour will cover, with the tour that covers them.
+// Used for the rest of suggestions (no stamp counted twice), whatever the own tour's track is;
+// whether a stamp is really "verplant" depends on the track, see stampPlanning().
+function ownTourStampOwners() {
     const owners = new Map();
     ownUnits().filter(u => !isDone(u)).forEach(u => u.stamps.forEach(n => {
         if (!collected.has(n) && !owners.has(n)) owners.set(n, u);
@@ -520,8 +523,46 @@ function plannedStampOwners() {
     return owners;
 }
 
+// Tracks from Komoot or another service are real plans; OpenRouteService tracks are unchecked suggestions,
+// and straight lines exported by the app are no way at all
+const CHECKED_ORIGINS = new Set(['komoot', 'external']);
+const ORIGIN_LABELS = { ors: 'Routenvorschlag (OpenRouteService, ungeprüft)', app: 'Luftlinie aus der App', komoot: 'Komoot-Track', external: 'Track aus anderem Dienst' };
+const hasCheckedTrack = unit => CHECKED_ORIGINS.has(tracks.get(unit.id)?.origin);
+
+/**
+ * Planning state of every open stamp:
+ * - 'planned': an open unit (chosen variant or planned own tour) has a Komoot or other checked track
+ *   that passes the stamp
+ * - 'own-unchecked': in a planned own tour whose track is from OpenRouteService or a straight line
+ * - 'suggested': only in a suggestion with an OpenRouteService track
+ * @returns {Map<number, {status, unit, origin}>}
+ */
+function stampPlanningMap() {
+    const result = new Map();
+    const set = (n, status, unit) => {
+        if (!collected.has(n) && !result.has(n)) result.set(n, { status, unit, origin: tracks.get(unit.id)?.origin || null });
+    };
+    const open = shownUnits().filter(u => !isDone(u));
+    open.filter(hasCheckedTrack).forEach(unit => {
+        const missed = new Set(tracks.get(unit.id).missed.map(m => m.number));
+        unit.stamps.filter(n => !missed.has(n)).forEach(n => set(n, 'planned', unit));
+    });
+    open.filter(u => u.own).forEach(unit => unit.stamps.forEach(n => set(n, 'own-unchecked', unit)));
+    open.filter(u => !u.own && tracks.get(u.id)?.origin === 'ors').forEach(unit => unit.stamps.forEach(n => set(n, 'suggested', unit)));
+    return result;
+}
+
+/** Planning of all open stamps for the stamp page: number -> {status, unitId, name, origin, originLabel} */
+export function stampPlanning() {
+    return new Map([...stampPlanningMap()].map(([n, p]) => [n, {
+        status: p.status, unitId: p.unit.id, name: unitLabel(p.unit), origin: p.origin, originLabel: ORIGIN_LABELS[p.origin] || ''
+    }]));
+}
+
+const plannedCount = (planning = stampPlanningMap()) => [...planning.values()].filter(p => p.status === 'planned').length;
+
 // What is left of a suggestion: stamps neither collected nor planned in an own tour (in the suggestion's order)
-function restStamps(tour, owners = plannedStampOwners()) {
+function restStamps(tour, owners = ownTourStampOwners()) {
     return tour.stamps.filter(n => !collected.has(n) && !owners.has(n));
 }
 
@@ -549,7 +590,7 @@ function estimateLoop(stamps) {
  * or planned elsewhere, an estimate for the remaining loop otherwise, nothing when no stamp is left.
  * @returns {Object} - tourFigures() fields plus {rest, reduced, empty}
  */
-function restFigures(tour, owners = plannedStampOwners()) {
+function restFigures(tour, owners = ownTourStampOwners()) {
     const rest = restStamps(tour, owners);
     if (rest.length === tour.stamps.length) return { ...tourFigures(tour), rest, reduced: false, empty: false };
     if (!rest.length) {
@@ -625,13 +666,12 @@ function tourTags(tour) {
 
 // Tracks computed by OpenRouteService (project defaults or "Auf Wanderwege legen") are only suggestions
 function isSuggestedTrack(track) {
-    return /OpenRouteService/.test(track.gpx.slice(0, 2000));
+    return track.origin === 'ors';
 }
 
 function trackKind(tour, track) {
-    if (isSuggestedTrack(track)) return 'Routenvorschlag (OpenRouteService, ungeprüft)';
-    if (track.source === 'project') return 'Track aus dem Projekt';
-    return isDone(tour) ? 'Gelaufener Track' : 'Geplanter Track';
+    const label = ORIGIN_LABELS[track.origin];
+    return track.origin === 'komoot' || track.origin === 'external' ? `${label}${isDone(tour) ? ', gelaufen' : ''}` : label;
 }
 
 function loopLatLngs(tour) {
@@ -800,14 +840,39 @@ export async function showTourPlan(stamps) {
     render();
 
     // Project tracks load in the background; the straight-line plan is usable meanwhile
-    projectTracks = await loadProjectTracks(units.filter(u => !u.own).map(u => u.id));
-    refreshTracks();
+    if (projectTrackData) refreshTracks();
+    await loadPlanTracks();
 }
 
-// Rebuild the effective track per tour (upload beats project file) and redraw
+// Project tracks are loaded once, by the tour plan or the stamp page (for "verplant")
+let projectTrackData = null;
+export function loadPlanTracks() {
+    projectTrackData ??= (async () => {
+        projectTracks = await loadProjectTracks(units.filter(u => !u.own).map(u => u.id));
+        refreshTracks();
+    })();
+    return projectTrackData;
+}
+
+// Every progress or planning change: the stamp page and the route comparison follow it
+function notifyChange() {
+    document.dispatchEvent(new CustomEvent('hwn:progress-changed'));
+}
+
+// Rebuild the effective track per tour (upload beats project file); draws only when the map exists
 function refreshTracks() {
     updateUploadsButton();
+    buildTracks();
+    notifyChange();
     if (!map) return;
+    computeReviews();
+    updateLines();
+    renderChips();
+    renderList();
+    render();
+}
+
+function buildTracks() {
     tracks.clear();
     trackErrors.clear();
     units.forEach(tour => {
@@ -822,19 +887,13 @@ function refreshTracks() {
 
         for (const c of candidates) {
             try {
-                tracks.set(tour.id, { ...c, ...analyzeTrack(c.gpx, tourStamps(tour)) });
+                tracks.set(tour.id, { ...c, origin: trackOrigin(c.gpx), ...analyzeTrack(c.gpx, tourStamps(tour)) });
                 break;
             } catch (e) {
                 trackErrors.set(tour.id, `${c.name}: ${e.message}`);
             }
         }
     });
-
-    computeReviews();
-    updateLines();
-    renderChips();
-    renderList();
-    render();
 }
 
 const stampLabel = n => `${n} ${stampsByNumber.get(n)?.name || ''}`;
@@ -1151,7 +1210,7 @@ function createTourRow(tour) {
  * Figures, level and stamps of a list row. An open suggestion shows what is left of it
  * (estimated when stamps are collected or planned in an own tour).
  */
-function fillRowCells(tr, tour, owners = plannedStampOwners()) {
+function fillRowCells(tr, tour, owners = ownTourStampOwners(), planning = stampPlanningMap()) {
     const cells = tr.querySelectorAll('td');
     const dash = '–';
     const f = !tour.own && !isDone(tour) ? restFigures(tour, owners) : tourFigures(tour);
@@ -1159,12 +1218,19 @@ function fillRowCells(tr, tour, owners = plannedStampOwners()) {
     // Estimates are marked: "~" for distance/time, "≥" for ascent (only stamp-to-stamp climbs)
     const est = f.real ? '' : '<span class="est">~</span>';
     const restTitle = !f.reduced ? ''
-        : f.empty ? 'Alle offenen Stempel sind in eigenen Touren verplant' : `Rest: ${f.rest.join(', ')} (geschätzt)`;
+        : f.empty ? 'Alle offenen Stempel liegen in eigenen Touren' : `Rest: ${f.rest.join(', ')} (geschätzt)`;
     const seq = tourStamps(tour)
         .map(s => {
-            const state = collected.has(s.number) ? ' got' : owners.has(s.number) && !tour.own ? ' planned' : '';
-            const hint = state === ' got' ? ' title="gestempelt"' : state ? ` title="${escapeHtml(`verplant in „${owners.get(s.number).name}“`)}"` : '';
-            return `<span class="seq-stop${state}"${hint}><span class="mono">${s.number}</span> ${escapeHtml(s.name)}</span>`;
+            // Planned elsewhere (Komoot or another service) or only in an own tour with an unchecked track
+            const p = planning.get(s.number);
+            const elsewhere = p && p.unit !== tour && !tour.own;
+            const state = collected.has(s.number) ? ' got'
+                : elsewhere && p.status === 'planned' ? ' planned'
+                : owners.has(s.number) && !tour.own ? ' planned unchecked' : '';
+            const hint = state === ' got' ? 'gestempelt'
+                : state === ' planned' ? `verplant in ${p.unit.own ? `„${p.unit.name}“` : unitLabel(p.unit)} (${ORIGIN_LABELS[p.origin]})`
+                : state ? `in eigener Tour „${owners.get(s.number).name}“, Track ungeprüft` : '';
+            return `<span class="seq-stop${state}"${hint ? ` title="${escapeHtml(hint)}"` : ''}><span class="mono">${s.number}</span> ${escapeHtml(s.name)}</span>`;
         })
         .join(' → ') || '<span class="hint">Keine Stempel am Track</span>';
 
@@ -1194,6 +1260,7 @@ function select(id, scrollToMap = false) {
         saveVariants();
         updateLines();
         renderList();
+        notifyChange();
     }
     selectedId = id;
     if (tour && !matchesFilter(tour)) regionFilter = null;
@@ -1209,7 +1276,8 @@ function render() {
     if (reviewChip) reviewChip.textContent = `Zu prüfen (${units.filter(u => openReview(u).length).length})`;
 
     const collected = collectedStamps();
-    const owners = plannedStampOwners();
+    const owners = ownTourStampOwners();
+    const planning = stampPlanningMap();
     restLayer.clearLayers();
     shownUnits().forEach(tour => {
         const visible = matchesFilter(tour);
@@ -1285,7 +1353,7 @@ function render() {
         // The review filter shows only rows with something to check (and their suggestion)
         row.hidden = regionFilter === REVIEW_FILTER && !matchesFilter(rowTour)
             && !(rowTour.parts || []).some(matchesFilter);
-        fillRowCells(row, rowTour, owners);
+        fillRowCells(row, rowTour, owners, planning);
         row.classList.toggle('done', isDone(rowTour));
         row.classList.toggle('variant-off', !isShown(rowTour));
         const cb = row.querySelector('.tour-done');
@@ -1304,9 +1372,10 @@ function render() {
 function renderStats() {
     const collected = collectedStamps();
     const openStamps = stampsByNumber.size - collected.size;
+    const planned = plannedCount();
     // Every open stamp counts once: planned own tours with their track, plus what is left of each
     // open suggestion (split tours with the chosen variant, never both)
-    const owners = plannedStampOwners();
+    const owners = ownTourStampOwners();
     const openList = [
         ...ownUnits().filter(u => !isDone(u)).map(u => ({ tour: u, f: tourFigures(u) })),
         ...suggestionUnits().filter(t => !isDone(t)).map(t => ({ tour: t, f: restFigures(t, owners) }))
@@ -1336,7 +1405,7 @@ function renderStats() {
     el('tourStats').innerHTML = `
         <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${collected.size}</div><a class="stat-link" href="#stempel">Alle Stempel ansehen</a></div>
         <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${openStamps}</div></div>`
-        + (owners.size ? `<div class="route-stat" title="Offene Stempel, die in geplanten eigenen Touren liegen"><div class="label">davon verplant</div><div class="value">${owners.size}</div></div>` : '')
+        + (planned ? `<div class="route-stat" title="Offene Stempel mit Komoot-Track oder Track aus einem anderen Dienst"><div class="label">davon verplant</div><div class="value">${planned}</div></div>` : '')
         + `
         <div class="route-stat"><div class="label">Rundtouren</div><div class="value">${plan.tours.filter(t => !t.single).length}</div></div>
         <div class="route-stat" title="Geplante eigene Touren plus der Rest der offenen Vorschläge${openKmEstimated ? '; teilweise geschätzt (ohne GPX-Track oder Rest-Runde)' : ''}"><div class="label">km offen</div><div class="value">${openKmEstimated ? '~' : ''}${Math.round(openKm)}</div></div>
@@ -1512,7 +1581,7 @@ function renderDetail(tour) {
 // What of a suggestion is collected, planned in own tours and still left, with an estimate for the rest
 function restHtml(tour) {
     if (isDone(tour) || tour.single) return '';
-    const owners = plannedStampOwners();
+    const owners = ownTourStampOwners();
     const f = restFigures(tour, owners);
     if (!f.reduced) return '';
 
@@ -1526,10 +1595,14 @@ function restHtml(tour) {
 
     const items = [
         got.length && `<li><b>Gesammelt:</b> ${names(got)}</li>`,
-        ...[...byOwner].map(([owner, numbers]) =>
-            `<li><b>Verplant</b> in <button type="button" class="part-link" data-own="${owner.id}">„${escapeHtml(owner.name)}“</button>: ${names(numbers)}</li>`),
+        ...[...byOwner].map(([owner, numbers]) => {
+            const link = `<button type="button" class="part-link" data-own="${owner.id}">„${escapeHtml(owner.name)}“</button>`;
+            return hasCheckedTrack(owner)
+                ? `<li><b>Verplant</b> in ${link}: ${names(numbers)}</li>`
+                : `<li><b>In eigener Tour</b> ${link} (Track ungeprüft): ${names(numbers)}</li>`;
+        }),
         f.empty
-            ? '<li><b>Rest:</b> keiner, alle offenen Stempel sind in eigenen Touren verplant.</li>'
+            ? '<li><b>Rest:</b> keiner, alle offenen Stempel liegen in eigenen Touren.</li>'
             : `<li><b>Rest:</b> ${names(f.rest)}${f.rest.length > 1
                 ? ` <span class="mono">· ~${fmt1(f.km)} km · ≥${f.ascent} Hm</span> ${levelHtml(tour, f)}`
                 : ''}</li>`
@@ -1568,9 +1641,12 @@ function stopListHtml(stamps, showSuggestion = false) {
 }
 
 function komootBoxHtml(tour) {
+    // A link alone doesn't say which stamps the Komoot tour covers, so it doesn't make them "verplant"
+    const linkOnly = tourKomootLinks(tour).length && !hasCheckedTrack(tour) && !isDone(tour);
     return `<div class="komoot-box">
             <b>Komoot</b>
             ${komootHtml(tour)}
+            ${linkOnly ? '<p class="hint">Komoot verlinkt: GPX aus Komoot hinterlegen, damit die Stempel als verplant zählen.</p>' : ''}
             <form class="komoot-add" id="komootForm">
                 <input type="text" id="komootInput" placeholder="komoot.com/tour/… oder Tour-ID" aria-label="Komoot-Link hinzufügen" autocomplete="off">
                 <button type="submit" class="calc-route-btn">Verlinken</button>
@@ -1660,7 +1736,7 @@ function renderOwnDetail(detail, tour) {
             <span class="hint">Markiert die Tour als gelaufen und sammelt ihre Stempel. Ohne Haken werden diese Stempel wieder entfernt, außer eine andere gelaufene eigene Tour enthält sie.</span>
         </div>
         <div class="track-box">
-            <p class="hint track-source"><b>${track && isSuggestedTrack(track) ? 'Eigene Tour, Weg von OpenRouteService (ungeprüft)' : 'Eigene Tour'}:</b> <span class="mono">${escapeHtml(tour.record.fileName || 'GPX')}</span> · im Browser gespeichert, wird mit exportiert</p>
+            <p class="hint track-source"><b>${!track ? 'Eigene Tour' : track.origin === 'ors' ? 'Eigene Tour, Weg von OpenRouteService (ungeprüft)' : `Eigene Tour, ${ORIGIN_LABELS[track.origin]}`}:</b> <span class="mono">${escapeHtml(tour.record.fileName || 'GPX')}</span> · im Browser gespeichert, wird mit exportiert</p>
             ${error ? `<p class="hint track-warning">⚠ ${escapeHtml(error)}</p>` : ''}
             ${message}
             <div class="detail-actions">

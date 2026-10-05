@@ -105,6 +105,22 @@ export function clearOwnTours() {
  * @param {Array<string>} tourIds
  * @returns {Promise<Object>} - {tourId: {name, gpx}}
  */
+/**
+ * Where a GPX comes from, read from the head of the file (`creator`, Komoot's author link):
+ * 'ors' = computed by OpenRouteService in this app (unchecked suggestion), 'app' = straight lines
+ * exported by this app (no real way), 'komoot' and 'external' = planned or walked elsewhere.
+ * @param {string} gpxText
+ * @returns {'ors' | 'app' | 'komoot' | 'external'}
+ */
+export function trackOrigin(gpxText) {
+    const head = String(gpxText).slice(0, 2000);
+    if (/OpenRouteService/.test(head)) return 'ors';
+    const creator = head.match(/<gpx\b[^>]*\bcreator\s*=\s*["']([^"']*)["']/i)?.[1] || '';
+    if (/komoot/i.test(creator) || /<author>[^]*komoot/i.test(head)) return 'komoot';
+    if (/^HWN Route Compare/.test(creator)) return 'app';
+    return 'external';
+}
+
 export async function loadProjectTracks(tourIds) {
     const out = {};
     await Promise.all(tourIds.map(async id => {

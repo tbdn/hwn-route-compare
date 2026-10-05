@@ -2,13 +2,17 @@
 // Stamps are toggled here or entered as a list of numbers (e.g. from the paper stamp booklet).
 // Progress itself lives in tourplan.js (`hwn-stamps-collected`), so both views always show the same state.
 
-import { loadStampProgress, isStampCollected, suggestionOfStamp, setStampsCollected, stampDate, setStampDate, today } from "./tourplan.js";
+import {
+    loadStampProgress, isStampCollected, suggestionOfStamp, setStampsCollected, stampDate, setStampDate, today,
+    stampPlanning, loadPlanTracks
+} from "./tourplan.js";
 
 const el = id => document.getElementById(id);
 
 let initialized = false;
 let allStamps = [];
-let filter = 'all';               // all | open | got
+let filter = 'all';               // all | open | planned | got
+let planning = new Map();         // open stamp -> {status, unitId, name, origin, originLabel}
 let sort = 'number';              // number | recent
 let undo = null;                  // stamp numbers added by the last list entry
 
@@ -32,6 +36,8 @@ export async function showStampPass(stamps) {
         buildGrid();
         bindControls();
         document.addEventListener('hwn:progress-changed', sync);
+        // Tracks decide what is "verplant"; they load in the background and sync when ready
+        loadPlanTracks().catch(() => {});
     }
     sync();
 }
@@ -51,6 +57,7 @@ function buildGrid() {
                     ${s.elevation ? `<span class="pass-ele">${s.elevation} m</span>` : ''}
                     <button type="button" class="pass-date" data-stamp="${s.number}" hidden></button>
                     <input type="date" class="pass-date-input" data-stamp="${s.number}" hidden aria-label="${escapeHtml(`${s.id} ${s.name} gestempelt am`)}">
+                    <button type="button" class="pass-plan" hidden></button>
                     ${tour ? `<button type="button" class="pass-tour" data-tour="${tour.id}" title="Vorschlag ${tour.id} (${escapeHtml(tour.regionName)}) im Tourenplan zeigen">${tour.id}</button>` : ''}
                 </span>
             </div>`;
@@ -77,6 +84,8 @@ function buildGrid() {
             if (e.key === 'Enter' || e.key === 'Escape') input.blur();
         });
     });
+    el('passGrid').querySelectorAll('.pass-plan').forEach(b =>
+        b.addEventListener('click', () => document.dispatchEvent(new CustomEvent('hwn:show-tour', { detail: { id: b.dataset.unit } }))));
     el('passGrid').querySelectorAll('.pass-tour').forEach(b =>
         b.addEventListener('click', () => document.dispatchEvent(new CustomEvent('hwn:show-tour', { detail: { id: b.dataset.tour } }))));
 }
@@ -186,7 +195,9 @@ function applyFilter() {
     el('passGrid').querySelectorAll('.pass-stamp').forEach(tile => {
         const stamp = allStamps.find(s => s.number === Number(tile.dataset.stamp));
         const got = isStampCollected(stamp.number);
-        const visible = matches(stamp, query) && (filter === 'all' || (filter === 'got') === got);
+        const visible = matches(stamp, query) && (filter === 'all'
+            || (filter === 'got' && got) || (filter === 'open' && !got)
+            || (filter === 'planned' && planning.get(stamp.number)?.status === 'planned'));
         tile.hidden = !visible;
         if (visible) shown++;
     });
@@ -198,6 +209,7 @@ function applyFilter() {
 // Refresh states and counts in place, so focus stays on the ticked checkbox
 function sync() {
     if (!initialized) return;
+    planning = stampPlanning();
     let got = 0;
     let dated = 0;
     let thisYear = 0;
@@ -219,19 +231,35 @@ function sync() {
         button.title = date ? `Gestempelt am ${longDate(date)}, ändern` : 'Ohne Datum, Datum eintragen';
         const ele = tile.querySelector('.pass-ele');
         if (ele) ele.hidden = on;
+        // Planned with a Komoot or other checked track, or only in an own tour with an unchecked track
+        const p = on ? null : planning.get(Number(tile.dataset.stamp));
+        const plan = tile.querySelector('.pass-plan');
+        const shownPlan = p && (p.status === 'planned' || p.status === 'own-unchecked') ? p : null;
+        plan.hidden = !shownPlan;
+        tile.classList.toggle('planned', shownPlan?.status === 'planned');
+        if (shownPlan) {
+            plan.dataset.unit = shownPlan.unitId;
+            plan.textContent = shownPlan.status === 'planned' ? 'verplant' : 'eigene Tour';
+            plan.classList.toggle('unchecked', shownPlan.status !== 'planned');
+            plan.title = shownPlan.status === 'planned'
+                ? `Verplant: ${shownPlan.name} · ${shownPlan.originLabel}`
+                : `In ${shownPlan.name}, Track ungeprüft (${shownPlan.originLabel || 'ohne Track'})`;
+        }
         if (date?.startsWith(year)) thisYear++;
         if (date) dated++;
     });
     const total = allStamps.length;
+    const plannedCount = [...planning.values()].filter(p => p.status === 'planned').length;
     const percent = total ? Math.round(got / total * 100) : 0;
     el('passStats').innerHTML = `
         <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${got} <small>/ ${total}</small></div></div>
         <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${total - got}</div></div>`
+        + (plannedCount ? `<div class="route-stat" title="Offene Stempel mit Komoot-Track oder Track aus einem anderen Dienst"><div class="label">davon verplant</div><div class="value">${plannedCount}</div></div>` : '')
         + (dated ? `<div class="route-stat" title="Stempel mit Datum aus ${year}"><div class="label">Dieses Jahr</div><div class="value highlight">${thisYear}</div></div>` : '')
         + `
         <div class="route-stat"><div class="label">Fortschritt</div><div class="value">${percent} %</div>
             <div class="pass-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${got}" aria-label="Gesammelte Stempel"><i style="width:${got / total * 100}%"></i></div></div>`;
-    const counts = { all: total, open: total - got, got };
+    const counts = { all: total, open: total - got, planned: plannedCount, got };
     el('passFilter').querySelectorAll('[data-filter]').forEach(b => {
         b.querySelector('.mono').textContent = counts[b.dataset.filter];
     });
