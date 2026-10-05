@@ -13,6 +13,7 @@ Stand: 05.10.2026
 | 3 | Vorschläge passen sich an | ✅ erledigt (05.10.2026) |
 | 4 | Routenabgleich anbinden | ✅ erledigt (05.10.2026) |
 | 5 | Eigene Tour auf der Karte zusammenstellen (optional) | ⬜ offen, nächster Schritt |
+| – | Prüfhinweise „⚠ Zu prüfen“ an den Vorschlägen | ✅ erledigt (05.10.2026) |
 
 Die automatisierten Tests zu den erledigten Schritten liegen in `tests/` (`npm install`, dann `npm test`), siehe Abschnitt „Tests“ in `CLAUDE.md`.
 
@@ -373,6 +374,25 @@ Abweichungen von der ursprünglichen Planung:
 
 - Modus „Eigene Tour planen“: Stempel auf der Tourenkarte anklicken, die Reihenfolge per `optimizeStampOrder` oder in Klick-Reihenfolge. Danach „Auf Wanderwege legen“ (ORS) oder die Luftlinie speichern.
 - Der ORS-Fehler „kein Weg innerhalb von 350 m“ wird mit dem betroffenen Stempel angezeigt.
+
+## ✅ Prüfhinweise an den Vorschlägen (umgesetzt am 05.10.2026)
+
+Die App markiert Vorschläge und Teile mit „⚠ prüfen“ und erklärt im Detail, was zu prüfen ist und warum. Die Regeln stehen in `REVIEW_RULES` in `tourplan.js`:
+
+| Hinweis | Regel | Quelle |
+|---|---|---|
+| Umweg | Weg zwischen zwei Stempeln ≥ 3 × Luftlinie und ≥ 1 km länger; auf der Karte orange | ORS-Track |
+| Hin und zurück | ≥ 45 % des Tracks führen auf demselben Weg zurück | ORS-Track |
+| Länger als geschätzt | Track ≥ 1,3 × Schätzung und ≥ 2 km länger | ORS-Track |
+| Teile kürzer | Beide Teil-Tracks zusammen ≤ 85 % des ganzen Tracks, solange „Komplett“ gewählt ist | Tracks |
+| Umbau | Text aus `tours.json` (`review`), derzeit C5 und B3 | Daten |
+
+- Bewertet werden nur Tracks von OpenRouteService. Gelaufene oder eigene Tracks (Komoot) und erledigte Touren werden nicht markiert.
+- Die Hinweise werden bei jeder Track-Änderung neu berechnet; ein verbesserter Track lässt sie verschwinden.
+- Der Chip „⚠ Zu prüfen (n)“ filtert Karte und Liste und zeigt ohne Auswahl eine Übersicht aller Hinweise.
+- Stand 05.10.2026: 23 Vorschläge und Teile mit Hinweisen.
+
+**Noch offen:** `defaultVariant` („In zwei Teilen“ als Voreinstellung für A5, B4, G2 und D7) und der Umbau von C5 sind nur als Hinweis markiert, nicht umgesetzt.
 
 ## Offene Fragen / Entscheidungen
 

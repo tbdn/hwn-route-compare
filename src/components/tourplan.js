@@ -9,7 +9,7 @@ import { generateGPX, downloadGPX } from "../utils/optimize.js";
 import {
     analyzeTrack, loadProjectTracks, loadUploadedTracks, saveUploadedTrack,
     deleteUploadedTrack, clearUploadedTracks, coordinatesToGPX, STAMP_ON_TRACK_METERS,
-    loadOwnTours, saveOwnTour, deleteOwnTour, clearOwnTours, stampsAlongTrack, gpxName
+    loadOwnTours, saveOwnTour, deleteOwnTour, clearOwnTours, stampsAlongTrack, gpxName, reviewTrack
 } from "../utils/tracks.js";
 import { calculateHikingTrack, hasApiKey } from "../utils/routing.js";
 import { distanceMeters } from "../utils/geo.js";
@@ -36,6 +36,18 @@ const STAMPED_COLOR = '#9A958A';
 const OWN_REGION = 'own';
 const OWN_COLOR = '#3D2A6B';
 const OWN_ID = /^own-[\w-]{1,40}$/;
+// Filter chip for suggestions with something to check
+const REVIEW_FILTER = 'review';
+const REVIEW_COLOR = '#C26A00';
+// When an OpenRouteService track is worth checking (e.g. in Komoot)
+const REVIEW_RULES = {
+    legFactor: 3,        // a leg between two stamps is this many times the straight line ...
+    legExtraKm: 1,       // ... and at least this much longer
+    backtrackShare: 0.45, // this share of the track runs back on the same path
+    lengthFactor: 1.3,   // the whole track is this many times the estimate ...
+    lengthExtraKm: 2,    // ... and at least this much longer
+    partsShare: 0.85     // both part tracks together are at most this share of the whole track
+};
 
 // Season hint from the highest point of the tour (track or highest stamp)
 const SEASON_TAGS = [
@@ -57,6 +69,7 @@ const unitById = new Map();
 let ownTours = [];                // own tour records as stored: {id, name, gpx, fileName, stamps, status, createdAt}
 let ownDraft = null;              // own tour being created or edited (form in the detail panel)
 let ownDeleteId = null;           // own tour waiting for the delete confirmation
+const reviews = new Map();        // unit id -> [{kind, text, leg?, points?}] things to check on its track or layout
 let regionFilter = null;
 let selectedId = null;
 
@@ -72,6 +85,7 @@ const hitLines = new Map();       // tourId -> wide invisible polyline for click
 const stampMarkers = new Map();   // stamp number -> circleMarker
 let loopLayer = null;
 let restLayer = null;             // straight-line loops of reduced suggestions
+let reviewLayer = null;           // detour legs of the selected suggestion
 let labelLayer = null;
 let endpointLayer = null;
 let draftLine = null;             // preview of the GPX in the own tour form
@@ -83,7 +97,7 @@ function escapeHtml(str) {
 }
 
 const fmt1 = n => n.toFixed(1).replace('.', ',');
-const color = code => code === OWN_REGION ? OWN_COLOR : REGION_COLORS[code] || '#3D3563';
+const color = code => code === OWN_REGION ? OWN_COLOR : code === REVIEW_FILTER ? REVIEW_COLOR : REGION_COLORS[code] || '#3D3563';
 
 function lighten(hex, amount) {
     const n = parseInt(hex.slice(1), 16);
@@ -152,7 +166,6 @@ function setOwnTours(records) {
     units.filter(u => !loopLines.has(u.id)).forEach(addUnitLines);
     if (selectedId && !unitById.has(selectedId)) selectedId = null;
     if (regionFilter === OWN_REGION && !ownTours.length) regionFilter = null;
-    renderChips();
     refreshTracks();
 }
 
@@ -549,7 +562,7 @@ function renderEndpoints() {
     endpointLayer.clearLayers();
     const selected = shownUnits().filter(isSelected);
     // With a selection only that tour (or its parts) gets large markers; otherwise every visible tour gets small ones
-    const tours = selected.length ? selected : shownUnits().filter(t => !regionFilter || t.region === regionFilter);
+    const tours = selected.length ? selected : shownUnits().filter(matchesFilter);
 
     tours.forEach(tour => {
         const big = selected.includes(tour);
@@ -641,9 +654,100 @@ function refreshTracks() {
         }
     });
 
+    computeReviews();
     updateLines();
+    renderChips();
     renderList();
     render();
+}
+
+const stampLabel = n => `${n} ${stampsByNumber.get(n)?.name || ''}`;
+
+/**
+ * Things worth checking per suggestion or part: notes from tours.json (`review`), and for
+ * OpenRouteService tracks detours between stamps, ways back on the same path, a track much longer
+ * than the estimate, and parts that are much shorter than the whole tour.
+ * Walked Komoot tracks and own tours are not judged.
+ */
+function computeReviews() {
+    reviews.clear();
+    units.filter(u => !u.own).forEach(unit => {
+        const reasons = (unit.review || []).map(text => ({ kind: 'note', text }));
+        const track = tracks.get(unit.id);
+
+        if (track && isSuggestedTrack(track) && !unit.single) {
+            const result = reviewTrack(track.latLngs, tourStamps(unit));
+            result.legs
+                .filter(l => l.trackKm >= REVIEW_RULES.legFactor * l.lineKm && l.trackKm - l.lineKm >= REVIEW_RULES.legExtraKm)
+                .forEach(l => reasons.push({
+                    kind: 'detour', leg: l, points: result.points,
+                    text: `Umweg von ${stampLabel(l.from)} nach ${stampLabel(l.to)}: ${fmt1(l.trackKm)} km Weg für ${fmt1(l.lineKm)} km Luftlinie (×${fmt1(l.trackKm / l.lineKm)}). Gibt es einen direkteren Weg?`
+                }));
+            if (result.backtrackShare >= REVIEW_RULES.backtrackShare) {
+                reasons.push({
+                    kind: 'backtrack',
+                    text: `${Math.round(result.backtrackShare * 100)} % der Strecke führen auf demselben Weg zurück. Gibt es eine echte Runde?`
+                });
+            }
+            if (unit.km && track.km >= REVIEW_RULES.lengthFactor * unit.km && track.km - unit.km >= REVIEW_RULES.lengthExtraKm) {
+                reasons.push({
+                    kind: 'longer',
+                    text: `Der Track ist ${fmt1(track.km)} km lang, geschätzt waren ${fmt1(unit.km)} km (×${fmt1(track.km / unit.km)}). OpenRouteService kennt vermutlich nicht jeden Pfad.`
+                });
+            }
+        }
+
+        const whole = tracks.get(unit.id);
+        const partTracks = (unit.parts || []).map(p => tracks.get(p.id));
+        if (whole && partTracks.length && partTracks.every(Boolean)) {
+            const sum = partTracks.reduce((a, t) => a + t.km, 0);
+            if (sum <= REVIEW_RULES.partsShare * whole.km) {
+                reasons.push({
+                    kind: 'parts',
+                    text: `In zwei Teilen deutlich kürzer: ${unit.parts.map(p => p.id).join(' + ')} zusammen ${fmt1(sum)} km statt ${fmt1(whole.km)} km, die lange Verbindung zwischen den Teilen fällt weg.`
+                });
+            }
+        }
+        if (reasons.length) reviews.set(unit.id, reasons);
+    });
+}
+
+// Hints that still matter: none for finished tours, the parts hint only while the tour is walked whole
+function openReview(unit) {
+    if (!unit || unit.own || isDone(unit)) return [];
+    return (reviews.get(unit.id) || []).filter(r => r.kind !== 'parts' || !usesParts(unit));
+}
+
+// Region chips filter by region; the review chip by open hints
+function matchesFilter(unit) {
+    if (!regionFilter || !unit) return true;
+    if (regionFilter === REVIEW_FILTER) return openReview(unit).length > 0;
+    return unit.region === regionFilter;
+}
+
+// Detour legs on the map: of the selection, or of everything to check while the review filter is on
+function renderReviewLegs() {
+    reviewLayer.clearLayers();
+    const selected = shownUnits().filter(isSelected);
+    const shown = selected.length ? selected : regionFilter === REVIEW_FILTER ? shownUnits() : [];
+    shown.forEach(unit => openReview(unit).filter(r => r.kind === 'detour').forEach(({ leg, points }) => {
+        // The closing leg wraps around the end of the track
+        const latLngs = leg.endIndex >= leg.startIndex
+            ? points.slice(leg.startIndex, leg.endIndex + 1)
+            : [...points.slice(leg.startIndex), ...points.slice(0, leg.endIndex + 1)];
+        L.polyline(latLngs, { color: REVIEW_COLOR, weight: 9, opacity: 0.45, lineCap: 'round', interactive: false })
+            .addTo(reviewLayer);
+    }));
+}
+
+function reviewHtml(unit) {
+    const items = openReview(unit);
+    if (!items.length) return '';
+    return `<div class="review-box">
+        <b><span aria-hidden="true">⚠</span> Zu prüfen</b>
+        <ul>${items.map(r => `<li>${escapeHtml(r.text)}</li>`).join('')}</ul>
+        <p class="hint">${items.some(r => r.kind === 'detour') ? 'Umweg-Etappen sind auf der Karte orange hinterlegt. ' : ''}Am besten in Komoot nachplanen und den Track als <span class="mono">src/data/tours/${unit.id}.gpx</span> ablegen oder hier hochladen; danach verschwinden die Track-Hinweise von selbst.</p>
+    </div>`;
 }
 
 // Only the chosen variant of each tour is drawn (and clickable)
@@ -665,6 +769,7 @@ function initTourMap() {
 
     loopLayer = L.layerGroup().addTo(map);
     restLayer = L.layerGroup().addTo(map);
+    reviewLayer = L.layerGroup().addTo(map);
     const pointLayer = L.layerGroup().addTo(map);
     draftLine = L.polyline([], { color: OWN_COLOR, weight: 4, opacity: 0.9, dashArray: '2 8', interactive: false }).addTo(map);
     endpointLayer = L.layerGroup().addTo(map);
@@ -746,16 +851,18 @@ function renderChips() {
         b.className = 'region-chip';
         b.dataset.code = code || '';
         b.style.setProperty('--c', code ? color(code) : 'var(--ink)');
-        b.innerHTML = (code === OWN_REGION ? '<i></i>' : code ? `<i></i><span class="mono">${code}</span> ` : '') + escapeHtml(label);
+        b.innerHTML = (code === OWN_REGION ? '<i></i>' : code === REVIEW_FILTER ? '<span class="review-mark" aria-hidden="true">⚠</span> '
+            : code ? `<i></i><span class="mono">${code}</span> ` : '') + `<span class="chip-label">${escapeHtml(label)}</span>`;
         b.addEventListener('click', () => {
             regionFilter = code;
-            if (selectedId && code && !selectedId.startsWith(code)) selectedId = null;
+            if (selectedId && !matchesFilter(unitById.get(selectedId))) selectedId = null;
             render();
-            fitTo(shownUnits().filter(t => !code || t.region === code));
+            fitTo(shownUnits().filter(matchesFilter));
         });
         chips.appendChild(b);
     };
     make(null, 'Alle Regionen');
+    if (reviews.size) make(REVIEW_FILTER, 'Zu prüfen');
     if (ownTours.length) make(OWN_REGION, 'Eigene Touren');
     plan.regions.forEach(r => make(r.code, shortRegionName(r.code)));
 }
@@ -836,7 +943,8 @@ function createTourRow(tour) {
     const f = tourFigures(tour);
     const idCell = tour.own
         ? `<span class="own-name">${escapeHtml(tour.name)}</span>`
-        : `${tour.parent ? '<span class="part-arrow" aria-hidden="true">↳</span>' : ''}${tour.id}${tour.parts?.length ? '<span class="gpx-tag parts-tag" title="Lässt sich in zwei Teilen gehen">2 Teile</span>' : ''}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}`;
+        : `${tour.parent ? '<span class="part-arrow" aria-hidden="true">↳</span>' : ''}${tour.id}${reviews.has(tour.id)
+            ? `<span class="gpx-tag review-tag" title="${escapeHtml(reviews.get(tour.id).map(r => r.text).join('\n'))}">⚠ prüfen</span>` : ''}${tour.parts?.length ? '<span class="gpx-tag parts-tag" title="Lässt sich in zwei Teilen gehen">2 Teile</span>' : ''}${f.real ? '<span class="gpx-tag" title="Mit GPX-Track">GPX</span>' : ''}`;
 
     tr.innerHTML = `
         <td><input type="checkbox" class="tour-done" aria-label="${escapeHtml(unitLabel(tour))} ${tour.own ? 'gelaufen' : ': alle Stempel gesammelt'}"><span class="done-count mono"></span></td>
@@ -911,7 +1019,7 @@ function select(id, scrollToMap = false) {
         renderList();
     }
     selectedId = id;
-    if (tour && regionFilter && tour.region !== regionFilter) regionFilter = null;
+    if (tour && !matchesFilter(tour)) regionFilter = null;
     render();
     if (tour) fitTo(usesParts(tour) ? tour.parts : [tour]);
     if (scrollToMap) el('tourMapGrid').scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -920,12 +1028,14 @@ function select(id, scrollToMap = false) {
 function render() {
     el('tourChips').querySelectorAll('.region-chip').forEach(b =>
         b.setAttribute('aria-pressed', String((b.dataset.code || null) === regionFilter)));
+    const reviewChip = el('tourChips').querySelector(`[data-code="${REVIEW_FILTER}"] .chip-label`);
+    if (reviewChip) reviewChip.textContent = `Zu prüfen (${units.filter(u => openReview(u).length).length})`;
 
     const collected = collectedStamps();
     const owners = plannedStampOwners();
     restLayer.clearLayers();
     shownUnits().forEach(tour => {
-        const visible = !regionFilter || tour.region === regionFilter;
+        const visible = matchesFilter(tour);
         const done = isDone(tour);
         const real = tracks.has(tour.id);
         const line = loopLines.get(tour.id);
@@ -953,10 +1063,12 @@ function render() {
     // Stamp markers keep the color of their suggestion; dimmed when outside the selection or filter
     const selectedStamps = new Set(shownUnits().filter(isSelected).flatMap(u => u.stamps));
     const ownStamps = new Set(ownUnits().flatMap(u => u.stamps));
+    const reviewStamps = new Set(units.filter(u => openReview(u).length).flatMap(u => u.stamps));
     plan.tours.forEach(tour => tour.stamps.forEach(n => {
         const m = stampMarkers.get(n);
         if (!m) return;
-        const visible = !regionFilter || tour.region === regionFilter || (regionFilter === OWN_REGION && ownStamps.has(n));
+        const visible = !regionFilter || tour.region === regionFilter
+            || (regionFilter === OWN_REGION && ownStamps.has(n)) || (regionFilter === REVIEW_FILTER && reviewStamps.has(n));
         const dim = !visible || (selectedId && !selectedStamps.has(n));
         const got = collected.has(n);
         m.setRadius(got ? 4 : 5.5);
@@ -967,6 +1079,7 @@ function render() {
         });
     }));
     draftLine.setLatLngs(ownDraft?.latLngs || []);
+    renderReviewLegs();
 
     renderEndpoints();
 
@@ -989,17 +1102,22 @@ function render() {
         });
     });
 
-    el('tourList').querySelectorAll('.region-card').forEach(sec => {
-        sec.hidden = !!regionFilter && sec.dataset.code !== regionFilter;
-    });
     el('tourList').querySelectorAll('.tour-row').forEach(row => {
         row.classList.toggle('selected', row.dataset.id === selectedId);
         const rowTour = unitById.get(row.dataset.id);
+        // The review filter shows only rows with something to check (and their suggestion)
+        row.hidden = regionFilter === REVIEW_FILTER && !matchesFilter(rowTour)
+            && !(rowTour.parts || []).some(matchesFilter);
         fillRowCells(row, rowTour, owners);
         row.classList.toggle('done', isDone(rowTour));
         row.classList.toggle('variant-off', !isShown(rowTour));
         const cb = row.querySelector('.tour-done');
         if (cb) syncDoneCheckbox(cb, rowTour);
+    });
+    el('tourList').querySelectorAll('.region-card').forEach(sec => {
+        sec.hidden = regionFilter === REVIEW_FILTER
+            ? ![...sec.querySelectorAll('.tour-row')].some(r => !r.hidden)
+            : !!regionFilter && sec.dataset.code !== regionFilter;
     });
 
     renderStats();
@@ -1086,6 +1204,19 @@ function renderDetail(tour) {
         renderOwnForm(detail);
         return;
     }
+    if (!tour && regionFilter === REVIEW_FILTER) {
+        detail.style.setProperty('--c', REVIEW_COLOR);
+        const open = units.filter(u => openReview(u).length);
+        detail.innerHTML = `
+            <h3><span aria-hidden="true">⚠</span> Zu prüfen</h3>
+            <p class="hint">${open.length} ${open.length === 1 ? 'Vorschlag oder Teil hat' : 'Vorschläge und Teile haben'} Hinweise. Umweg-Etappen sind auf der Karte orange hinterlegt.</p>
+            <ul class="review-list">${open.map(u => `<li>
+                <button type="button" class="part-link" data-unit="${u.id}">${escapeHtml(unitLabel(u))}</button>
+                <span class="hint">${openReview(u).map(r => ({ note: 'Umbau', detour: 'Umweg', backtrack: 'Hin und zurück', longer: 'länger als geschätzt', parts: 'Teile kürzer' })[r.kind]).join(' · ')}</span>
+            </li>`).join('')}</ul>`;
+        detail.querySelectorAll('[data-unit]').forEach(btn => btn.addEventListener('click', () => select(btn.dataset.unit)));
+        return;
+    }
     if (!tour && regionFilter === OWN_REGION) {
         detail.style.setProperty('--c', OWN_COLOR);
         const own = ownUnits();
@@ -1139,6 +1270,7 @@ function renderDetail(tour) {
             : isPartial(tour) ? ` <span class="level lv-mittel">${collectedCount(tour)}/${stamps.length} gestempelt</span>` : ''}</h3>
         <div class="tour-meta mono">${meta}<span>${f.minEle}–${f.maxEle} m ü. NN</span><span>${stamps.length} Stempel</span></div>
         ${tour.parent ? partInfoHtml(tour) : '<p class="hint suggestion-hint">Vorschlag aus dem Tourenplan: Du kannst ihn so gehen, mit eigenem GPX anpassen oder nur einzelne Stempel davon sammeln.</p>'}
+        ${reviewHtml(tour)}
         ${tour.parts?.length ? variantHtml(tour) : ''}
         ${restHtml(tour)}
         ${tipsHtml(tour)}
@@ -1279,7 +1411,7 @@ function bindDetailCommon(detail, tour, { gpx, fileName, compareName }) {
     el('tourClear').addEventListener('click', () => {
         selectedId = null;
         render();
-        fitTo(shownUnits().filter(t => !regionFilter || t.region === regionFilter));
+        fitTo(shownUnits().filter(matchesFilter));
     });
 
     const doneToggle = el('tourDoneToggle');

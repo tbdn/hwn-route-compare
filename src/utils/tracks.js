@@ -218,6 +218,77 @@ export function stampsAlongTrack(gpxText, stamps) {
         .sort((a, b) => a.index - b.index || a.distance - b.distance);
 }
 
+// Points closer than this to an earlier part of the track count as walked twice ...
+const BACKTRACK_METERS = 25;
+// ... unless that earlier part is only this far back (a bend, not the way back)
+const BACKTRACK_MIN_GAP_METERS = 400;
+
+/**
+ * Where a track could be improved: the walking distance between consecutive stamps (in track order)
+ * and the share of the track that runs back on itself.
+ * @param {Array} latLngs - [[[lat, lon], ...], ...] per segment, as returned by analyzeTrack()
+ * @param {Array} stamps - Tour stamps {number, lat, lon}
+ * @returns {Object} - {points: [[lat, lon]], legs: [{from, to, trackKm, lineKm, startIndex, endIndex}], backtrackShare}
+ *                     a leg's indices refer to points; the closing leg wraps around (endIndex < startIndex)
+ */
+export function reviewTrack(latLngs, stamps) {
+    const points = latLngs.flat();
+    const cum = [0];
+    for (let i = 1; i < points.length; i++) {
+        cum.push(cum[i - 1] + distanceMeters(points[i - 1][0], points[i - 1][1], points[i][0], points[i][1]));
+    }
+    const total = cum.at(-1) || 1;
+
+    const nearest = stamps.map(s => {
+        let best = { number: s.number, index: 0, distance: Infinity };
+        points.forEach((p, index) => {
+            const distance = distanceMeters(s.lat, s.lon, p[0], p[1]);
+            if (distance < best.distance) best = { number: s.number, index, distance };
+        });
+        return best;
+    }).sort((a, b) => a.index - b.index);
+
+    const byNumber = new Map(stamps.map(s => [s.number, s]));
+    const legs = nearest.length < 2 ? [] : nearest.map((a, k) => {
+        const b = nearest[(k + 1) % nearest.length];
+        const wraps = k === nearest.length - 1;
+        const meters = wraps ? total - cum[a.index] + cum[b.index] : cum[b.index] - cum[a.index];
+        const sa = byNumber.get(a.number);
+        const sb = byNumber.get(b.number);
+        return {
+            from: a.number, to: b.number,
+            trackKm: meters / 1000,
+            lineKm: distanceMeters(sa.lat, sa.lon, sb.lat, sb.lon) / 1000,
+            startIndex: a.index, endIndex: b.index
+        };
+    });
+
+    // Grid of ~30 m cells, so each point is only compared with its neighbourhood
+    const cell = ([lat, lon]) => `${Math.floor(lat / 0.00027)}:${Math.floor(lon / 0.00043)}`;
+    const grid = new Map();
+    let doubled = 0;
+    points.forEach((p, i) => {
+        const [cy, cx] = cell(p).split(':').map(Number);
+        let again = false;
+        for (let dy = -1; dy <= 1 && !again; dy++) {
+            for (let dx = -1; dx <= 1 && !again; dx++) {
+                for (const j of grid.get(`${cy + dy}:${cx + dx}`) || []) {
+                    if (cum[i] - cum[j] >= BACKTRACK_MIN_GAP_METERS
+                        && distanceMeters(p[0], p[1], points[j][0], points[j][1]) < BACKTRACK_METERS) {
+                        again = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (again && i > 0) doubled += cum[i] - cum[i - 1];
+        const key = cell(p);
+        grid.set(key, [...(grid.get(key) || []), i]);
+    });
+
+    return { points, legs, backtrackShare: doubled / total };
+}
+
 // Name stored in the GPX (metadata or first track/route), if any
 export function gpxName(gpxText) {
     const doc = new DOMParser().parseFromString(gpxText, 'application/xml');

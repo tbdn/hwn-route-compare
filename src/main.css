@@ -1445,3 +1445,24 @@ footer a{color:var(--paper-2);}
 
 /* Routenabgleich: save the compared route as an own tour */
 .results-head #saveOwnTour{ margin-left:auto; padding:8px 14px; }
+
+/* Things to check on a suggestion (detours, ways back, layout notes) */
+.review-tag{ background:#FCE9D2; color:#8A4B00; }
+.tour-row.done .review-tag{ display:none; }
+.review-box{
+    display:grid;
+    gap:6px;
+    margin:10px 0;
+    padding:12px;
+    border:1.5px solid #E8B77A;
+    border-radius:10px;
+    background:#FFF6EA;
+    font-size:13px;
+}
+.review-box > b{ color:#8A4B00; }
+.review-box ul{ margin:0; padding-left:18px; display:grid; gap:4px; }
+.review-box .hint{ margin:0; }
+.review-list{ list-style:none; margin:0; padding:0; display:grid; gap:6px; font-size:13px; }
+.review-list .hint{ margin:0; display:block; }
+.review-mark{ color:#C26A00; }
+.tour-legend .legend-line.review{ border-top:6px solid rgba(194, 106, 0, .5); }
