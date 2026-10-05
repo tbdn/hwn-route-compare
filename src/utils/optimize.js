@@ -108,7 +108,7 @@ export function calculateTotalDetour(stamps) {
 /**
  * Generate GPX file content from optimized route
  * @param {Array} stamps - Stamps in visit order
- * @param {Object} options - {name, description}
+ * @param {Object} options - {name, description, closeLoop}
  * @returns {string} - GPX XML content
  */
 export function generateGPX(stamps, options = {}) {
@@ -123,8 +123,9 @@ export function generateGPX(stamps, options = {}) {
         <sym>Flag</sym>
     </wpt>`).join('');
 
-    // Create a route (for navigation apps)
-    const routePoints = stamps.map(stamp => `
+    // Create a route (for navigation apps); round tours return to the first stamp
+    const routeStamps = options.closeLoop && stamps.length > 1 ? [...stamps, stamps[0]] : stamps;
+    const routePoints = routeStamps.map(stamp => `
         <rtept lat="${stamp.lat}" lon="${stamp.lon}">
             <ele>${stamp.elevation || 0}</ele>
             <name>${stamp.name}</name>

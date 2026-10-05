@@ -2,7 +2,8 @@ import { parseGPX } from "./utils/gpx.js";
 import { findNearbyStamps } from "./utils/geo.js";
 import { loadStamps } from "./utils/stamps.js";
 import { analyzeDetours, getDetourEffort } from "./utils/detour.js";
-import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, displayRoutingResult, displayExtendedRoute, clearExtendedRoute, panToStamp } from "./components/map.js";
+import { initMap, clearMap, displayRoute, displayAllStamps, displayMatchedStamps, displayDetourLines, displayRoutingResult, displayExtendedRoute, clearExtendedRoute, panToStamp, getMap } from "./components/map.js";
+import { showTourPlan } from "./components/tourplan.js";
 import { setApiKey, hasApiKey, calculateDetourRoute, calculateMultiWaypointRoute, formatDuration, formatDistance } from "./utils/routing.js";
 import { optimizeStampOrder, calculateTotalDetour, generateGPX, downloadGPX } from "./utils/optimize.js";
 
@@ -549,13 +550,57 @@ async function calculateRouteForStamp(stamp, button) {
 // Cached stamps
 let stampsCache = null;
 
-async function getStamps() {
+async function getStamps(silent = false) {
     if (stampsCache) return stampsCache;
 
-    setStatus('Lade Stempeldaten …');
+    if (!silent) setStatus('Lade Stempeldaten …');
     stampsCache = await loadStamps();
     return stampsCache;
 }
+
+// View switching (Routenabgleich / Tourenplan)
+const VIEW_HASH = { compare: '', tours: '#touren' };
+const tabs = document.querySelectorAll('.tab');
+
+async function switchView(view) {
+    tabs.forEach(tab => {
+        const active = tab.dataset.view === view;
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+    });
+    el('viewCompare').hidden = view !== 'compare';
+    el('viewTours').hidden = view !== 'tours';
+    document.querySelectorAll('[data-view-header]').forEach(h => {
+        h.hidden = h.dataset.viewHeader !== view;
+    });
+
+    if (view === 'compare') {
+        getMap()?.invalidateSize();
+        return;
+    }
+    try {
+        await showTourPlan(await getStamps(true));
+    } catch (e) {
+        el('tourStatus').textContent = e.message || 'Tourenplan konnte nicht geladen werden.';
+    }
+}
+
+tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        const view = tab.dataset.view;
+        history.replaceState(null, '', VIEW_HASH[view] || location.pathname + location.search);
+        switchView(view);
+    });
+    tab.addEventListener('keydown', e => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        const other = [...tabs].find(t => t !== tab);
+        other.focus();
+        other.click();
+    });
+});
+
+window.addEventListener('hashchange', () => switchView(location.hash === VIEW_HASH.tours ? 'tours' : 'compare'));
+if (location.hash === VIEW_HASH.tours) switchView('tours');
 
 // Main comparison handler
 goBtn.addEventListener('click', async () => {

@@ -14,10 +14,22 @@
 <div class="wrap">
     <header>
         <div class="eyebrow">Harzer Wandernadel · 222 Stempelstellen</div>
-        <h1>Liegt dein Weg an einer <em>Stempelstelle</em>?</h1>
-        <div class="sub">GPX-Track aus Komoot hochladen – der Abgleich läuft direkt im Browser gegen die offiziellen Koordinaten der HWN.</div>
+        <div data-view-header="compare">
+            <h1>Liegt dein Weg an einer <em>Stempelstelle</em>?</h1>
+            <div class="sub">GPX-Track aus Komoot hochladen – der Abgleich läuft direkt im Browser gegen die offiziellen Koordinaten der HWN.</div>
+        </div>
+        <div data-view-header="tours" hidden>
+            <h1>Tourenplan für die <em>offenen Stempel</em></h1>
+            <div class="sub">Alle Stempelstellen, die noch fehlen, aufgeteilt in Rundwanderungen von höchstens rund 25 km. Gruppiert nach Regionen und sortiert nach Entfernung von Hamburg.</div>
+        </div>
     </header>
 
+    <nav class="tabs" role="tablist" aria-label="Ansicht">
+        <button type="button" class="tab" role="tab" id="tabCompare" data-view="compare" aria-controls="viewCompare" aria-selected="true">Routenabgleich</button>
+        <button type="button" class="tab" role="tab" id="tabTours" data-view="tours" aria-controls="viewTours" aria-selected="false" tabindex="-1">Tourenplan</button>
+    </nav>
+
+    <section id="viewCompare" role="tabpanel" aria-labelledby="tabCompare">
     <div class="card">
         <div class="file-upload-area">
             <label class="file-btn large">
@@ -100,6 +112,40 @@
             </div>
         </div>
     </div>
+
+    </section>
+
+    <section id="viewTours" role="tabpanel" aria-labelledby="tabTours" hidden>
+        <div class="route-comparison tour-stats" id="tourStats"></div>
+
+        <div class="region-chips" id="tourChips" role="group" aria-label="Region filtern"></div>
+
+        <div class="tour-mapgrid" id="tourMapGrid">
+            <div class="tour-mapbox">
+                <div id="tourMap"></div>
+                <div class="tour-legend">
+                    <span><i style="background:var(--ink)"></i>Linie = Reihenfolge, Luftlinie</span>
+                    <span><i style="background:#9A958A"></i>schon gestempelt</span>
+                    <span><b class="legend-dash"></b>gestrichelt = Tour erledigt</span>
+                </div>
+            </div>
+            <aside class="card tour-detail" id="tourDetail" aria-live="polite"></aside>
+        </div>
+
+        <div class="tour-list" id="tourList"></div>
+
+        <details class="api-config tour-notes">
+            <summary>So ist der Plan entstanden</summary>
+            <div class="api-config-content">
+                <p><b>Kilometer:</b> Luftlinie der optimierten Runde mal 1,4 als Zuschlag für Wege. Die echte Länge siehst du erst nach dem Import in Komoot. Die Zeit rechnet mit 4 km/h plus ein paar Minuten pro Stempel.</p>
+                <p><b>Höhenmeter:</b> „Hm min.“ zählt nur die Anstiege von Stempel zu Stempel, nach den Höhen aus dem HWN-GPS-Download. Täler und Kuppen dazwischen fehlen, die echten Höhenmeter liegen also höher, in Tälern wie dem Bodetal deutlich. Das Niveau ergibt sich aus Kilometern plus Höhenmetern und aus der höchsten Stelle der Runde (ab 650 m mittel, ab 850 m anspruchsvoll).</p>
+                <p><b>Start:</b> Jede Runde ist geschlossen. Du kannst an jedem Stempel einsteigen und parkst am besten am Wanderparkplatz, der einem Stempel am nächsten liegt.</p>
+                <p><b>Abstecher:</b> Die ehemalige Steinmühle (96) liegt zu abseits für eine Runde. Nimm sie mit dem Auto mit, wenn du für Tour G2 nach Ilfeld fährst.</p>
+                <p><b>Erledigt:</b> Bereits absolvierte Touren (B7, B8, D8) sind fest hinterlegt. Weitere abgehakte Touren werden nur in diesem Browser gespeichert.</p>
+            </div>
+        </details>
+        <div class="status error" id="tourStatus"></div>
+    </section>
 
     <footer>
         Referenzkoordinaten: Offizielle Zusammenstellung der 222 Stempelstellen (+ Sonderstempel) auf Basis der Daten der Harzer Wandernadel, geladen von https://www.harzer-wandernadel.de/stempelstellen/gps-download/.
