@@ -169,8 +169,10 @@ function setOwnTours(records) {
     refreshTracks();
 }
 
+// The variant chosen in the browser, otherwise the default from tours.json (`defaultVariant: "parts"`)
 function usesParts(tour) {
-    return tour.parts?.length > 0 && variants[tour.id] === 'parts';
+    if (!tour.parts?.length) return false;
+    return (variants[tour.id] || tour.defaultVariant || 'whole') === 'parts';
 }
 
 // What is walked: the whole tour, or its parts when that variant is chosen
@@ -189,7 +191,7 @@ function isSelected(unit) {
 function sanitizeVariants(data) {
     const result = {};
     Object.entries(data || {}).forEach(([id, v]) => {
-        if (v === 'parts' && unitById.get(id)?.parts?.length) result[id] = 'parts';
+        if ((v === 'parts' || v === 'whole') && unitById.get(id)?.parts?.length) result[id] = v;
     });
     return result;
 }
@@ -210,9 +212,11 @@ function saveVariants() {
     }
 }
 
+// Only a choice that differs from the tour's default is stored
 function setVariant(tour, useParts) {
-    if (useParts) variants[tour.id] = 'parts';
-    else delete variants[tour.id];
+    const variant = useParts ? 'parts' : 'whole';
+    if (variant === (tour.defaultVariant || 'whole')) delete variants[tour.id];
+    else variants[tour.id] = variant;
     saveVariants();
     updateLines();
     renderList();
@@ -1013,7 +1017,8 @@ function select(id, scrollToMap = false) {
     const tour = unitById.get(id);
     // Opening a part switches its tour to the part variant
     if (tour?.parent && !usesParts(tour.parent)) {
-        variants[tour.parent.id] = 'parts';
+        if ((tour.parent.defaultVariant || 'whole') === 'parts') delete variants[tour.parent.id];
+        else variants[tour.parent.id] = 'parts';
         saveVariants();
         updateLines();
         renderList();
@@ -1747,7 +1752,7 @@ function variantHtml(tour) {
         <b>Gehen als</b>
         <div class="variant-switch" role="radiogroup" aria-label="Variante">
             <label><input type="radio" name="tourVariant" value="whole"${parts ? '' : ' checked'}> Komplett (${whole.real ? '' : '~'}${fmt1(whole.km)} km)</label>
-            <label><input type="radio" name="tourVariant" value="parts"${parts ? ' checked' : ''}> In zwei Teilen</label>
+            <label><input type="radio" name="tourVariant" value="parts"${parts ? ' checked' : ''}> In zwei Teilen${tour.defaultVariant === 'parts' ? ' (empfohlen)' : ''}</label>
         </div>
         <ul class="variant-parts">${partRows}</ul>
         <p class="hint">Die Teile sind eigene Runden mit eigenem Track; öffne einen Teil, um ihn abzuhaken oder einen Track zu hinterlegen.

@@ -5,7 +5,7 @@
      xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
     <metadata>
         <name>HWN Tour C5 (Platzhalter)</name>
-        <desc>Oberharz: Altenau, St. Andreasberg, Bad Lauterberg · Stempel HWN146, HWN154 · Luftlinie, geschätzt ca. 15,8 km / mind. 60 Hm</desc>
+        <desc>Oberharz: Altenau, St. Andreasberg, Bad Lauterberg · Stempel HWN146 · Einzelstempel ohne Runde</desc>
     </metadata>
     <wpt lat="51.7626" lon="10.4457333">
         <ele>610</ele>
@@ -14,19 +14,4 @@
 Morgenbrodstal</desc>
         <sym>Flag</sym>
     </wpt>
-    <wpt lat="51.7322373" lon="10.5113626">
-        <ele>670</ele>
-        <name>2. HWN154 Dreibrodesteine</name>
-        <desc>Dreibrodesteine</desc>
-        <sym>Flag</sym>
-    </wpt>
-    <trk>
-        <name>HWN Tour C5 (Platzhalter)</name>
-        <desc>Oberharz: Altenau, St. Andreasberg, Bad Lauterberg · Stempel HWN146, HWN154 · Luftlinie, geschätzt ca. 15,8 km / mind. 60 Hm</desc>
-        <trkseg>
-            <trkpt lat="51.7626" lon="10.4457333"><ele>610</ele></trkpt>
-            <trkpt lat="51.7322373" lon="10.5113626"><ele>670</ele></trkpt>
-            <trkpt lat="51.7626" lon="10.4457333"><ele>610</ele></trkpt>
-        </trkseg>
-    </trk>
 </gpx>

@@ -83,7 +83,6 @@ test('the routed rest becomes a planned own tour and empties the suggestion', as
     assert.match(text($('#tourDetail h3')), /^A1 – Rest geplant/);
     assert.match(text($('#tourDetail .track-source')), /Weg von OpenRouteService \(ungeprüft\)/);
     assert.deepEqual(rowCells('A1'), { km: '–', hours: '–', ascent: '–' });
-    assert.ok(!stats()['km offen'].startsWith('~'), 'everything open now has a track');
 });
 
 test('only suggestions with a track can be adopted', async () => {

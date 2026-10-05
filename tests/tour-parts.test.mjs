@@ -1,103 +1,131 @@
-// Part tours of long suggestions (plan step 1b): variant switch, part detail, progress through
-// parts, statistics per variant, export/import of the chosen variants.
+// Part tours of long suggestions (plan step 1b): variant switch, default variant from tours.json,
+// part detail, progress through parts, statistics per variant, export/import of the chosen variants.
+// The tours used are picked from the data: one walked whole by default, one in parts by default.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    setupBrowser, startTourPlan, tourById, plan, $, $$, tick, text, row, rowState, rowCells, setChecked,
+    setupBrowser, startTourPlan, plan, $, $$, tick, text, row, rowState, rowCells, setChecked,
     importProgressFile, stats, parseDe
 } from './helpers/browser.mjs';
 
 const env = setupBrowser();
 await startTourPlan();
 const variantsInStore = () => JSON.parse(env.store['hwn-tour-variants'] || '{}');
-const A5 = tourById('A5');
+const split = plan.tours.filter(t => t.parts?.length);
+// T: walked whole by default, P: walked in parts by default, O: another whole-by-default tour
+const [T, O] = split.filter(t => t.defaultVariant !== 'parts');
+const P = split.find(t => t.defaultVariant === 'parts');
+const [Ta, Tb] = T.parts;
 
 test('every split tour lists its parts below it', () => {
-    const withParts = plan.tours.filter(t => t.parts?.length);
-    assert.ok(withParts.length > 0);
-    assert.deepEqual($$('.part-row').map(r => r.dataset.id), withParts.flatMap(t => t.parts.map(p => p.id)));
-    assert.match(text(row('A5').querySelector('.tour-id')), /2 Teile/);
+    assert.ok(split.length > 0);
+    assert.deepEqual($$('.part-row').map(r => r.dataset.id), split.flatMap(t => t.parts.map(p => p.id)));
+    assert.match(text(row(T.id).querySelector('.tour-id')), /2 Teile/);
 });
 
 test('parts of a split tour cover exactly its stamps', () => {
-    for (const tour of plan.tours.filter(t => t.parts?.length)) {
+    for (const tour of split) {
         assert.deepEqual(tour.parts.flatMap(p => p.stamps).sort(), [...tour.stamps].sort(), tour.id);
     }
 });
 
-test('a tour is walked whole until the parts variant is chosen', async () => {
-    assert.equal(row('A5').classList.contains('variant-off'), false);
-    assert.equal(row('A5a').classList.contains('variant-off'), true);
-    row('A5').click();
+test('a tour with defaultVariant "parts" starts in parts and marks that as recommended', async () => {
+    assert.ok(P, 'tours.json has a tour with defaultVariant "parts"');
+    assert.equal(row(P.id).classList.contains('variant-off'), true);
+    assert.equal(row(P.parts[0].id).classList.contains('variant-off'), false);
+    row(P.id).click();
+    await tick();
+    assert.match(text($('#tourDetail .variant-box')), /In zwei Teilen \(empfohlen\)/);
+    assert.deepEqual(variantsInStore(), {}, 'the default is not stored');
+});
+
+test('choosing whole for a parts-by-default tour is stored, going back to the default removes it', async () => {
+    setChecked($('#tourDetail input[name="tourVariant"][value="whole"]'), true);
+    await tick();
+    assert.deepEqual(variantsInStore(), { [P.id]: 'whole' });
+    assert.equal(row(P.id).classList.contains('variant-off'), false);
+
+    row(P.id).click();
+    await tick();
+    setChecked($('#tourDetail input[name="tourVariant"][value="parts"]'), true);
+    await tick();
+    assert.deepEqual(variantsInStore(), {});
+});
+
+test('a tour without default is walked whole until the parts variant is chosen', async () => {
+    assert.equal(row(T.id).classList.contains('variant-off'), false);
+    assert.equal(row(Ta.id).classList.contains('variant-off'), true);
+    row(T.id).click();
     await tick();
     assert.match(text($('#tourDetail .variant-box')), /Komplett/);
+    assert.doesNotMatch(text($('#tourDetail .variant-box')), /empfohlen/);
     assert.equal($$('#tourDetail .part-link').length, 2);
 });
 
 test('switching to parts counts the parts in the open distance instead of the whole tour', async () => {
     const beforeText = stats()['km offen'];
     const before = parseDe(beforeText);
-    const whole = parseDe(rowCells('A5').km);
+    const whole = parseDe(rowCells(T.id).km);
     setChecked($('#tourDetail input[name="tourVariant"][value="parts"]'), true);
     await tick();
-    assert.deepEqual(variantsInStore(), { A5: 'parts' });
-    const parts = A5.parts.reduce((a, p) => a + parseDe(rowCells(p.id).km), 0);
+    assert.deepEqual(variantsInStore(), { [T.id]: 'parts' });
+    const parts = T.parts.reduce((a, p) => a + parseDe(rowCells(p.id).km), 0);
     assert.ok(Math.abs(parseDe(stats()['km offen']) - (before - whole + parts)) <= 1);
     // Parts without a project track are estimates ("~")
-    const partWithoutTrack = A5.parts.some(p => !row(p.id).querySelector('.tour-id').textContent.includes('GPX'));
+    const partWithoutTrack = T.parts.some(p => !row(p.id).querySelector('.tour-id').textContent.includes('GPX'));
     if (!beforeText.startsWith('~')) assert.equal(stats()['km offen'].startsWith('~'), partWithoutTrack);
-    assert.equal(row('A5').classList.contains('variant-off'), true);
-    assert.equal(row('A5a').classList.contains('variant-off'), false);
+    assert.equal(row(T.id).classList.contains('variant-off'), true);
+    assert.equal(row(Ta.id).classList.contains('variant-off'), false);
 });
 
 test('a part has its own detail with stamps, checkbox and track actions', async () => {
-    $('#tourDetail [data-part="A5b"]').click();
+    $(`#tourDetail [data-part="${Tb.id}"]`).click();
     await tick();
-    assert.match(text($('#tourDetail h3')), /^Teil A5b/);
+    assert.match(text($('#tourDetail h3')), new RegExp(`^Teil ${Tb.id}`));
     assert.ok($('#trackRoute'), 'parts can be routed on hiking paths');
-    assert.equal($$('#tourDetail .stamp-done').length, A5.parts[1].stamps.length);
+    assert.equal($$('#tourDetail .stamp-done').length, Tb.stamps.length);
 });
 
 test('a suggestion is done only when both parts are collected', async () => {
     setChecked($('#tourDoneToggle'), true);
-    assert.equal(rowState('A5b').checked, true);
-    assert.deepEqual(rowState('A5'), { checked: false, partial: true, count: `${A5.parts[1].stamps.length}/${A5.stamps.length}` });
+    assert.equal(rowState(Tb.id).checked, true);
+    assert.deepEqual(rowState(T.id), { checked: false, partial: true, count: `${Tb.stamps.length}/${T.stamps.length}` });
 
     $('#tourParent').click();
     await tick();
-    assert.match(text($('#tourDetail h3')), /^Vorschlag A5/);
+    assert.match(text($('#tourDetail h3')), new RegExp(`^Vorschlag ${T.id}`));
 
-    row('A5a').click();
+    row(Ta.id).click();
     await tick();
     setChecked($('#tourDoneToggle'), true);
-    assert.equal(rowState('A5').checked, true);
+    assert.equal(rowState(T.id).checked, true);
     assert.equal(stats()['Vorschläge erledigt'], '1');
 });
 
 test('walked distance follows the chosen variant', async () => {
-    const parts = A5.parts.reduce((a, p) => a + parseDe(rowCells(p.id).km), 0);
+    const parts = T.parts.reduce((a, p) => a + parseDe(rowCells(p.id).km), 0);
     assert.ok(Math.abs(parseDe(stats()['km zurückgelegt']) - parts) < 0.2);
 
-    row('A5').click();
+    row(T.id).click();
     await tick();
     setChecked($('#tourDetail input[name="tourVariant"][value="whole"]'), true);
     await tick();
     assert.deepEqual(variantsInStore(), {});
-    assert.equal(stats()['km zurückgelegt'], rowCells('A5').km);
+    assert.equal(stats()['km zurückgelegt'], rowCells(T.id).km);
 });
 
 test('opening a part switches its tour to the parts variant', async () => {
-    row('D7b').click();
+    row(O.parts[1].id).click();
     await tick();
-    assert.deepEqual(variantsInStore(), { D7: 'parts' });
+    assert.deepEqual(variantsInStore(), { [O.id]: 'parts' });
 });
 
 test('variants are exported and imported, unknown ones are dropped', async () => {
     $('#progressExport').click();
     const data = JSON.parse(env.downloads.at(-1));
-    assert.deepEqual(data.variants, { D7: 'parts' });
+    assert.deepEqual(data.variants, { [O.id]: 'parts' });
 
-    await importProgressFile(JSON.stringify({ ...data, variants: { A5: 'parts', XX: 'parts', A1: 'parts' } }));
-    assert.deepEqual(variantsInStore(), { A5: 'parts' });
+    await importProgressFile(JSON.stringify({ ...data, variants: { [T.id]: 'parts', [P.id]: 'whole', XX: 'parts', A1: 'parts' } }));
+    assert.deepEqual(variantsInStore(), { [T.id]: 'parts', [P.id]: 'whole' });
 });

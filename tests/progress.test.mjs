@@ -3,8 +3,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
-    setupBrowser, startTourPlan, tourById, $, $$, tick, text, row, rowState, setChecked,
+    setupBrowser, startTourPlan, tourById, plan, SRC, $, $$, tick, text, row, rowState, setChecked,
     importProgressFile, stats, readJSON
 } from './helpers/browser.mjs';
 
@@ -54,11 +55,16 @@ test('project tracks from Komoot are labelled as project tracks', async () => {
 });
 
 test('season tag follows the highest point of the track', async () => {
-    // C5's track climbs above 800 m although its highest stamp is lower
-    row('C5').click();
-    await tick();
-    assert.ok(tourById('C5').maxEle < 800);
-    assert.ok($$('#tourDetail .tips b').some(b => b.textContent.startsWith('Mai–Okt')));
+    const { analyzeTrack } = await import('../src/utils/tracks.js');
+    const season = ele => ele < 600 ? 'ganzjährig' : ele < 800 ? 'Apr–Nov' : 'Mai–Okt';
+    const withTrack = plan.tours.filter(t => !t.single && fs.existsSync(`${SRC}data/tours/${t.id}.gpx`));
+    assert.ok(withTrack.length > 0);
+    for (const tour of withTrack) {
+        const { maxEle } = analyzeTrack(fs.readFileSync(`${SRC}data/tours/${tour.id}.gpx`, 'utf8'), []);
+        row(tour.id).click();
+        await tick();
+        assert.equal($$('#tourDetail .tips b')[0].textContent, `${season(maxEle ?? tour.maxEle)}:`, tour.id);
+    }
 });
 
 test('a single-stamp suggestion is done with its stamp', async () => {

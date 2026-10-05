@@ -212,6 +212,7 @@ Abweichungen von der ursprünglichen Planung:
 **Nicht teilen:**
 - C5 (2 Stempel) und C7 (3 Stempel mit 6 bis 7 km Abstand): in Komoot prüfen.
 - B3 (Brocken): eher als Streckenwanderung mit der Brockenbahn.
+- C7 (seit dem C5-Umbau 23,6 km / 889 Hm): ein Teil wäre fast nur Hin- und Rückweg, die Ersparnis gering.
 - ~~B4: 18 und 156 besser als Abstecher mit dem Auto.~~ Inzwischen doch geteilt: Der kurze Teil liegt 3,4 km entfernt in einem eigenen Gebiet.
 
 **Erst prüfen:** Bei D7, A5, C5, B3 und B2 ist der ORS-Track 1,3- bis 1,6-mal so lang wie die Schätzung. Das deutet auf Umwege hin. Diese Touren vor dem Teilen in Komoot prüfen.
@@ -390,9 +391,23 @@ Die App markiert Vorschläge und Teile mit „⚠ prüfen“ und erklärt im Det
 - Bewertet werden nur Tracks von OpenRouteService. Gelaufene oder eigene Tracks (Komoot) und erledigte Touren werden nicht markiert.
 - Die Hinweise werden bei jeder Track-Änderung neu berechnet; ein verbesserter Track lässt sie verschwinden.
 - Der Chip „⚠ Zu prüfen (n)“ filtert Karte und Liste und zeigt ohne Auswahl eine Übersicht aller Hinweise.
-- Stand 05.10.2026: 23 Vorschläge und Teile mit Hinweisen.
+- Stand 05.10.2026: 23 Vorschläge und Teile mit Hinweisen, nach den Anpassungen unten noch 20.
 
-**Noch offen:** `defaultVariant` („In zwei Teilen“ als Voreinstellung für A5, B4, G2 und D7) und der Umbau von C5 sind nur als Hinweis markiert, nicht umgesetzt.
+### ✅ Umgesetzte Anpassungen (05.10.2026)
+
+- **Voreinstellung „In zwei Teilen“** für A5, B4, G2 und D7 (`defaultVariant: "parts"` in `tours.json`):
+  - Im Umschalter steht „(empfohlen)“.
+  - Gespeichert wird im Browser nur eine abweichende Wahl („whole“ bzw. „parts“), auch im Export.
+  - Begründung: Die Teil-Tracks sind zusammen deutlich kürzer (A5 13,6 statt 26,0 km, B4 14,2 statt 22,9 km, G2 19,2 statt 23,5 km). D7 ist in einem Stück mit 32,5 km kaum machbar (Teile 12,1 + 16,7 km).
+- **C5 aufgelöst:**
+  - 154 Dreibrodesteine gehört jetzt zu C7 (Reihenfolge 154 → 153 → 123 → 155, geschätzt 23,3 statt 21,8 km).
+  - C5 ist nur noch 146 Großes Wehr, als Einzelstempel wie G1.
+  - Die alten Tracks `C5.gpx` (24,6 km Hin- und Rückweg) und `C7.gpx` (ohne 154) sind entfernt; sie stehen noch in der Git-Historie.
+  - ~~C7 zeigt bis zu einem neuen Track die Schätzung.~~ Seit 05.10.2026 liegt der neue ORS-Track `C7.gpx` vor: 23,6 km, 889 Hm, alle vier Stempel am Weg, keine Prüfhinweise. „km offen“ jetzt 910 km ohne Schätzanteil.
+  - C7 liegt damit bei 32,5 Leistungs-km über der Teilungsschwelle, wird aber bewusst nicht geteilt (`NO_SPLIT` in `scripts/suggest-tour-parts.js`). Der Vorschlag des Skripts, [154, 153] mit ~15,8 km und [123, 155] mit ~6,3 km, hätte einen Teil ergeben, der fast nur Hin- und Rückweg zum Goedeckenplatz ist, und zusammen nur ~1,5 km gespart.
+  - Der Umbau-Hinweis bei C5 ist entfernt.
+- **„km offen“:** von 962 auf ~909 km.
+- **Neue Datenprüfungen in `npm test`:** `defaultVariant` nur bei geteilten Touren, und Einzelstempel ohne Projekt-Track.
 
 ## Offene Fragen / Entscheidungen
 

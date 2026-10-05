@@ -81,3 +81,17 @@ test('every project track passes all stamps of its tour', async () => {
         assert.deepEqual(result.missed.map(m => m.number), [], `${unit.id}.gpx`);
     }
 });
+
+test('defaultVariant is only set to "parts" and only on tours that have parts', () => {
+    for (const tour of plan.tours.filter(t => t.defaultVariant !== undefined)) {
+        assert.equal(tour.defaultVariant, 'parts', tour.id);
+        assert.ok(tour.parts?.length, `${tour.id} has no parts`);
+    }
+});
+
+// A single stamp has no round; a track would show a walk that isn't part of the plan
+test('single-stamp suggestions have no project track', () => {
+    for (const tour of plan.tours.filter(t => t.single)) {
+        assert.equal(fs.existsSync(`${SRC}data/tours/${tour.id}.gpx`), false, tour.id);
+    }
+});
