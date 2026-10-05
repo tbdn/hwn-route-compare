@@ -1492,6 +1492,32 @@ footer a{color:var(--paper-2);}
 .tour-legend .legend-line.review{ border-top:6px solid rgba(194, 106, 0, .5); }
 
 /* Delete all uploaded tracks (development helper next to export/import) */
+/* Backup bar (Meine Stempel and Tourenplan) */
+.backup-bar{ margin-top:22px; }
+.backup-bar .progress-transfer{ margin:0; }
+.backup-bar[data-view="stamps"] .tours-only{ display:none !important; }
+.backup-hint{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px 12px;
+    margin-bottom:12px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--paper-2);
+    opacity:.85;
+}
+.backup-hint.urgent{
+    opacity:1;
+    padding:10px 14px;
+    border-radius:10px;
+    background:#F1DCCB;
+    color:#6E3519;
+    font-family:'Inter', system-ui, sans-serif;
+    font-size:14px;
+}
+.backup-hint .selection-btn{ padding:6px 12px; }
+.backup-hint.urgent .pass-undo{ color:#6E3519; }
 .uploads-confirm{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:13px; }
 .uploads-confirm .selection-btn{ padding:6px 12px; }
 

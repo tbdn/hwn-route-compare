@@ -22,6 +22,13 @@ const LEGACY_EXTRA_STORAGE = 'hwn-stamps-extra';
 const KOMOOT_STORAGE = 'hwn-komoot-links';
 const VARIANT_STORAGE = 'hwn-tour-variants';
 const PROGRESS_FORMAT = 'hwn-tourenplan-progress';
+const BACKUP_STORAGE = 'hwn-last-backup';             // {at, stamps} of the last export or import
+const CHANGES_STORAGE = 'hwn-changes-since-backup';   // number of progress changes since then
+const SNOOZE_STORAGE = 'hwn-backup-snooze';           // ISO time until which the reminder stays quiet
+const PERSIST_STORAGE = 'hwn-persist-requested';      // navigator.storage.persist() was asked once
+const BACKUP_SNOOZE_DAYS = 7;
+const BACKUP_DUE_DAYS = 14;
+const BACKUP_DUE_CHANGES = 10;
 // Start and end closer than this are shown as one "Start/Ziel" marker
 const LOOP_CLOSE_METERS = 250;
 // Straight line to path distance, the same factor as the estimates in tours.json
@@ -162,6 +169,10 @@ function setOwnTours(records) {
     ownTours = records;
     const before = ownUnits().map(u => u.id);
     buildUnits();
+    if (!map) {
+        refreshTracks();
+        return;
+    }
     before.filter(id => !unitById.has(id)).forEach(removeUnitLines);
     units.filter(u => !loopLines.has(u.id)).forEach(addUnitLines);
     if (selectedId && !unitById.has(selectedId)) selectedId = null;
@@ -349,7 +360,52 @@ function loadCollected() {
 
 function saveCollected() {
     saveSet(COLLECTED_STORAGE, collected);
+    writeStorage(CHANGES_STORAGE, String(changesSinceBackup() + 1));
+    if (collected.size) requestPersistentStorage();
+    renderBackupHint();
     document.dispatchEvent(new CustomEvent('hwn:progress-changed'));
+}
+
+function readStorage(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+function writeStorage(key, value) {
+    try {
+        value === null ? localStorage.removeItem(key) : localStorage.setItem(key, value);
+    } catch {
+        // ignore
+    }
+}
+
+function changesSinceBackup() {
+    return Math.max(0, parseInt(readStorage(CHANGES_STORAGE), 10) || 0);
+}
+
+function lastBackup() {
+    try {
+        const b = JSON.parse(readStorage(BACKUP_STORAGE));
+        return b && !Number.isNaN(Date.parse(b.at)) ? b : null;
+    } catch {
+        return null;
+    }
+}
+
+// Browsers may clear site data under storage pressure (or Safari after a week without a visit);
+// a persistent grant prevents that. Asked once, on the first collected stamp.
+let storagePersisted = null;      // true/false once known
+function requestPersistentStorage() {
+    const storage = globalThis.navigator?.storage;
+    if (!storage?.persist || readStorage(PERSIST_STORAGE)) return;
+    writeStorage(PERSIST_STORAGE, new Date().toISOString());
+    storage.persist().then(granted => {
+        storagePersisted = granted;
+        renderBackupHint();
+    }).catch(() => {});
 }
 
 function collectedStamps() {
@@ -608,8 +664,16 @@ function loadPlanData(stamps) {
         buildUnits();
         collected = loadCollected();
         variants = loadVariants();
-        // Own tours load later, so their links are kept by id pattern
+        // Uploads and own tours come from IndexedDB; they belong to the progress (export) even without the map
+        const [uploads, ownRecords] = await Promise.all([
+            loadUploadedTracks().catch(() => ({})),
+            loadOwnTours().catch(() => [])
+        ]);
+        uploadedTracks = uploads;
+        ownTours = ownRecords.map(sanitizeOwnRecord).filter(Boolean);
+        buildUnits();
         komootLinks = sanitizeKomootLinks(loadKomootLinks(), id => unitById.has(id) || OWN_ID.test(id));
+        initBackupBar();
     })();
     planData.catch(() => { planData = null; });
     return planData;
@@ -662,25 +726,20 @@ export async function showTourPlan(stamps) {
     }
 
     initTourMap();
-    initProgressTransfer();
-    initUploadsClear();
     initOwnTours();
     renderChips();
     renderList();
     render();
 
-    // Tracks load in the background; the straight-line plan is usable meanwhile
-    let ownRecords;
-    [projectTracks, uploadedTracks, ownRecords] = await Promise.all([
-        loadProjectTracks(units.map(u => u.id)),
-        loadUploadedTracks(),
-        loadOwnTours().catch(() => [])
-    ]);
-    setOwnTours(ownRecords.map(sanitizeOwnRecord).filter(Boolean));
+    // Project tracks load in the background; the straight-line plan is usable meanwhile
+    projectTracks = await loadProjectTracks(units.filter(u => !u.own).map(u => u.id));
+    refreshTracks();
 }
 
 // Rebuild the effective track per tour (upload beats project file) and redraw
 function refreshTracks() {
+    updateUploadsButton();
+    if (!map) return;
     tracks.clear();
     trackErrors.clear();
     units.forEach(tour => {
@@ -704,7 +763,6 @@ function refreshTracks() {
     });
 
     computeReviews();
-    updateUploadsButton();
     updateLines();
     renderChips();
     renderList();
@@ -1994,6 +2052,7 @@ function exportProgress() {
     // Only uploads are exported; project files already live in the repository
     const exportedTracks = Object.fromEntries(
         Object.entries(uploadedTracks).map(([id, t]) => [id, { name: t.name, gpx: t.gpx, uploadedAt: t.uploadedAt }]));
+    markBackup();
     downloadJSON({
         format: PROGRESS_FORMAT,
         version: 3,
@@ -2068,6 +2127,8 @@ async function importProgress(text) {
     }
     ownDraft = null;
     setOwnTours(ownRecords);
+    markBackup();
+    document.dispatchEvent(new CustomEvent('hwn:progress-changed'));
 
     const doneCount = plan.tours.filter(isDone).length;
     let msg = `Importiert: ${doneCount} ${doneCount === 1 ? 'Vorschlag' : 'Vorschläge'} erledigt, ${collected.size} Stempel gesammelt`;
@@ -2108,6 +2169,77 @@ function initUploadsClear() {
         setTransferStatus(`${count} Browser-Track${count === 1 ? '' : 's'} gelöscht. Es gelten wieder die Projektdateien.`);
         refreshTracks();
     });
+}
+
+// A file export or import is a backup: the reminder starts over
+function markBackup() {
+    writeStorage(BACKUP_STORAGE, JSON.stringify({ at: new Date().toISOString(), stamps: collected.size }));
+    writeStorage(CHANGES_STORAGE, '0');
+    writeStorage(SNOOZE_STORAGE, null);
+    renderBackupHint();
+}
+
+const localDay = date => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+function daysAgoText(days) {
+    return days <= 0 ? 'heute' : days === 1 ? 'gestern' : `vor ${days} Tagen`;
+}
+
+/**
+ * Reminder above the backup bar: urgent when nothing was ever saved or the last backup is old
+ * or far behind, a short note otherwise. "Später erinnern" quiets the urgent state for a week.
+ */
+function renderBackupHint() {
+    const hint = el('backupHint');
+    if (!hint || !plan) return;
+    const backup = lastBackup();
+    const changes = changesSinceBackup();
+    const snoozed = Date.parse(readStorage(SNOOZE_STORAGE)) > Date.now();
+    const protectedNote = storagePersisted ? ' Der Browser hält den Speicher dauerhaft.' : '';
+    let text = '';
+    let urgent = false;
+    if (!backup) {
+        urgent = collected.size > 0;
+        text = urgent ? `Dein Stand (${collected.size} Stempel) ist nur in diesem Browser gespeichert.` : '';
+    } else {
+        const at = new Date(backup.at);
+        const days = Math.round((localDay(new Date()) - localDay(at)) / 86400000);
+        if (changes) {
+            urgent = days >= BACKUP_DUE_DAYS || changes >= BACKUP_DUE_CHANGES;
+            text = `Letzte Sicherung ${daysAgoText(days)}, seitdem ${changes} ${changes === 1 ? 'Änderung' : 'Änderungen'}.`;
+        } else {
+            text = `Gesichert am ${at.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}.`;
+        }
+    }
+    if (urgent && snoozed) {
+        urgent = false;
+        if (!backup) text = '';
+    }
+    hint.hidden = !text;
+    hint.classList.toggle('urgent', urgent);
+    el('backupHintText').textContent = text + protectedNote;
+    el('backupNow').hidden = !urgent;
+    el('backupSnooze').hidden = !urgent;
+}
+
+// The bar lives outside the views and is shown on "Meine Stempel" and in the Tourenplan
+let backupBarReady = false;
+function initBackupBar() {
+    if (backupBarReady || !el('backupBar')) return;
+    backupBarReady = true;
+    initProgressTransfer();
+    initUploadsClear();
+    updateUploadsButton();
+    el('backupNow').addEventListener('click', exportProgress);
+    el('backupSnooze').addEventListener('click', () => {
+        writeStorage(SNOOZE_STORAGE, new Date(Date.now() + BACKUP_SNOOZE_DAYS * 86400000).toISOString());
+        renderBackupHint();
+    });
+    globalThis.navigator?.storage?.persisted?.().then(p => {
+        storagePersisted = p;
+        renderBackupHint();
+    }).catch(() => {});
+    renderBackupHint();
 }
 
 function initProgressTransfer() {

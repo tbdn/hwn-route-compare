@@ -34,6 +34,27 @@
         <button type="button" class="tab" role="tab" id="tabStamps" data-view="stamps" aria-controls="viewStamps" aria-selected="false" tabindex="-1">Meine Stempel</button>
     </nav>
 
+    <section class="backup-bar" id="backupBar" hidden aria-label="Fortschritt sichern">
+        <div class="backup-hint" id="backupHint" role="status" hidden>
+            <span id="backupHintText"></span>
+            <button type="button" class="selection-btn primary" id="backupNow">Jetzt sichern</button>
+            <button type="button" class="pass-undo" id="backupSnooze">Später erinnern</button>
+        </div>
+        <div class="progress-transfer">
+            <span class="progress-label">Fortschritt sichern</span>
+            <button type="button" class="selection-btn secondary" id="progressExport">Exportieren</button>
+            <button type="button" class="selection-btn secondary" id="progressImport">Importieren</button>
+            <input type="file" id="progressFile" accept=".json,application/json" hidden>
+            <button type="button" class="detail-clear tours-only" id="uploadsClear" hidden title="Alle im Browser hinterlegten GPX-Tracks löschen; danach gelten wieder die Projektdateien">Browser-Tracks löschen</button>
+            <span class="uploads-confirm tours-only" id="uploadsConfirm" hidden>
+                <span id="uploadsConfirmText"></span>
+                <button type="button" class="selection-btn primary" id="uploadsClearYes">Ja, löschen</button>
+                <button type="button" class="detail-clear" id="uploadsClearNo">Abbrechen</button>
+            </span>
+            <span class="progress-status" id="progressStatus" role="status"></span>
+        </div>
+    </section>
+
     <section id="viewCompare" role="tabpanel" aria-labelledby="tabCompare">
     <div class="card">
         <div class="file-upload-area">
@@ -125,20 +146,6 @@
     <section id="viewTours" role="tabpanel" aria-labelledby="tabTours" hidden>
         <div class="route-comparison tour-stats" id="tourStats"></div>
 
-        <div class="progress-transfer">
-            <span class="progress-label">Fortschritt sichern</span>
-            <button type="button" class="selection-btn secondary" id="progressExport">Exportieren</button>
-            <button type="button" class="selection-btn secondary" id="progressImport">Importieren</button>
-            <input type="file" id="progressFile" accept=".json,application/json" hidden>
-            <button type="button" class="detail-clear" id="uploadsClear" hidden title="Alle im Browser hinterlegten GPX-Tracks löschen; danach gelten wieder die Projektdateien">Browser-Tracks löschen</button>
-            <span class="uploads-confirm" id="uploadsConfirm" hidden>
-                <span id="uploadsConfirmText"></span>
-                <button type="button" class="selection-btn primary" id="uploadsClearYes">Ja, löschen</button>
-                <button type="button" class="detail-clear" id="uploadsClearNo">Abbrechen</button>
-            </span>
-            <span class="progress-status" id="progressStatus" role="status"></span>
-        </div>
-
         <div class="own-actions">
             <button type="button" class="selection-btn primary" id="ownAdd">+ Eigene Tour aus GPX</button>
             <input type="file" id="ownFile" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
@@ -182,7 +189,8 @@
                 <p><b>Rest eines Vorschlags:</b> Sind Stempel eines Vorschlags schon gesammelt oder in einer geplanten eigenen Tour verplant, zeigt der Vorschlag nur noch seinen Rest: In der Liste stehen die geschätzten Werte der Rest-Runde (Luftlinie × 1,4, mit „Rest“ markiert), auf der Karte wird der Vorschlag blass und die Rest-Runde gepunktet. „km/Hm offen“ zählt jeden offenen Stempel genau einmal: geplante eigene Touren mit ihrem Track plus den Rest der Vorschläge. „Rest auf Wanderwege legen“ berechnet die Rest-Runde mit OpenRouteService und speichert sie als eigene Tour; „Als eigene Tour übernehmen“ kopiert einen Vorschlag samt Track, damit du ihn anpassen kannst.</p>
                 <p><b>Zu prüfen (⚠):</b> Die App bewertet die von OpenRouteService berechneten Tracks und markiert, was sich wahrscheinlich besser gehen lässt: Umwege zwischen zwei Stempeln (Weg mindestens dreimal so lang wie die Luftlinie und mindestens 1 km länger, auf der Karte orange), Runden, die zu mindestens 45 % auf demselben Weg zurückführen, Tracks mit mindestens 30 % und 2 km mehr als die Schätzung und Vorschläge, deren Teile zusammen deutlich kürzer sind. Dazu kommen Umbau-Hinweise aus <span class="mono">tours.json</span> (Feld <span class="mono">review</span>). Deine eigenen und gelaufenen Komoot-Tracks werden nicht bewertet, erledigte Touren nicht markiert. Der Chip „Zu prüfen“ zeigt alle Stellen auf einen Blick.</p>
                 <p><b>Komoot:</b> Jede Tour kann auf eine oder mehrere Komoot-Touren verlinken. Links aus <span class="mono">src/data/tours.json</span> (Feld <span class="mono">komoot</span>) sind fest im Projekt; über „Verlinken“ in der Tour-Ansicht hinzugefügte Links bleiben im Browser und werden mit exportiert. Lädst du einen GPX-Export von Komoot hoch, wird die Tour automatisch verlinkt.</p>
-                <p><b>Fortschritt:</b> Gezählt wird pro Stempel. Hake einzelne Stempel in der Tour-Ansicht ab, oder setze mit dem Haken eines Vorschlags alle seine Stempel auf einmal. Ein Vorschlag gilt als erledigt, wenn alle seine Stempel gesammelt sind; teilweise gesammelte zeigen z. B. „2/4“. Der Stand wird nur in diesem Browser gespeichert. Sichere ihn mit „Exportieren“ als Datei; „Importieren“ ersetzt den Stand im Browser durch den aus der Datei. Ältere Sicherungen funktionieren weiter.</p>
+                <p><b>Fortschritt:</b> Gezählt wird pro Stempel. Hake einzelne Stempel in der Tour-Ansicht ab, oder setze mit dem Haken eines Vorschlags alle seine Stempel auf einmal. Ein Vorschlag gilt als erledigt, wenn alle seine Stempel gesammelt sind; teilweise gesammelte zeigen z. B. „2/4“. Der Stand wird nur in diesem Browser gespeichert. Sichere ihn mit „Exportieren“ als Datei (oben im Tourenplan und auf „Meine Stempel“); „Importieren“ ersetzt den Stand im Browser durch den aus der Datei. Ältere Sicherungen funktionieren weiter. Hast du noch nie gesichert, oder liegt die letzte Sicherung 14 Tage oder 10 Änderungen zurück, erinnert ein Hinweis daran; „Später erinnern“ stellt ihn für 7 Tage still.</p>
+                <p><b>Speicher schützen:</b> Beim ersten gesammelten Stempel bittet die App den Browser, ihren Speicher dauerhaft zu behalten. Ohne diese Erlaubnis darf der Browser die Daten bei Platzmangel löschen, Safari auch nach 7 Tagen ohne Besuch. Chrome und Firefox entscheiden selbst oder fragen nach; ist der Speicher geschützt, steht das im Hinweis über „Fortschritt sichern“. Gegen selbst gelöschte Browserdaten oder ein neues Gerät hilft nur die Sicherung als Datei.</p>
             </div>
         </details>
         <div class="status error" id="tourStatus"></div>
@@ -210,7 +218,7 @@
 
         <div class="pass-grid" id="passGrid"></div>
         <p class="pass-empty" id="passEmpty" hidden>Kein Stempel passt zur Suche.</p>
-        <p class="pass-hint">Das Kürzel rechts (z. B. A1) öffnet den Tourvorschlag mit diesem Stempel. Sichern und übertragen kannst du den Stand im Tourenplan mit „Exportieren“.</p>
+        <p class="pass-hint">Das Kürzel rechts (z. B. A1) öffnet den Tourvorschlag mit diesem Stempel. Sichern und übertragen kannst du den Stand oben mit „Exportieren“ und „Importieren“.</p>
         <div class="status error" id="passStatus"></div>
     </section>
 

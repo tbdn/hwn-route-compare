@@ -648,6 +648,9 @@ async function switchView(view) {
     el('viewCompare').hidden = view !== 'compare';
     el('viewTours').hidden = view !== 'tours';
     el('viewStamps').hidden = view !== 'stamps';
+    // Backup bar for the progress: on "Meine Stempel" and in the Tourenplan
+    el('backupBar').hidden = view === 'compare';
+    el('backupBar').dataset.view = view;
     document.querySelectorAll('[data-view-header]').forEach(h => {
         h.hidden = h.dataset.viewHeader !== view;
     });
