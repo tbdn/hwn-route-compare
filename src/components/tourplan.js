@@ -210,14 +210,15 @@ function loopLatLngs(tour) {
 }
 
 /**
- * Start and end points of a tour, one pair per track segment.
+ * Start and end points of a tour's GPX track, one pair per segment (none without a track).
  * A loop (start ≈ end) collapses into a single "Start/Ziel" point.
  * @returns {Array<{latLng: number[], kind: 'start'|'end'|'both', title: string}>}
  */
 function tourEndpoints(tour) {
-    const raw = loopLatLngs(tour);
-    if (!raw.length) return [];
-    const segments = Array.isArray(raw[0][0]) ? raw : [raw];
+    // Only a real track has a known start; the straight-line loop could start at any stamp
+    const track = tracks.get(tour.id);
+    if (!track) return [];
+    const segments = track.latLngs;
     const multi = segments.filter(seg => seg.length).length > 1;
 
     return segments.filter(seg => seg.length).flatMap((seg, i) => {
