@@ -709,21 +709,23 @@ function renderDetail(tour) {
         </div>
         <div class="detail-actions">
             <button type="button" class="selection-btn primary" id="tourGpx">${track ? 'GPX-Track herunterladen' : 'GPX herunterladen'}</button>
+            <button type="button" class="calc-route-btn" id="tourCompare" title="${track ? 'Track' : 'Luftlinien-Runde'} im Routenabgleich gegen alle Stempel prüfen">Im Routenabgleich prüfen</button>
             <a class="detail-link" href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener">Google Maps →</a>
             <button type="button" class="detail-clear" id="tourClear">Auswahl aufheben</button>
         </div>`;
 
-    el('tourGpx').addEventListener('click', () => {
-        if (track) {
-            downloadGPX(track.gpx, `HWN_${tour.id}`);
-            return;
-        }
-        const gpx = generateGPX(stamps, {
-            name: `HWN Tour ${tour.id}`,
-            description: `${regionName(tour.region)} · ${stamps.length} Stempel · ca. ${fmt1(tour.km)} km`,
-            closeLoop: !tour.single
-        });
-        downloadGPX(gpx, `HWN_${tour.id}`);
+    // Without a track: straight-line loop through the stamps
+    const tourGpx = () => track ? track.gpx : generateGPX(stamps, {
+        name: `HWN Tour ${tour.id}`,
+        description: `${regionName(tour.region)} · ${stamps.length} Stempel · ca. ${fmt1(tour.km)} km`,
+        closeLoop: !tour.single
+    });
+    el('tourGpx').addEventListener('click', () => downloadGPX(tourGpx(), `HWN_${tour.id}`));
+    // app.js owns the comparison view; hand the route over without importing it here
+    el('tourCompare').addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('hwn:compare-route', {
+            detail: { gpx: tourGpx(), name: track ? `Tour ${tour.id}: ${track.name}` : `Tour ${tour.id} (Luftlinie)` }
+        }));
     });
     el('tourClear').addEventListener('click', () => {
         selectedId = null;

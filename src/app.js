@@ -603,7 +603,22 @@ window.addEventListener('hashchange', () => switchView(location.hash === VIEW_HA
 if (location.hash === VIEW_HASH.tours) switchView('tours');
 
 // Main comparison handler
-goBtn.addEventListener('click', async () => {
+goBtn.addEventListener('click', runComparison);
+
+// A tour from the Tourenplan is compared like an uploaded file
+document.addEventListener('hwn:compare-route', e => {
+    const { gpx, name } = e.detail;
+    gpxContent = gpx;
+    fileInput.value = '';
+    fileNameEl.textContent = name;
+    fileNameEl.classList.add('has-file');
+    history.replaceState(null, '', location.pathname + location.search);
+    switchView('compare');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    runComparison();
+});
+
+async function runComparison() {
     stats.innerHTML = '';
 
     if (!gpxContent) {
@@ -676,4 +691,4 @@ goBtn.addEventListener('click', async () => {
     } finally {
         goBtn.disabled = false;
     }
-});
+}
