@@ -456,6 +456,7 @@ function createStampCard(stamp, index, isOnRoute) {
         <h3>${escapeHtml(stamp.name)}</h3>
         ${metaHtml}
         ${positionPct !== null ? `<div class="route-pos">Bei ${positionPct}% der Route</div>` : ''}
+        <div class="coords">${stamp.lat.toFixed(5)}, ${stamp.lon.toFixed(5)}</div>
         <div class="routing-result" id="routing-${stamp.id}">${routingHtml}</div>
         ${showDesc ? `<div class="desc">${escapeHtml(stamp.description)}</div>` : ''}
         <div class="card-actions">
