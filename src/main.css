@@ -1531,6 +1531,7 @@ footer a{color:var(--paper-2);}
     text-underline-offset:3px;
 }
 .stat-link:hover{ color:var(--ink); }
+.stat-next{ margin-top:4px; font-size:11.5px; color:#5B5470; line-height:1.3; }
 
 /* Meine Stempel */
 .route-stat .value small{ font-size:15px; font-weight:450; color:#5B5470; }
@@ -1542,6 +1543,15 @@ footer a{color:var(--paper-2);}
     overflow:hidden;
 }
 .pass-progress i{ display:block; height:100%; background:var(--moss); }
+.pass-progress{ position:relative; }
+.pass-progress .tick{
+    position:absolute;
+    top:0; bottom:0;
+    width:2px;
+    margin-left:-1px;
+    background:rgba(61,53,99,0.45);
+}
+.pass-progress .tick.passed{ background:var(--paper); }
 
 .pass-bulk{
     display:flex;
@@ -1746,3 +1756,82 @@ footer a{color:var(--paper-2);}
     font-weight:500;
 }
 .pass-stamp.planned .pass-number{ border-style:solid; border-color:#3D2A6B; }
+
+/* Abzeichen */
+.pass-badges{
+    background:var(--paper);
+    color:#241E38;
+    border-radius:12px;
+    padding:16px 18px;
+    margin:-4px 0 18px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.22);
+}
+.badge-head{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; margin-bottom:12px; }
+.pass-badges h3{
+    font-family:'Fraunces', serif;
+    font-size:18px;
+    font-weight:600;
+    margin:0;
+}
+.pass-badges h3.badge-sub{ font-size:15px; margin:18px 0 10px; }
+.badge-next{ font-size:14px; color:var(--ink); font-weight:500; }
+.badge-ladder{
+    list-style:none;
+    margin:0; padding:0;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));
+    gap:8px;
+}
+.badge-level{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    padding:8px 10px;
+    border-radius:10px;
+    border:1.5px dashed rgba(61,53,99,0.3);
+    color:#5B5470;
+}
+.badge-level.reached{ border:1.5px solid var(--moss); background:#DCE6D6; color:#241E38; }
+.badge-level.next{ border:1.5px solid var(--ink); background:#FBF6EA; color:#241E38; }
+.badge-count{ font-family:'Fraunces', serif; font-size:20px; font-weight:600; line-height:1.1; }
+.badge-level.reached .badge-count{ color:var(--moss); }
+.badge-level.next .badge-count{ color:var(--ink); }
+.badge-name{ font-size:12.5px; font-weight:500; line-height:1.25; }
+.badge-detail{ font-family:'JetBrains Mono', monospace; font-size:10.5px; }
+.badge-filter,
+.badge-theme-name{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    padding:0;
+    border:none;
+    background:none;
+    color:var(--ink-light);
+    text-align:left;
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:3px;
+}
+.badge-themes{
+    list-style:none;
+    margin:0; padding:0;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));
+    gap:10px 18px;
+}
+.badge-theme{ display:grid; grid-template-columns:1fr auto; align-items:baseline; gap:4px 10px; }
+.badge-theme .badge-theme-name{
+    font-family:'Inter', system-ui, sans-serif;
+    font-size:13.5px;
+    font-weight:500;
+    color:#241E38;
+}
+.badge-theme-count{ font-family:'JetBrains Mono', monospace; font-size:11.5px; color:#5B5470; }
+.badge-theme.complete .badge-theme-count{ color:var(--moss); font-weight:600; }
+.badge-theme .pass-progress{ grid-column:1 / -1; margin-top:2px; }
+.badge-theme-note{ grid-column:1 / -1; font-size:11.5px; color:#5B5470; line-height:1.35; }
+@media (max-width: 600px){
+    .badge-ladder{ grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; }
+    .badge-level{ padding:6px 8px; }
+    .badge-name{ font-size:11.5px; }
+}
+.badge-hint{ margin:14px 0 0; font-size:12px; color:#5B5470; line-height:1.45; }

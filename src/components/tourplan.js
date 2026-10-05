@@ -13,6 +13,7 @@ import {
 } from "../utils/tracks.js";
 import { calculateHikingTrack, hasApiKey } from "../utils/routing.js";
 import { distanceMeters } from "../utils/geo.js";
+import { loadBadges, badgeProgress } from "../utils/badges.js";
 
 const HARZ_CENTER = [51.72, 10.75];
 const COLLECTED_STORAGE = 'hwn-stamps-collected';
@@ -70,6 +71,7 @@ let initialized = false;
 let map = null;
 let plan = null;
 let stampsByNumber = new Map();
+let badges = null;                // badges.json (levels for "nächste Stufe"), null when missing
 let collected = new Set();        // stamp numbers; the only source of progress
 let stampDates = new Map();       // stamp number -> 'YYYY-MM-DD' (local date); collected stamps may have none
 let variants = {};                // tourId -> 'parts' when a tour is walked as its part tours
@@ -757,10 +759,12 @@ function loadPlanData(stamps) {
         stampDates = loadDates();
         variants = loadVariants();
         // Uploads and own tours come from IndexedDB; they belong to the progress (export) even without the map
-        const [uploads, ownRecords] = await Promise.all([
+        const [uploads, ownRecords, badgeData] = await Promise.all([
             loadUploadedTracks().catch(() => ({})),
-            loadOwnTours().catch(() => [])
+            loadOwnTours().catch(() => []),
+            loadBadges().catch(() => null)
         ]);
+        badges = badgeData;
         uploadedTracks = uploads;
         ownTours = ownRecords.map(sanitizeOwnRecord).filter(Boolean);
         buildUnits();
@@ -1403,7 +1407,7 @@ function renderStats() {
     const hm = n => Math.round(n).toLocaleString('de-DE');
 
     el('tourStats').innerHTML = `
-        <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${collected.size}</div><a class="stat-link" href="#stempel">Alle Stempel ansehen</a></div>
+        <div class="route-stat"><div class="label">Stempel gesammelt</div><div class="value highlight">${collected.size}</div>${nextLevelHtml()}<a class="stat-link" href="#stempel">Alle Stempel ansehen</a></div>
         <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${openStamps}</div></div>`
         + (planned ? `<div class="route-stat" title="Offene Stempel mit Komoot-Track oder Track aus einem anderen Dienst"><div class="label">davon verplant</div><div class="value">${planned}</div></div>` : '')
         + `
@@ -1414,6 +1418,15 @@ function renderStats() {
         <div class="route-stat"${walkedHmEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track mit Höhendaten"' : ''}><div class="label">Hm zurückgelegt</div><div class="value highlight">${walkedHmEstimated ? '≥' : ''}${hm(walkedHm)}</div></div>
         <div class="route-stat"><div class="label">Vorschläge erledigt</div><div class="value highlight">${plan.tours.filter(isDone).length}</div></div>`
         + (ownTours.length ? `<div class="route-stat"><div class="label">Eigene Touren gelaufen</div><div class="value highlight">${walkedOwn.length}/${ownTours.length}</div></div>` : '');
+}
+
+// Next badge level under "Stempel gesammelt", e.g. "noch 7 bis Wanderkönig/-in"
+function nextLevelHtml() {
+    const next = badges && badgeProgress(badges, collected, stampDate, [...stampsByNumber.keys()]).next;
+    if (!next) return '';
+    const name = next.name.replace(/^Harzer (Wandernadel )?/, '');
+    const what = next.remaining ? `noch ${next.remaining}` : `${next.missingRequired.length} Pflichtstempel`;
+    return `<div class="stat-next" title="${escapeHtml(next.name)}">${what} bis ${escapeHtml(name)}</div>`;
 }
 
 function trackInfoHtml(tour) {

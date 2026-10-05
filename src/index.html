@@ -187,6 +187,7 @@
                 <p><b>Auf Wanderwege legen:</b> Mit einem OpenRouteService-API-Schlüssel (im Routenabgleich hinterlegt) berechnet die Tour-Ansicht die Runde durch die Stempel auf echten Wegen und speichert sie wie einen hochgeladenen, geplanten Track. ORS kennt nur Wege aus OpenStreetMap; für die endgültige Planung ist Komoot meist besser.</p>
                 <p><b>Eigene Touren:</b> Mit „+ Eigene Tour aus GPX“ legst du eine Tour mit beliebigen Stempeln an, z. B. eine Komoot-Planung nur über 129 und 130. Auch im Routenabgleich kannst du eine Route mit „Als eigene Tour speichern“ übernehmen, ebenso die berechnete „Erweiterte Route“. Die App erkennt alle Stempel bis 150 m vom Track; du kannst Stempel abwählen oder per Nummer hinzufügen. Eigene Touren werden im Browser gespeichert und mit exportiert. Der Haken „Gelaufen“ sammelt ihre Stempel, und „km/Hm zurückgelegt“ zählt ihren Track. Ein Vorschlag, dessen Stempel du (auch nur teilweise) mit eigenen Touren gesammelt hast, zählt dort nicht noch einmal.</p>
                 <p><b>Rest eines Vorschlags:</b> Sind Stempel eines Vorschlags schon gesammelt oder in einer geplanten eigenen Tour verplant, zeigt der Vorschlag nur noch seinen Rest: In der Liste stehen die geschätzten Werte der Rest-Runde (Luftlinie × 1,4, mit „Rest“ markiert), auf der Karte wird der Vorschlag blass und die Rest-Runde gepunktet. „km/Hm offen“ zählt jeden offenen Stempel genau einmal: geplante eigene Touren mit ihrem Track plus den Rest der Vorschläge. „Rest auf Wanderwege legen“ berechnet die Rest-Runde mit OpenRouteService und speichert sie als eigene Tour; „Als eigene Tour übernehmen“ kopiert einen Vorschlag samt Track, damit du ihn anpassen kannst.</p>
+                <p><b>Abzeichen:</b> „Meine Stempel“ zeigt die Leistungsabzeichen der Harzer Wandernadel (Bronze ab 8 Stempeln bis Wanderkaiser mit allen 222) und wann du sie erreicht hast, sofern deine Stempel ein Datum haben. Der Harzer Steiger braucht 111 Stempel und dazu bestimmte Pflichtstempel mit bergbaulichem Bezug. Die Sammlungen (Grenzweg, Hexenstieg, Goethe im Harz, Nationalpark Harz, Glücksplatz) zählen nur ihre nummerischen Stempel; Sonderstempel und die eigenen Stempelhefte kennt die App nicht. Für ein Abzeichen zählt dein Stempelheft, beantragt wird es bei der Harzer Wandernadel.</p>
                 <p><b>Verplant:</b> Ein offener Stempel gilt als verplant, wenn eine offene Tour mit Track aus Komoot oder einem anderen Dienst an ihm vorbeiführt (bis 150 m), egal ob der Track an einem Vorschlag oder an einer eigenen Tour hängt. Die mitgelieferten Routenvorschläge von OpenRouteService zählen nicht, sie sind ungeprüft; eine eigene Tour mit OpenRouteService-Weg heißt „in eigener Tour, Track ungeprüft“. Ihre Stempel fallen trotzdem aus dem Rest des Vorschlags, damit nichts doppelt zählt. Die App erkennt die Herkunft am Kopf der GPX-Datei. Ein Komoot-Link allein reicht nicht, weil die App ohne Track nicht sieht, welche Stempel die Komoot-Tour enthält.</p>
                 <p><b>Zu prüfen (⚠):</b> Die App bewertet die von OpenRouteService berechneten Tracks und markiert, was sich wahrscheinlich besser gehen lässt: Umwege zwischen zwei Stempeln (Weg mindestens dreimal so lang wie die Luftlinie und mindestens 1 km länger, auf der Karte orange), Runden, die zu mindestens 45 % auf demselben Weg zurückführen, Tracks mit mindestens 30 % und 2 km mehr als die Schätzung und Vorschläge, deren Teile zusammen deutlich kürzer sind. Dazu kommen Umbau-Hinweise aus <span class="mono">tours.json</span> (Feld <span class="mono">review</span>). Deine eigenen und gelaufenen Komoot-Tracks werden nicht bewertet, erledigte Touren nicht markiert. Der Chip „Zu prüfen“ zeigt alle Stellen auf einen Blick.</p>
                 <p><b>Komoot:</b> Jede Tour kann auf eine oder mehrere Komoot-Touren verlinken. Links aus <span class="mono">src/data/tours.json</span> (Feld <span class="mono">komoot</span>) sind fest im Projekt; über „Verlinken“ in der Tour-Ansicht hinzugefügte Links bleiben im Browser und werden mit exportiert. Lädst du einen GPX-Export von Komoot hoch, wird die Tour automatisch verlinkt.</p>
@@ -199,6 +200,7 @@
 
     <section id="viewStamps" role="tabpanel" aria-labelledby="tabStamps" hidden>
         <div class="route-comparison tour-stats" id="passStats"></div>
+        <section class="pass-badges" id="passBadges" aria-label="Abzeichen" hidden></section>
 
         <form class="pass-bulk" id="passBulk">
             <label class="progress-label" for="passBulkInput">Mehrere eintragen</label>
@@ -217,6 +219,11 @@
                 <button type="button" class="region-chip" data-filter="planned" aria-pressed="false" title="Offene Stempel mit Komoot-Track oder Track aus einem anderen Dienst">Verplant <span class="mono"></span></button>
                 <button type="button" class="region-chip" data-filter="got" aria-pressed="false">Gestempelt <span class="mono"></span></button>
             </div>
+            <label class="pass-sort">Sammlung
+                <select id="passTheme">
+                    <option value="">alle Stempel</option>
+                </select>
+            </label>
             <label class="pass-sort">Sortieren
                 <select id="passSort">
                     <option value="number">nach Nummer</option>

@@ -7,11 +7,15 @@ import {
     stampPlanning, loadPlanTracks
 } from "./tourplan.js";
 
+import { loadBadges, badgeProgress, remainingText } from "../utils/badges.js";
+
 const el = id => document.getElementById(id);
 
 let initialized = false;
 let allStamps = [];
 let filter = 'all';               // all | open | planned | got
+let theme = '';                   // id of a themed collection or 'steiger' (its required stamps); '' = all
+let badges = null;                // badges.json, null when it couldn't be loaded
 let planning = new Map();         // open stamp -> {status, unitId, name, origin, originLabel}
 let sort = 'number';              // number | recent
 let undo = null;                  // stamp numbers added by the last list entry
@@ -32,6 +36,7 @@ export async function showStampPass(stamps) {
     if (!initialized) {
         await loadStampProgress(stamps);
         allStamps = [...stamps].sort((a, b) => a.number - b.number);
+        badges = await loadBadges().catch(() => null);
         initialized = true;
         buildGrid();
         bindControls();
@@ -94,6 +99,16 @@ function bindControls() {
     el('passSearch').addEventListener('input', applyFilter);
     el('passBulkDate').value = today();
     el('passBulkDate').max = today();
+    fillThemeSelect();
+    el('passTheme').addEventListener('change', () => {
+        theme = el('passTheme').value;
+        applyFilter();
+    });
+    el('passBadges').addEventListener('click', e => {
+        const b = e.target.closest('[data-theme]');
+        if (!b) return;
+        showTheme(b.dataset.theme);
+    });
     el('passSort').addEventListener('change', () => {
         sort = el('passSort').value;
         applySort();
@@ -130,6 +145,77 @@ function bindControls() {
         undo = null;
         setBulkStatus(`${n} Stempel wieder entfernt.`, false);
     });
+}
+
+// Themed collections and the required stamps of the Steiger as a filter for the grid
+function themeStamps(id) {
+    if (!badges || !id) return null;
+    const t = badges.themes.find(x => x.id === id);
+    if (t) return t.stamps;
+    return badges.levels.find(l => l.id === id && l.required?.length)?.required || null;
+}
+
+function fillThemeSelect() {
+    if (!badges) return;
+    const options = [
+        ...badges.levels.filter(l => l.required?.length).map(l => [l.id, `${l.name}: Pflichtstempel`]),
+        ...badges.themes.map(t => [t.id, t.name])
+    ];
+    el('passTheme').insertAdjacentHTML('beforeend',
+        options.map(([id, name]) => `<option value="${id}">${escapeHtml(name)}</option>`).join(''));
+}
+
+function showTheme(id) {
+    theme = id;
+    el('passTheme').querySelectorAll('option').forEach(o => {
+        o.selected = o.value === id;
+        o.toggleAttribute('selected', o.value === id);
+    });
+    applyFilter();
+    el('passGrid').scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+}
+
+// Levels as a ladder (reached, next, later) and the themed collections with their progress
+function renderBadges() {
+    const box = el('passBadges');
+    if (!badges) {
+        box.hidden = true;
+        return;
+    }
+    const collected = new Set(allStamps.map(s => s.number).filter(isStampCollected));
+    const progress = badgeProgress(badges, collected, stampDate, allStamps.map(s => s.number));
+    const levels = progress.levels.map(l => {
+        const state = l.reached ? 'reached' : l === progress.next ? 'next' : '';
+        const detail = l.reached ? (l.since ? `seit ${longDate(l.since)}` : 'erreicht')
+            : l.missingRequired.length && !l.remaining ? `${l.missingRequired.length} Pflichtstempel offen`
+            : `noch ${l.remaining}`;
+        const title = [l.name, `${l.stamps} Stempel`, l.note, l.missingRequired.length ? `offene Pflichtstempel: ${l.missingRequired.join(', ')}` : '']
+            .filter(Boolean).join(' · ');
+        return `<li class="badge-level ${state}" title="${escapeHtml(title)}">
+                <span class="badge-count">${l.stamps}</span>
+                <span class="badge-name">${escapeHtml(l.name.replace(/^Harzer (Wandernadel )?/, ''))}</span>
+                <span class="badge-detail">${detail}</span>
+                ${l.required?.length ? `<button type="button" class="badge-filter" data-theme="${l.id}">Pflichtstempel ${l.required.length - l.missingRequired.length}/${l.required.length}</button>` : ''}
+            </li>`;
+    }).join('');
+    const themes = progress.themes.map(t => `
+            <li class="badge-theme${t.complete ? ' complete' : ''}">
+                <button type="button" class="badge-theme-name" data-theme="${t.id}" title="Stempel dieser Sammlung zeigen">${escapeHtml(t.name)}</button>
+                <span class="badge-theme-count">${Math.min(t.got, t.needed)} / ${t.needed}${t.complete ? (t.since ? ` · seit ${longDate(t.since)}` : ' · vollständig') : ''}</span>
+                <span class="pass-progress"><i style="width:${Math.min(1, t.got / t.needed) * 100}%"></i></span>
+                ${t.missingRequired.length ? `<span class="badge-theme-note">Pflicht: ${t.missingRequired.map(n => `HWN ${n}`).join(', ')}</span>` : ''}
+                ${t.note ? `<span class="badge-theme-note">${escapeHtml(t.note)}</span>` : ''}
+            </li>`).join('');
+    box.hidden = false;
+    box.innerHTML = `
+        <div class="badge-head">
+            <h3>Abzeichen</h3>
+            <span class="badge-next">${progress.next ? escapeHtml(remainingText(progress.next)) : 'Alle Leistungsabzeichen erreicht'}</span>
+        </div>
+        <ol class="badge-ladder">${levels}</ol>
+        <h3 class="badge-sub">Sammlungen</h3>
+        <ul class="badge-themes">${themes}</ul>
+        <p class="badge-hint">Die App ist eine Übersicht: Für ein Abzeichen zählt dein Stempelheft (für Sammlungen das eigene Heft), beantragt wird es bei der Harzer Wandernadel. Sonderstempel erfasst die App nicht.</p>`;
 }
 
 /**
@@ -195,7 +281,8 @@ function applyFilter() {
     el('passGrid').querySelectorAll('.pass-stamp').forEach(tile => {
         const stamp = allStamps.find(s => s.number === Number(tile.dataset.stamp));
         const got = isStampCollected(stamp.number);
-        const visible = matches(stamp, query) && (filter === 'all'
+        const inTheme = !themeStamps(theme) || themeStamps(theme).includes(stamp.number);
+        const visible = inTheme && matches(stamp, query) && (filter === 'all'
             || (filter === 'got' && got) || (filter === 'open' && !got)
             || (filter === 'planned' && planning.get(stamp.number)?.status === 'planned'));
         tile.hidden = !visible;
@@ -258,7 +345,10 @@ function sync() {
         + (dated ? `<div class="route-stat" title="Stempel mit Datum aus ${year}"><div class="label">Dieses Jahr</div><div class="value highlight">${thisYear}</div></div>` : '')
         + `
         <div class="route-stat"><div class="label">Fortschritt</div><div class="value">${percent} %</div>
-            <div class="pass-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${got}" aria-label="Gesammelte Stempel"><i style="width:${got / total * 100}%"></i></div></div>`;
+            <div class="pass-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${got}" aria-label="Gesammelte Stempel"><i style="width:${got / total * 100}%"></i>${
+    (badges?.levels || []).filter(l => l.stamps < total).map(l => `<b class="tick${got >= l.stamps ? ' passed' : ''}" style="left:${l.stamps / total * 100}%" title="${escapeHtml(`${l.name}: ${l.stamps}`)}"></b>`).join('')
+}</div></div>`;
+    renderBadges();
     const counts = { all: total, open: total - got, planned: plannedCount, got };
     el('passFilter').querySelectorAll('[data-filter]').forEach(b => {
         b.querySelector('.mono').textContent = counts[b.dataset.filter];
