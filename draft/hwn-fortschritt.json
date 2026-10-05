@@ -1,0 +1,7 @@
+{
+  "format": "hwn-tourenplan-progress",
+  "version": 1,
+  "exportedAt": "2026-10-05T00:00:00.000Z",
+  "doneTours": ["B7", "B8", "D8"],
+  "stamps": [6, 7, 8, 14, 16, 20, 21, 30, 71, 72, 178]
+}

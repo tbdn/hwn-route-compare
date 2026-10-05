@@ -20,7 +20,7 @@
         </div>
         <div data-view-header="tours" hidden>
             <h1>Tourenplan für die <em>offenen Stempel</em></h1>
-            <div class="sub">Alle Stempelstellen, die noch fehlen, aufgeteilt in Rundwanderungen von höchstens rund 25 km. Gruppiert nach Regionen und sortiert nach Entfernung von Hamburg.</div>
+            <div class="sub">Alle 222 Stempelstellen, aufgeteilt in Rundwanderungen von höchstens rund 25 km. Gruppiert nach Regionen und sortiert nach Entfernung von Hamburg.</div>
         </div>
     </header>
 
@@ -118,6 +118,14 @@
     <section id="viewTours" role="tabpanel" aria-labelledby="tabTours" hidden>
         <div class="route-comparison tour-stats" id="tourStats"></div>
 
+        <div class="progress-transfer">
+            <span class="progress-label">Fortschritt sichern</span>
+            <button type="button" class="selection-btn secondary" id="progressExport">Exportieren</button>
+            <button type="button" class="selection-btn secondary" id="progressImport">Importieren</button>
+            <input type="file" id="progressFile" accept=".json,application/json" hidden>
+            <span class="progress-status" id="progressStatus" role="status"></span>
+        </div>
+
         <div class="region-chips" id="tourChips" role="group" aria-label="Region filtern"></div>
 
         <div class="tour-mapgrid" id="tourMapGrid">
@@ -141,7 +149,7 @@
                 <p><b>Höhenmeter:</b> „Hm min.“ zählt nur die Anstiege von Stempel zu Stempel, nach den Höhen aus dem HWN-GPS-Download. Täler und Kuppen dazwischen fehlen, die echten Höhenmeter liegen also höher, in Tälern wie dem Bodetal deutlich. Das Niveau ergibt sich aus Kilometern plus Höhenmetern und aus der höchsten Stelle der Runde (ab 650 m mittel, ab 850 m anspruchsvoll).</p>
                 <p><b>Start:</b> Jede Runde ist geschlossen. Du kannst an jedem Stempel einsteigen und parkst am besten am Wanderparkplatz, der einem Stempel am nächsten liegt.</p>
                 <p><b>Abstecher:</b> Die ehemalige Steinmühle (96) liegt zu abseits für eine Runde. Nimm sie mit dem Auto mit, wenn du für Tour G2 nach Ilfeld fährst.</p>
-                <p><b>Erledigt:</b> Bereits absolvierte Touren (B7, B8, D8) sind fest hinterlegt. Weitere abgehakte Touren werden nur in diesem Browser gespeichert.</p>
+                <p><b>Erledigt:</b> Abgehakte Touren und gesammelte Stempel werden nur in diesem Browser gespeichert. Sichere sie mit „Exportieren“ als Datei; „Importieren“ ersetzt den Stand im Browser durch den aus der Datei.</p>
             </div>
         </details>
         <div class="status error" id="tourStatus"></div>

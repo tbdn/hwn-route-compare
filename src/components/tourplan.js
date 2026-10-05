@@ -5,6 +5,8 @@ import { generateGPX, downloadGPX } from "../utils/optimize.js";
 
 const HARZ_CENTER = [51.72, 10.75];
 const DONE_STORAGE = 'hwn-tours-done';
+const EXTRA_STAMPS_STORAGE = 'hwn-stamps-extra';
+const PROGRESS_FORMAT = 'hwn-tourenplan-progress';
 
 // Region colors, readable on paper and on OSM tiles
 const REGION_COLORS = {
@@ -19,8 +21,8 @@ let initialized = false;
 let map = null;
 let plan = null;
 let stampsByNumber = new Map();
-let stamped = new Set();
 let doneTours = new Set();
+let extraStamps = new Set();      // collected outside of any finished tour (from imports)
 let regionFilter = null;
 let selectedId = null;
 
@@ -37,25 +39,35 @@ function escapeHtml(str) {
 const fmt1 = n => n.toFixed(1).replace('.', ',');
 const color = code => REGION_COLORS[code] || '#3D3563';
 
-function loadDone() {
+function loadSet(key) {
     try {
-        doneTours = new Set(JSON.parse(localStorage.getItem(DONE_STORAGE) || '[]'));
+        return new Set(JSON.parse(localStorage.getItem(key) || '[]'));
     } catch {
-        doneTours = new Set();
+        return new Set();
     }
 }
 
-function saveDone() {
+function saveSet(key, set) {
     try {
-        localStorage.setItem(DONE_STORAGE, JSON.stringify([...doneTours]));
+        localStorage.setItem(key, JSON.stringify([...set]));
     } catch {
         // ignore
     }
 }
 
-// Tours marked done in the data are fixed; others can be ticked off in the browser
+function saveDone() {
+    saveSet(DONE_STORAGE, doneTours);
+}
+
+// Progress lives only in browser storage: imported extras + every stamp of a finished tour
+function collectedStamps() {
+    const collected = new Set(extraStamps);
+    plan.tours.filter(isDone).forEach(t => t.stamps.forEach(n => collected.add(n)));
+    return collected;
+}
+
 function isDone(tour) {
-    return !!tour.done || doneTours.has(tour.id);
+    return doneTours.has(tour.id);
 }
 
 function tourStamps(tour) {
@@ -87,10 +99,11 @@ export async function showTourPlan(stamps) {
     }
     plan = await response.json();
     stampsByNumber = new Map(stamps.map(s => [s.number, s]));
-    stamped = new Set(plan.stamped);
-    loadDone();
+    doneTours = loadSet(DONE_STORAGE);
+    extraStamps = loadSet(EXTRA_STAMPS_STORAGE);
 
     initTourMap();
+    initProgressTransfer();
     renderChips();
     renderList();
     render();
@@ -134,19 +147,19 @@ function initTourMap() {
     const tourOf = new Map();
     plan.tours.forEach(t => t.stamps.forEach(n => tourOf.set(n, t)));
 
+    // Color and size depend on progress and are set in render()
     stampsByNumber.forEach((stamp, number) => {
         const tour = tourOf.get(number);
-        const isStamped = stamped.has(number);
         const marker = L.circleMarker([stamp.lat, stamp.lon], {
-            radius: isStamped ? 4 : 5.5,
+            radius: 5.5,
             color: '#FFFFFF',
             weight: 1.5,
-            fillColor: isStamped || !tour ? STAMPED_COLOR : color(tour.region),
+            fillColor: tour ? color(tour.region) : STAMPED_COLOR,
             fillOpacity: 1
         });
-        marker.bindTooltip(
+        marker.bindTooltip(() =>
             `<span class="stamp-id">${stamp.id}</span>${escapeHtml(stamp.name)}`
-            + (isStamped ? ' · gestempelt' : tour ? ` · Tour ${tour.id}` : '')
+            + (collectedStamps().has(number) ? ' · gestempelt' : tour ? ` · Tour ${tour.id}` : '')
         );
         if (tour) marker.on('click', () => select(tour.id));
         marker.addTo(pointLayer);
@@ -241,10 +254,6 @@ function createTourRow(tour) {
 
     const cb = tr.querySelector('.tour-done');
     cb.checked = isDone(tour);
-    if (tour.done) {
-        cb.disabled = true;
-        cb.title = 'Bereits absolviert';
-    }
     cb.addEventListener('click', e => e.stopPropagation());
     cb.addEventListener('change', () => {
         cb.checked ? doneTours.add(tour.id) : doneTours.delete(tour.id);
@@ -275,6 +284,7 @@ function render() {
     el('tourChips').querySelectorAll('.region-chip').forEach(b =>
         b.setAttribute('aria-pressed', String((b.dataset.code || null) === regionFilter)));
 
+    const collected = collectedStamps();
     plan.tours.forEach(tour => {
         const visible = !regionFilter || tour.region === regionFilter;
         const done = isDone(tour);
@@ -292,7 +302,14 @@ function render() {
         }
         tour.stamps.forEach(n => {
             const m = stampMarkers.get(n);
-            if (m) m.setStyle({ opacity: dim ? 0.25 : 1, fillOpacity: dim ? 0.25 : 1 });
+            if (!m) return;
+            const got = collected.has(n);
+            m.setRadius(got ? 4 : 5.5);
+            m.setStyle({
+                fillColor: got ? STAMPED_COLOR : color(tour.region),
+                opacity: dim ? 0.25 : 1,
+                fillOpacity: dim ? 0.25 : 1
+            });
         });
     });
 
@@ -318,7 +335,9 @@ function render() {
     });
     el('tourList').querySelectorAll('.tour-row').forEach(row => {
         row.classList.toggle('selected', row.dataset.id === selectedId);
-        row.classList.toggle('done', isDone(plan.tours.find(t => t.id === row.dataset.id)));
+        const done = isDone(plan.tours.find(t => t.id === row.dataset.id));
+        row.classList.toggle('done', done);
+        row.querySelector('.tour-done').checked = done;
     });
 
     renderStats();
@@ -326,9 +345,7 @@ function render() {
 }
 
 function renderStats() {
-    // Collected = stamped before the plan + every stamp of a finished tour
-    const collected = new Set(stamped);
-    plan.tours.filter(isDone).forEach(t => t.stamps.forEach(n => collected.add(n)));
+    const collected = collectedStamps();
     const openStamps = stampsByNumber.size - collected.size;
     const openKm = plan.tours
         .filter(t => !isDone(t))
@@ -406,5 +423,86 @@ function renderDetail(tour) {
         selectedId = null;
         render();
         fitTo(regionFilter ? plan.tours.filter(t => t.region === regionFilter) : plan.tours);
+    });
+}
+
+// Progress backup: export/import as JSON so it survives a cleared browser storage
+
+function downloadJSON(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function setTransferStatus(msg, isError = false) {
+    const status = el('progressStatus');
+    status.textContent = msg;
+    status.classList.toggle('error', isError);
+}
+
+function exportProgress() {
+    const today = new Date().toISOString().slice(0, 10);
+    downloadJSON({
+        format: PROGRESS_FORMAT,
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        doneTours: plan.tours.filter(isDone).map(t => t.id),
+        stamps: [...collectedStamps()].sort((a, b) => a - b)
+    }, `hwn-fortschritt-${today}.json`);
+    setTransferStatus('Fortschritt exportiert.');
+}
+
+function importProgress(text) {
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch {
+        throw new Error('Datei ist kein gültiges JSON.');
+    }
+    if (data?.format !== PROGRESS_FORMAT || !Array.isArray(data.doneTours) || !Array.isArray(data.stamps)) {
+        throw new Error('Datei ist kein HWN-Fortschritt-Export.');
+    }
+
+    const tourIds = new Set(plan.tours.map(t => t.id));
+    const unknownTours = data.doneTours.filter(id => !tourIds.has(id));
+
+    // The file replaces the browser state
+    doneTours = new Set(data.doneTours.filter(id => tourIds.has(id)));
+    extraStamps = new Set();
+    const covered = collectedStamps();
+    extraStamps = new Set(data.stamps.map(Number).filter(n => stampsByNumber.has(n) && !covered.has(n)));
+
+    saveDone();
+    saveSet(EXTRA_STAMPS_STORAGE, extraStamps);
+    render();
+
+    const msg = `Importiert: ${plan.tours.filter(isDone).length} Touren erledigt, ${collectedStamps().size} Stempel gesammelt.`;
+    setTransferStatus(unknownTours.length ? `${msg} Unbekannte Touren ignoriert: ${unknownTours.join(', ')}` : msg);
+}
+
+function initProgressTransfer() {
+    const input = el('progressFile');
+    el('progressExport').addEventListener('click', exportProgress);
+    el('progressImport').addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                importProgress(reader.result);
+            } catch (e) {
+                setTransferStatus(e.message, true);
+            }
+            input.value = '';
+        };
+        reader.onerror = () => setTransferStatus('Fehler beim Lesen der Datei.', true);
+        reader.readAsText(file);
     });
 }
