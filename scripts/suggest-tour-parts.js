@@ -5,7 +5,6 @@
  * The stamp order is cut into two consecutive groups, each walked as its own closed loop.
  * Run: node scripts/suggest-tour-parts.js            (prints the analysis)
  *      node scripts/suggest-tour-parts.js --write    (also updates tours.json)
- * Afterwards `node scripts/generate-tour-drafts.js` writes placeholder GPX files for the parts.
  */
 
 const fs = require('fs');
