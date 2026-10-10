@@ -78,7 +78,6 @@ tests/                      # node --test (npm test), see "Tests"
 
 scripts/
 ├── convert-gpx-to-json.js  # Node.js script to regenerate src/data/stamps.geojson
-├── generate-tour-drafts.js # Placeholder GPX per tour and part tour → draft/tours/<ID>.gpx (straight-line loop + stamp waypoints)
 └── suggest-tour-parts.js   # Splits long tours into two part tours (`parts` in tours.json, --write)
 ```
 
@@ -183,7 +182,7 @@ Users can select stamps and add them to the route:
 - A track (planned or walked) never changes progress
 - Season tags (ganzjährig/Apr–Nov/Mai–Okt) are computed from `tourFigures().maxEle` (`SEASON_TAGS`); `tours.json` `tags` only holds thematic hints
 - Part tours: long tours have `parts` in `tours.json` (ids like `A5a`, own stamp order and estimate). They are "units" like tours (tracks `data/tours/A5a.gpx`, uploads, Komoot links keyed by part id). `defaultVariant: "parts"` in `tours.json` makes the parts the default (marked "empfohlen"); a browser choice (`whole`/`parts`) is stored in localStorage (`hwn-tour-variants`) only when it differs from the default, and exported as `variants`; map, region sums and "km/Hm offen/zurückgelegt" use the chosen variant (`shownUnits()`)
-- `scripts/suggest-tour-parts.js` computes the splits (≥30 Leistungs-km, see thresholds in the script) and with `--write` updates `parts` in `tours.json`; existing parts of a tour without a track are kept (they were chosen with the former ORS tracks, the estimate is too short to judge them); `generate-tour-drafts.js` also writes drafts for parts
+- `scripts/suggest-tour-parts.js` computes the splits (≥30 Leistungs-km, see thresholds in the script) and with `--write` updates `parts` in `tours.json`; existing parts of a tour without a track are kept (they were chosen with the former ORS tracks, the estimate is too short to judge them)
 - Own tours ("+ Eigene Tour aus GPX"): records `{id: "own-<ts>", name, gpx, fileName, stamps, status: planned|walked, createdAt}` in IndexedDB store `own-tours` (DB version 2). Stamps are detected with `stampsAlongTrack()` (≤ `STAMP_ON_TRACK_METERS`, ordered along the track) and can be edited in the form. They are units with `own: true`, region `own`, listed in their own section; "Gelaufen" collects their stamps. Exported as `ownTours`; their Komoot links live in `hwn-komoot-links` under the own id
 - "km/Hm zurückgelegt" = walked own tours + finished suggestions that share no stamp with a walked own tour
 - Rest of a suggestion (`restStamps()` / `restFigures()`): stamps neither collected nor in a planned own tour (`plannedStampOwners()`), kept in the suggestion's order; unchanged → track/estimate figures, reduced → `estimateLoop()` (straight line × `ROUTE_FACTOR` 1.4), empty → 0. "km/Hm offen" = planned own tours + rest of open suggestions, so every open stamp counts once. List cells are refreshed in `render()` via `fillRowCells()`; reduced suggestions fade on the map with a dotted rest loop (`restLayer`)
