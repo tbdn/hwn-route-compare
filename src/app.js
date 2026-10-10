@@ -452,18 +452,18 @@ function render(results, routeLen, threshold) {
     syncCollected();
 }
 
-// Suggestions from the Tourenplan that the route passes: does one of them fit the route?
+// Groups from the Tourenplan that the route passes: does one of them fit the route?
 const matchSection = el('matchSection');
 const matchList = el('matchList');
 let currentMatches = [];
 
 const MATCH_VERDICTS = {
     fits: { label: 'passt', hint: 'Gleiche Stempel, fast überall dieselben Wege' },
-    covers: { label: 'Vorschlag + mehr', hint: 'Deine Route läuft den ganzen Vorschlag ab und noch weitere Wege' },
-    inside: { label: 'kürzer', hint: 'Deine Route bleibt auf den Wegen des Vorschlags, lässt aber einen Teil davon aus' },
+    covers: { label: 'Gruppe + mehr', hint: 'Deine Route läuft den ganzen Track der Gruppe ab und noch weitere Wege' },
+    inside: { label: 'kürzer', hint: 'Deine Route bleibt auf den Wegen des Gruppen-Tracks, lässt aber einen Teil davon aus' },
     differs: { label: 'andere Wege', hint: 'Gleiche Stempel, aber über andere Wege' },
-    partial: { label: 'teilweise', hint: 'Deine Route erreicht nur einen Teil der Stempel dieses Vorschlags' },
-    nearby: { label: 'in der Nähe', hint: 'Kein Stempel dieses Vorschlags auf deiner Route, aber gemeinsame Wege oder ein Stempel knapp daneben' }
+    partial: { label: 'teilweise', hint: 'Deine Route erreicht nur einen Teil der Stempel dieser Gruppe' },
+    nearby: { label: 'in der Nähe', hint: 'Kein Stempel dieser Gruppe auf deiner Route, aber gemeinsame Wege oder ein Stempel knapp daneben' }
 };
 const fmtKm = km => km.toFixed(1).replace('.', ',');
 const pct = share => `${Math.round(share * 100)} %`;
@@ -480,8 +480,8 @@ function matchHtml(m) {
         : stampName(number);
     const ways = m.suggestionShare === null
         ? '<span>kein Track zum Vergleich der Wege</span>'
-        : `<span title="Anteil des Vorschlags, der auf deiner Route liegt">Vorschlag zu <b>${pct(m.suggestionShare)}</b> auf deiner Route</span>
-           <span title="Anteil deiner Route, der auf dem Vorschlag liegt">deine Route zu <b>${pct(m.routeShare)}</b> auf dem Vorschlag (${fmtKm(m.sharedKm)} km gemeinsam)</span>`;
+        : `<span title="Anteil des Gruppen-Tracks, der auf deiner Route liegt">Track der Gruppe zu <b>${pct(m.suggestionShare)}</b> auf deiner Route</span>
+           <span title="Anteil deiner Route, der auf dem Track der Gruppe liegt">deine Route zu <b>${pct(m.routeShare)}</b> auf dem Track der Gruppe (${fmtKm(m.sharedKm)} km gemeinsam)</span>`;
     return `<div class="match match-${m.verdict}" data-id="${m.id}" style="--tour:${m.color}">
         <div class="match-head">
             <b class="match-name">${escapeHtml(m.label)}</b>
@@ -514,7 +514,7 @@ function renderMatches(matches, error = '') {
         ? `<div class="empty">${escapeHtml(error)}</div>`
         : matches.length
             ? matches.map(matchHtml).join('')
-            : '<div class="empty">Kein Tourenvorschlag in der Nähe: kein Stempel höchstens 300 m neben der Route und keine gemeinsamen Wege.</div>';
+            : '<div class="empty">Keine Gruppe in der Nähe: kein Stempel höchstens 300 m neben der Route und keine gemeinsamen Wege.</div>';
     // The best match with a track is drawn right away
     const best = matches.find(m => m.latLngs);
     if (best) showMatchOnMap(best);
@@ -879,7 +879,7 @@ async function runComparison() {
             const { latLngs, km } = analyzeTrack(gpxText, []);
             renderMatches(suggestionMatches({ latLngs, km }));
         } catch (e) {
-            renderMatches([], `Tourenvorschläge konnten nicht verglichen werden: ${e.message || 'unbekannter Fehler'}`);
+            renderMatches([], `Gruppen konnten nicht verglichen werden: ${e.message || 'unbekannter Fehler'}`);
         }
 
     } catch (e) {

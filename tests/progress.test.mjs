@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
     setupBrowser, startTourPlan, tourById, plan, SRC, $, $$, tick, text, row, rowState, setChecked,
-    importProgressFile, stats, readJSON
+    importProgressFile, stats, readJSON, stampByNumber
 } from './helpers/browser.mjs';
 
 // A browser that still has the old keys: finished tours plus stamps collected outside of them
@@ -18,16 +18,29 @@ test('migrates finished tours and extra stamps to collected stamps', () => {
     const expected = new Set([...tourById('B7').stamps, ...tourById('B8').stamps, ...tourById('D8').stamps, 14, 20, 21]);
     assert.deepEqual(new Set(collectedInStore()), expected);
     assert.equal(stats()['Stempel gesammelt'], String(expected.size));
-    assert.equal(stats()['Vorschläge erledigt'], '3');
+    assert.equal(stats()['Gruppen erledigt'], '3');
     assert.deepEqual(rowState('B7'), { checked: true, partial: false, count: '' });
 });
 
-test('labels tours as suggestions and ORS tracks as unchecked route suggestions', async () => {
+test('a group without a track is a sketch and links to the Komoot planner with its stamps as a loop', async () => {
     row('A1').click();
     await tick();
-    assert.match(text($('#tourDetail h3')), /^Vorschlag A1/);
-    assert.ok($('#tourDetail .suggestion-hint'));
-    assert.match(text($('#tourDetail .track-source')), /^Routenvorschlag \(OpenRouteService, ungeprüft\)/);
+    assert.match(text($('#tourDetail h3')), /^Gruppe A1/);
+    assert.match(text($('#tourDetail .suggestion-hint')), /nur eine Skizze/);
+    assert.equal($('#tourDetail .track-source'), null);
+    assert.equal($('#trackRoute'), null, 'no OpenRouteService routing in the Tourenplan');
+
+    const url = new URL($('#komootPlan').getAttribute('href'));
+    assert.equal(url.hostname, 'www.komoot.com');
+    assert.match(url.pathname, /^\/de-de\/plan\/@[\d.]+,[\d.]+,13z$/);
+    assert.equal(url.searchParams.get('sport'), 'hike');
+    const loop = [...tourById('A1').stamps, tourById('A1').stamps[0]].map(n => stampByNumber.get(n));
+    loop.forEach((s, i) => {
+        assert.equal(url.searchParams.get(`p[${i}][loc]`), `${s.lat.toFixed(6)},${s.lon.toFixed(6)}`);
+        assert.equal(url.searchParams.get(`p[${i}][name]`), s.name);
+    });
+    assert.equal(url.searchParams.get(`p[${loop.length}][loc]`), null);
+    assert.equal($('#komootPlan').getAttribute('target'), '_blank');
 });
 
 test('single stamps can be collected and make a suggestion partial', async () => {
@@ -90,13 +103,13 @@ test('export v4 has the stamps, their dates and the derived finished suggestions
 test('imports a v1 file and replaces the browser state', async () => {
     const file = { format: 'hwn-tourenplan-progress', version: 1, doneTours: ['B7', 'B8', 'D8'], stamps: [6, 7, 8, 14, 16, 20, 21, 30, 71, 72, 178] };
     await importProgressFile(JSON.stringify(file));
-    assert.match($('#progressStatus').textContent, /^Importiert: 3 Vorschläge erledigt, 11 Stempel gesammelt/);
+    assert.match($('#progressStatus').textContent, /^Importiert: 3 Gruppen erledigt, 11 Stempel gesammelt/);
     assert.equal(rowState('G1').checked, false);
 });
 
 test('a finished tour in an older file counts with all of its stamps', async () => {
     await importProgressFile(JSON.stringify({ format: 'hwn-tourenplan-progress', version: 1, doneTours: ['A1'], stamps: [5] }));
-    assert.match($('#progressStatus').textContent, /1 Vorschlag erledigt, 5 Stempel gesammelt/);
+    assert.match($('#progressStatus').textContent, /1 Gruppe erledigt, 5 Stempel gesammelt/);
     assert.equal(rowState('A1').checked, true);
 });
 

@@ -1,6 +1,7 @@
-// Tourenplan: suggested round tours ("Vorschläge") covering all stamps, grouped by region.
+// Tourenplan: groups of stamps ("Gruppen") that fit into one day, covering all stamps, grouped by region.
+// A group is no route: the map shows a straight-line sketch until a real track is planned (e.g. in Komoot,
+// "In Komoot planen") and stored as project file or browser upload.
 // Has its own Leaflet map so it doesn't interfere with the route comparison map.
-// Tours can carry a real GPX track (project file or browser upload) that replaces the straight-line loop.
 // Progress is stored per stamp; a tour counts as done when all of its stamps are collected.
 // Long tours can have two part tours ("parts" in tours.json); each tour is shown either whole or in parts.
 // Own tours (GPX + detected stamps, planned or walked) are stored in the browser next to the suggestions.
@@ -8,10 +9,9 @@
 import { generateGPX, downloadGPX } from "../utils/optimize.js";
 import {
     analyzeTrack, loadProjectTracks, loadUploadedTracks, saveUploadedTrack,
-    deleteUploadedTrack, clearUploadedTracks, coordinatesToGPX, STAMP_ON_TRACK_METERS,
+    deleteUploadedTrack, clearUploadedTracks, STAMP_ON_TRACK_METERS,
     loadOwnTours, saveOwnTour, deleteOwnTour, clearOwnTours, stampsAlongTrack, gpxName, reviewTrack, trackOrigin, trackOverlap
 } from "../utils/tracks.js";
-import { calculateHikingTrack, hasApiKey } from "../utils/routing.js";
 import { distanceMeters } from "../utils/geo.js";
 import { loadBadges, badgeProgress } from "../utils/badges.js";
 
@@ -127,7 +127,7 @@ function lighten(hex, amount) {
 
 // The second part of a split tour is drawn in a lighter shade of the region color
 const unitColor = unit => unit.parent && unit.index === 1 ? lighten(color(unit.region), 0.45) : color(unit.region);
-const unitLabel = unit => unit.own ? `Eigene Tour „${unit.name}“` : unit.parent ? `Teil ${unit.id}` : `Vorschlag ${unit.id}`;
+const unitLabel = unit => unit.own ? `Eigene Tour „${unit.name}“` : unit.parent ? `Teil ${unit.id}` : `Gruppe ${unit.id}`;
 
 // Part tours behave like tours of their own (track, Komoot links, checkbox) and know their parent
 function prepareParts() {
@@ -276,6 +276,15 @@ function parseKomootUrl(input) {
     // Plain tour pages are normalized; anything else (collections, share links) is kept as is
     const id = url.pathname.match(/\/tour\/(\d+)/)?.[1];
     return id && !url.search ? `https://www.komoot.com/de-de/tour/${id}` : url.href;
+}
+
+// Komoot planner with the stamps as waypoints, closed to a loop (same URL format as Komoot's own planner links)
+function komootPlanUrl(stamps) {
+    const lat = stamps.reduce((a, s) => a + s.lat, 0) / stamps.length;
+    const lon = stamps.reduce((a, s) => a + s.lon, 0) / stamps.length;
+    const loop = stamps.length > 1 ? [...stamps, stamps[0]] : stamps;
+    const points = loop.map((s, i) => `p[${i}][loc]=${s.lat.toFixed(6)},${s.lon.toFixed(6)}&p[${i}][name]=${encodeURIComponent(s.name)}`);
+    return `https://www.komoot.com/de-de/plan/@${lat.toFixed(5)},${lon.toFixed(5)},13z?sport=hike&${points.join('&')}`;
 }
 
 // Komoot's GPX export is named like "2026-09-26_3310815718_Ilsetal.gpx"
@@ -772,7 +781,7 @@ function tourTags(tour) {
     return [season, ...tour.tags];
 }
 
-// Tracks computed by OpenRouteService (project defaults or "Auf Wanderwege legen") are only suggestions
+// Tracks computed by OpenRouteService (older browser uploads, own tours from the comparison) are unchecked
 function isSuggestedTrack(track) {
     return track.origin === 'ors';
 }
@@ -1138,7 +1147,7 @@ function initTourMap() {
         });
         marker.bindTooltip(() =>
             `<span class="stamp-id">${stamp.id}</span>${escapeHtml(stamp.name)}`
-            + (collectedStamps().has(number) ? ' · gestempelt' : tour ? ` · Vorschlag ${tour.id}` : '')
+            + (collectedStamps().has(number) ? ' · gestempelt' : tour ? ` · Gruppe ${tour.id}` : '')
         );
         // A split tour shown in parts selects the part that contains the stamp
         if (tour) marker.on('click', () => select(
@@ -1234,12 +1243,12 @@ function renderList() {
         sec.innerHTML = `
             <header class="region-head">
                 <h3><span class="mono region-code">${region.code}</span> ${escapeHtml(region.name)}</h3>
-                <span class="region-sub">${tours.length} Vorschläge · ${count} Stempel · ${Math.round(km)} km${withTrack ? ` · ${withTrack} mit GPX` : ''} · ca. ${tours[0].driveKm} km Anfahrt ab ${escapeHtml(plan.home)}</span>
+                <span class="region-sub">${tours.length} Gruppen · ${count} Stempel · ${Math.round(km)} km${withTrack ? ` · ${withTrack} mit GPX` : ''} · ca. ${tours[0].driveKm} km Anfahrt ab ${escapeHtml(plan.home)}</span>
             </header>
             <div class="table-wrap">
                 <table class="tour-table">
                     <thead><tr>
-                        <th scope="col">Erledigt</th><th scope="col">Vorschlag</th>
+                        <th scope="col">Erledigt</th><th scope="col">Gruppe</th>
                         <th scope="col" class="r">km</th><th scope="col" class="r">Std.</th><th scope="col" class="r">Hm</th>
                         <th scope="col">Niveau, Zeit</th><th scope="col">Stempel in Reihenfolge</th>
                     </tr></thead>
@@ -1522,12 +1531,12 @@ function renderStats() {
         <div class="route-stat"><div class="label">Offene Stempel</div><div class="value">${openStamps}</div></div>`
         + (planned ? `<div class="route-stat" title="Offene Stempel mit Komoot-Track oder Track aus einem anderen Dienst"><div class="label">davon verplant</div><div class="value">${planned}</div></div>` : '')
         + `
-        <div class="route-stat"><div class="label">Rundtouren</div><div class="value">${plan.tours.filter(t => !t.single).length}</div></div>
-        <div class="route-stat" title="Geplante eigene Touren plus der Rest der offenen Vorschläge${openKmEstimated ? '; teilweise geschätzt (ohne GPX-Track oder Rest-Runde)' : ''}"><div class="label">km offen</div><div class="value">${openKmEstimated ? '~' : ''}${Math.round(openKm)}</div></div>
+        <div class="route-stat"><div class="label">Gruppen</div><div class="value">${plan.tours.filter(t => !t.single).length}</div></div>
+        <div class="route-stat" title="Geplante eigene Touren plus der Rest der offenen Gruppen${openKmEstimated ? '; teilweise geschätzt (ohne GPX-Track oder Rest-Runde)' : ''}"><div class="label">km offen</div><div class="value">${openKmEstimated ? '~' : ''}${Math.round(openKm)}</div></div>
         <div class="route-stat"${openHmEstimated ? ' title="Teilweise geschätzt (nur Anstiege von Stempel zu Stempel), echte Höhenmeter liegen meist höher"' : ''}><div class="label">Hm offen</div><div class="value">${openHmEstimated ? '≥' : ''}${hm(openHm)}</div></div>
         <div class="route-stat"${walkedEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track"' : ''}><div class="label">km zurückgelegt</div><div class="value highlight">${walkedEstimated ? '~' : ''}${fmt1(walkedKm)}</div></div>
         <div class="route-stat"${walkedHmEstimated ? ' title="Teilweise geschätzt: nicht jede erledigte Tour hat einen GPX-Track mit Höhendaten"' : ''}><div class="label">Hm zurückgelegt</div><div class="value highlight">${walkedHmEstimated ? '≥' : ''}${hm(walkedHm)}</div></div>
-        <div class="route-stat"><div class="label">Vorschläge erledigt</div><div class="value highlight">${plan.tours.filter(isDone).length}</div></div>`
+        <div class="route-stat"><div class="label">Gruppen erledigt</div><div class="value highlight">${plan.tours.filter(isDone).length}</div></div>`
         + (ownTours.length ? `<div class="route-stat"><div class="label">Eigene Touren gelaufen</div><div class="value highlight">${walkedOwn.length}/${ownTours.length}</div></div>` : '');
 }
 
@@ -1556,7 +1565,7 @@ function trackInfoHtml(tour) {
             parts.push(`<p class="hint track-warning">⚠ Nicht am Track (mehr als ${STAMP_ON_TRACK_METERS} m entfernt): ${list}</p>`);
         }
     } else {
-        parts.push(`<p class="hint">Noch kein GPX-Track. Lade eine geplante oder gelaufene Tour hoch (z. B. aus Komoot), dann zeigt die Karte den echten Weg statt der Luftlinie. Der Erledigt-Status ändert sich dadurch nicht.</p>`);
+        parts.push(`<p class="hint">Noch keine Route, nur die Luftlinie als Skizze. ${tour.single ? '' : '„In Komoot planen“ öffnet den Komoot-Planer mit den Stempeln als Wegpunkten. '}Speichere die Tour in Komoot, exportiere das GPX und hinterlege es hier: Dann zeigt die Karte den echten Weg, km und Hm kommen aus dem Track, und die Stempel zählen als verplant. Der Erledigt-Status ändert sich dadurch nicht.</p>`);
     }
     if (error) {
         parts.push(`<p class="hint track-warning">⚠ ${escapeHtml(error)}</p>`);
@@ -1579,7 +1588,7 @@ function renderDetail(tour) {
         const open = units.filter(u => openReview(u).length);
         detail.innerHTML = `
             <h3><span aria-hidden="true">⚠</span> Zu prüfen</h3>
-            <p class="hint">${open.length} ${open.length === 1 ? 'Vorschlag oder Teil hat' : 'Vorschläge und Teile haben'} Hinweise. Umweg-Etappen sind auf der Karte orange hinterlegt.</p>
+            <p class="hint">${open.length} ${open.length === 1 ? 'Gruppe oder Teil hat' : 'Gruppen und Teile haben'} Hinweise. Umweg-Etappen sind auf der Karte orange hinterlegt.</p>
             <ul class="review-list">${open.map(u => `<li>
                 <button type="button" class="part-link" data-unit="${u.id}">${escapeHtml(unitLabel(u))}</button>
                 <span class="hint">${openReview(u).map(r => ({ note: 'Umbau', detour: 'Umweg', backtrack: 'Hin und zurück', longer: 'länger als geschätzt', parts: 'Teile kürzer' })[r.kind]).join(' · ')}</span>
@@ -1596,7 +1605,7 @@ function renderDetail(tour) {
             <h3>Geplant</h3>
             <p class="hint">${planned.length
                 ? `${planned.length} ${planned.length === 1 ? 'Tour' : 'Touren'} mit ${stampCount} offenen Stempeln, zusammen etwa ${Math.round(km)} km.`
-                : 'Noch nichts geplant.'} Geplant sind eigene Touren, die noch nicht gelaufen sind, und offene Vorschläge mit Komoot-Track (oder Track aus einem anderen Dienst).</p>
+                : 'Noch nichts geplant.'} Geplant sind eigene Touren, die noch nicht gelaufen sind, und offene Gruppen mit Komoot-Track (oder Track aus einem anderen Dienst).</p>
             ${planned.length ? `<ul class="review-list">${planned.map(u => `<li>
                 <button type="button" class="part-link" data-unit="${u.id}">${escapeHtml(unitLabel(u))}</button>
                 <span class="hint">${fmt1(tourFigures(u).km)} km · ${u.stamps.filter(n => !collected.has(n)).length} offene Stempel</span>
@@ -1652,11 +1661,13 @@ function renderDetail(tour) {
 
     detail.innerHTML = `
         <span class="region-tag">${escapeHtml(regionName(tour.region))}</span>
-        <h3>${tour.parent ? 'Teil' : 'Vorschlag'} <span class="mono">${tour.id}</span>${tour.parent ? ` <span class="part-title">${escapeHtml(tour.name)}</span>` : ''}${isDone(tour)
+        <h3>${tour.parent ? 'Teil' : 'Gruppe'} <span class="mono">${tour.id}</span>${tour.parent ? ` <span class="part-title">${escapeHtml(tour.name)}</span>` : ''}${isDone(tour)
             ? ' <span class="level lv-leicht">✓ erledigt</span>'
             : isPartial(tour) ? ` <span class="level lv-mittel">${collectedCount(tour)}/${stamps.length} gestempelt</span>` : ''}</h3>
         <div class="tour-meta mono">${meta}<span>${f.minEle}–${f.maxEle} m ü. NN</span><span>${stamps.length} Stempel</span></div>
-        ${tour.parent ? partInfoHtml(tour) : '<p class="hint suggestion-hint">Vorschlag aus dem Tourenplan: Du kannst ihn so gehen, mit eigenem GPX anpassen oder nur einzelne Stempel davon sammeln.</p>'}
+        ${tour.parent ? partInfoHtml(tour) : `<p class="hint suggestion-hint">${tour.single
+            ? 'Einzelstempel: liegt zu abseits für eine Runde.'
+            : 'Stempel, die gut an einem Tag zusammenpassen. Die Linie auf der Karte ist nur eine Skizze (Luftlinie), keine Route: Plane den Weg in Komoot und hinterlege das GPX.'}</p>`}
         ${reviewHtml(tour)}
         ${tour.parts?.length ? variantHtml(tour) : ''}
         ${restHtml(tour)}
@@ -1664,16 +1675,16 @@ function renderDetail(tour) {
         ${stopListHtml(stamps)}
         <p class="hint">${tour.single
             ? 'Liegt zu abseits für eine Runde; nimm ihn auf dem Weg zu einer Nachbartour mit.'
-            : 'Die Runde ist geschlossen, du kannst an jedem Stempel starten.'}</p>
+            : 'Die Reihenfolge ist ein Vorschlag für eine Runde, du kannst an jedem Stempel starten.'}</p>
         <div class="done-box">
             <label><input type="checkbox" id="tourDoneToggle"> Alle Stempel gesammelt</label>
-            <span class="hint">Setzt oder entfernt die Haken aller Stempel ${tour.parent ? 'dieses Teils' : 'dieses Vorschlags'}. Einzelne Stempel hakst du in der Liste oben ab. Ein GPX-Track allein ändert am Fortschritt nichts.</span>
+            <span class="hint">Setzt oder entfernt die Haken aller Stempel ${tour.parent ? 'dieses Teils' : 'dieser Gruppe'}. Einzelne Stempel hakst du in der Liste oben ab. Ein GPX-Track allein ändert am Fortschritt nichts.</span>
         </div>
         <div class="track-box">
             ${trackInfoHtml(tour)}
             <div class="detail-actions">
                 <button type="button" class="calc-route-btn" id="trackUpload">${track ? 'GPX ersetzen' : 'GPX hinterlegen'}</button>
-                ${tour.single ? '' : `<button type="button" class="calc-route-btn" id="trackRoute" title="Runde durch die Stempel auf Wanderwegen berechnen (OpenRouteService)">${track ? 'Neu auf Wanderwege legen' : 'Auf Wanderwege legen'}</button>`}
+                ${tour.single ? '' : `<a class="calc-route-btn komoot-plan" id="komootPlan" href="${escapeHtml(komootPlanUrl(stamps))}" target="_blank" rel="noopener" title="Öffnet den Komoot-Planer mit den Stempeln als Wegpunkten (Runde)">${track ? 'Neu in Komoot planen' : 'In Komoot planen'} →</a>`}
                 ${track && !tour.single ? '<button type="button" class="calc-route-btn" id="tourAdopt" title="Kopiert Track und Stempel in eine eigene Tour, die du anpassen kannst">Als eigene Tour übernehmen</button>' : ''}
                 ${track?.source === 'upload' ? '<button type="button" class="detail-clear" id="trackRemove">Hochgeladenen Track entfernen</button>' : ''}
                 <input type="file" id="trackFile" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
@@ -1707,8 +1718,6 @@ function renderDetail(tour) {
         if (file) uploadTrack(tour, file);
     });
     el('trackRemove')?.addEventListener('click', () => removeUploadedTrack(tour));
-    el('trackRoute')?.addEventListener('click', e => routeTour(tour, e.currentTarget));
-    el('restRoute')?.addEventListener('click', e => routeRest(tour, e.currentTarget));
     el('tourAdopt')?.addEventListener('click', e => adoptSuggestion(tour, e.currentTarget));
     detail.querySelectorAll('[data-own]').forEach(btn =>
         btn.addEventListener('click', () => select(btn.dataset.own)));
@@ -1752,12 +1761,12 @@ function restHtml(tour) {
     const hint = f.empty ? ''
         : f.rest.length === 1
             ? 'Nur noch ein Stempel offen: am besten als Abstecher auf einer anderen Tour mitnehmen.'
-            : 'Die Rest-Werte sind geschätzt (Luftlinie × 1,4, Hm nur von Stempel zu Stempel). Auf der Karte ist die Rest-Runde gepunktet. „Rest auf Wanderwege legen“ berechnet sie auf echten Wegen und speichert sie als eigene Tour.';
+            : 'Die Rest-Werte sind geschätzt (Luftlinie × 1,4, Hm nur von Stempel zu Stempel). Auf der Karte ist die Rest-Runde gepunktet. „Rest in Komoot planen“ öffnet Komoot mit den restlichen Stempeln; das GPX legst du dann mit „+ Eigene Tour aus GPX“ an.';
     return `<div class="rest-box">
-        <b>Stand dieses ${tour.parent ? 'Teils' : 'Vorschlags'}</b>
+        <b>Stand ${tour.parent ? 'dieses Teils' : 'dieser Gruppe'}</b>
         <ul>${items}</ul>
         ${hint ? `<p class="hint">${hint}</p>` : ''}
-        ${f.rest.length > 1 ? '<div class="detail-actions"><button type="button" class="calc-route-btn" id="restRoute">Rest auf Wanderwege legen</button></div>' : ''}
+        ${f.rest.length > 1 ? `<div class="detail-actions"><a class="calc-route-btn komoot-plan" id="restKomoot" href="${escapeHtml(komootPlanUrl(f.rest.map(n => stampsByNumber.get(n))))}" target="_blank" rel="noopener">Rest in Komoot planen →</a></div>` : ''}
     </div>`;
 }
 
@@ -1774,7 +1783,7 @@ function stopListHtml(stamps, showSuggestion = false) {
             <li class="stop-item${collected.has(s.number) ? ' collected' : ''}">
                 <span class="stop-number">${i + 1}</span>
                 <span class="stop-name">${escapeHtml(s.name)}</span>
-                <span class="stop-id">${s.id}${s.elevation ? ` · ${s.elevation} m` : ''}${suggestion ? ` · Vorschlag ${suggestion.id}` : ''}</span>
+                <span class="stop-id">${s.id}${s.elevation ? ` · ${s.elevation} m` : ''}${suggestion ? ` · Gruppe ${suggestion.id}` : ''}</span>
                 <label class="stamp-check" title="Gestempelt"><input type="checkbox" class="stamp-done" data-stamp="${s.number}"${collected.has(s.number) ? ' checked' : ''} aria-label="${escapeHtml(`${s.id} ${s.name} gestempelt`)}"></label>
             </li>`;
     }).join('')}
@@ -1967,7 +1976,7 @@ function renderOwnForm(detail) {
         return `<li><label>
             <input type="checkbox" class="own-stamp" data-stamp="${a.number}"${d.chosen.has(a.number) ? ' checked' : ''}>
             <span class="mono">${s.number}</span> ${escapeHtml(s.name)}
-            <span class="hint">${Math.round(a.distance)} m vom Track${suggestion ? ` · Vorschlag ${suggestion.id}` : ''}${collected.has(a.number) ? ' · schon gestempelt' : ''}</span>
+            <span class="hint">${Math.round(a.distance)} m vom Track${suggestion ? ` · Gruppe ${suggestion.id}` : ''}${collected.has(a.number) ? ' · schon gestempelt' : ''}</span>
         </label></li>`;
     }).join('');
 
@@ -2121,9 +2130,9 @@ function initOwnTours() {
 
 function partInfoHtml(part) {
     const sibling = part.parent.parts.find(p => p !== part);
-    return `<p class="hint suggestion-hint">Teil von Vorschlag ${part.parent.id}: eine eigene Runde. Zusammen mit
-        Teil ${sibling.id} (${escapeHtml(sibling.name)}) deckt er alle Stempel des Vorschlags ab.</p>
-        <button type="button" class="detail-clear" id="tourParent">← Zu Vorschlag ${part.parent.id}</button>`;
+    return `<p class="hint suggestion-hint">Teil von Gruppe ${part.parent.id}: eine eigene Runde. Zusammen mit
+        Teil ${sibling.id} (${escapeHtml(sibling.name)}) deckt er alle Stempel der Gruppe ab.</p>
+        <button type="button" class="detail-clear" id="tourParent">← Zu Gruppe ${part.parent.id}</button>`;
 }
 
 // Choose between walking a long tour whole or as its two part tours
@@ -2187,89 +2196,12 @@ async function uploadTrack(tour, file) {
     }
 }
 
-// Snap the straight-line loop to hiking paths via OpenRouteService; stored like an upload (planning only)
-async function routeTour(tour, button) {
-    const setMessage = (text, isError) => {
-        detailMessage = { tourId: tour.id, text, isError };
-        render();
-    };
-    if (!hasApiKey()) {
-        setMessage('Dafür brauchst du einen OpenRouteService-API-Schlüssel. Hinterlege ihn im Tab Routenabgleich unter den API-Einstellungen.', true);
-        return;
-    }
-    const existing = tracks.get(tour.id);
-    if (existing && !confirm(`${unitLabel(tour)} hat schon einen Track (${existing.name}). Durch die berechnete Route ersetzen?`
-        + (existing.source === 'project' ? '\nDie Projektdatei bleibt erhalten und gilt wieder, wenn du den hochgeladenen Track entfernst.' : ''))) {
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = 'Berechne …';
-    const stamps = tourStamps(tour);
-    const result = await calculateHikingTrack([...stamps, stamps[0]]);
-    if (result.error) {
-        setMessage(`Route nicht berechnet: ${result.error}`, true);
-        return;
-    }
-
-    const name = `OpenRouteService – Tour ${tour.id}`;
-    try {
-        const gpx = coordinatesToGPX(name, result.coordinates);
-        analyzeTrack(gpx, stamps);
-        const record = { name, gpx, uploadedAt: new Date().toISOString() };
-        await saveUploadedTrack(tour.id, record);
-        uploadedTracks[tour.id] = record;
-        detailMessage = { tourId: tour.id, text: 'Route auf Wanderwegen gespeichert (geplant). Prüfe sie auf der Karte, ORS kennt nicht jeden Pfad.', isError: false };
-        refreshTracks();
-        fitTo([tour]);
-    } catch (e) {
-        setMessage(`Route nicht gespeichert: ${e.message || 'Speichern fehlgeschlagen.'}`, true);
-    }
-}
-
 // Store a new own tour (from the rest of a suggestion or a copy of it) and open it
 async function createOwnTour(record, message) {
     await saveOwnTour(record);
     detailMessage = { tourId: record.id, text: message, isError: false };
     setOwnTours([...ownTours, record]);
     select(record.id);
-}
-
-// Route only the remaining stamps of a suggestion; the result becomes a planned own tour
-async function routeRest(tour, button) {
-    const setMessage = (text, isError) => {
-        detailMessage = { tourId: tour.id, text, isError };
-        render();
-    };
-    if (!hasApiKey()) {
-        setMessage('Dafür brauchst du einen OpenRouteService-API-Schlüssel. Hinterlege ihn im Tab Routenabgleich unter den API-Einstellungen.', true);
-        return;
-    }
-    const rest = restStamps(tour);
-    if (rest.length < 2) return;
-
-    button.disabled = true;
-    button.textContent = 'Berechne …';
-    const stamps = rest.map(n => stampsByNumber.get(n));
-    const result = await calculateHikingTrack([...stamps, stamps[0]]);
-    if (result.error) {
-        setMessage(`Rest-Runde nicht berechnet: ${result.error}`, true);
-        return;
-    }
-    const name = `${tour.id} – Rest`;
-    try {
-        await createOwnTour({
-            id: `own-${Date.now()}`,
-            name,
-            gpx: coordinatesToGPX(`OpenRouteService – ${name}`, result.coordinates),
-            fileName: '',
-            stamps: rest,
-            status: 'planned',
-            createdAt: new Date().toISOString()
-        }, `Rest-Runde von ${unitLabel(tour)} als eigene Tour gespeichert (geplant). Prüfe sie auf der Karte, ORS kennt nicht jeden Pfad.`);
-    } catch (e) {
-        setMessage(`Rest-Runde nicht gespeichert: ${e.message || 'Speichern fehlgeschlagen.'}`, true);
-    }
 }
 
 // Copy a suggestion with its track (and Komoot links) into an own tour that can then be edited
@@ -2421,7 +2353,7 @@ async function importProgress(text) {
     document.dispatchEvent(new CustomEvent('hwn:progress-changed'));
 
     const doneCount = plan.tours.filter(isDone).length;
-    let msg = `Importiert: ${doneCount} ${doneCount === 1 ? 'Vorschlag' : 'Vorschläge'} erledigt, ${collected.size} Stempel gesammelt`;
+    let msg = `Importiert: ${doneCount} ${doneCount === 1 ? 'Gruppe' : 'Gruppen'} erledigt, ${collected.size} Stempel gesammelt`;
     if (trackCount !== null) msg += `, ${trackCount} GPX-Track${trackCount === 1 ? '' : 's'}`;
     if (ownCount !== null) msg += `, ${ownCount} eigene ${ownCount === 1 ? 'Tour' : 'Touren'}`;
     msg += '.';

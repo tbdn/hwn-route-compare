@@ -42,8 +42,16 @@ test('a planned own tour joins, a finished tour leaves', async () => {
     assert.deepEqual(visibleRows(), expected);
 });
 
-test('an OpenRouteService track does not make a suggestion planned', () => {
-    assert.equal(trackOrigin(fs.readFileSync(`${SRC}data/tours/A1.gpx`, 'utf8')), 'ors');
+test('an OpenRouteService track does not make a group planned', async () => {
+    const gpx = loopGpx(tourById('A1').stamps).replace('<gpx>', '<gpx version="1.1" creator="HWN Route Compare (OpenRouteService)">');
+    assert.equal(trackOrigin(gpx), 'ors');
+    await importProgressFile(JSON.stringify({
+        format: 'hwn-tourenplan-progress', version: 4, stamps: [], variants: {}, komoot: {}, ownTours: [],
+        tracks: { A1: { name: 'ors.gpx', gpx, uploadedAt: '2026-10-01T00:00:00.000Z' } }
+    }));
+    await tick();
+    chip().click();
+    assert.ok(row('A1').querySelector('.gpx-tag'), 'A1 has the uploaded track');
     assert.ok(!visibleRows().includes('A1'));
 });
 
@@ -55,6 +63,6 @@ test('the level shows its Leistungs-km (km + Hm/100) next to it, "~" when estima
     assert.ok(Math.abs(parseDe(effort('E1').split(' ')[0]) - (km + hm / 100)) <= 0.11, effort('E1'));
     assert.ok(row('E1').querySelector('.level'));
     // Without a track the figures are estimates
-    const estimated = plan.tours.find(t => !fs.existsSync(`${SRC}data/tours/${t.id}.gpx`) && !t.single);
+    const estimated = plan.tours.find(t => t.id !== 'A1' && !fs.existsSync(`${SRC}data/tours/${t.id}.gpx`) && !t.single);
     if (estimated) assert.match(effort(estimated.id), /^~\d+,\d Leistungs-km$/);
 });

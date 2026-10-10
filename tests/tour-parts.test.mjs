@@ -83,7 +83,8 @@ test('a part has its own detail with stamps, checkbox and track actions', async 
     $(`#tourDetail [data-part="${Tb.id}"]`).click();
     await tick();
     assert.match(text($('#tourDetail h3')), new RegExp(`^Teil ${Tb.id}`));
-    assert.ok($('#trackRoute'), 'parts can be routed on hiking paths');
+    assert.ok($('#komootPlan'), 'parts can be planned in Komoot');
+    assert.ok($('#trackUpload'));
     assert.equal($$('#tourDetail .stamp-done').length, Tb.stamps.length);
 });
 
@@ -94,13 +95,13 @@ test('a suggestion is done only when both parts are collected', async () => {
 
     $('#tourParent').click();
     await tick();
-    assert.match(text($('#tourDetail h3')), new RegExp(`^Vorschlag ${T.id}`));
+    assert.match(text($('#tourDetail h3')), new RegExp(`^Gruppe ${T.id}`));
 
     row(Ta.id).click();
     await tick();
     setChecked($('#tourDoneToggle'), true);
     assert.equal(rowState(T.id).checked, true);
-    assert.equal(stats()['Vorschläge erledigt'], '1');
+    assert.equal(stats()['Gruppen erledigt'], '1');
 });
 
 test('walked distance follows the chosen variant', async () => {

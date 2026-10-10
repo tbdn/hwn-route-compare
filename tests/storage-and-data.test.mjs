@@ -61,7 +61,7 @@ test('the parts in tours.json are what scripts/suggest-tour-parts.js suggests', 
     const suggested = [...out.matchAll(/^(\w+): .* → teilen:/gm)].map(m => m[1]).sort();
     const inPlan = plan.tours.filter(t => t.parts?.length).map(t => t.id).sort();
     assert.deepEqual(inPlan, suggested);
-    assert.match(out, /^B3: .* → nicht teilen: Brocken/m);
+    assert.match(out, /^E1: .* → nicht teilen: mit Komoot/m);
 });
 
 // The app loads src/data/tours/<ID>.gpx; a file named differently (e.g. HWN_A5a.gpx) is silently ignored

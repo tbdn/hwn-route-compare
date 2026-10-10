@@ -64,7 +64,7 @@ function buildGrid() {
                     <button type="button" class="pass-date" data-stamp="${s.number}" hidden></button>
                     <input type="date" class="pass-date-input" data-stamp="${s.number}" hidden aria-label="${escapeHtml(`${s.id} ${s.name} gestempelt am`)}">
                     <button type="button" class="pass-plan" hidden></button>
-                    ${tour ? `<button type="button" class="pass-tour" data-tour="${tour.id}" title="Vorschlag ${tour.id} (${escapeHtml(tour.regionName)}) im Tourenplan zeigen">${tour.id}</button>` : ''}
+                    ${tour ? `<button type="button" class="pass-tour" data-tour="${tour.id}" title="Gruppe ${tour.id} (${escapeHtml(tour.regionName)}) im Tourenplan zeigen">${tour.id}</button>` : ''}
                 </span>
             </div>`;
     }).join('');

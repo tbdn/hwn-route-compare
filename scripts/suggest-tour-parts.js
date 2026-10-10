@@ -118,6 +118,12 @@ const results = {};
 for (const tour of plan.tours.filter(t => !t.single)) {
     const est = estimate(tour.stamps.map(n => stamps.get(n)));
     const track = trackFigures(tour.id);
+    // The existing parts were chosen with routed tracks; the straight-line estimate is too short to judge them again
+    if (!track && tour.parts?.length) {
+        console.log(`${tour.id}: ${est.km.toFixed(1)} km (geschätzt) → teilen: bestehende Teile behalten, ohne Track nicht neu bewertet`);
+        results[tour.id] = tour.parts;
+        continue;
+    }
     const km = track?.km ?? est.km;
     const effort = km + (track?.ascent ?? est.ascent) / 100;
     if (effort < MIN_EFFORT) continue;

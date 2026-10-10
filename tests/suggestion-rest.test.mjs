@@ -1,5 +1,5 @@
 // Suggestions adapt (plan step 3): rest of a suggestion when stamps are collected or planned in
-// own tours, every open stamp counted once in "km offen", rest routing and adopting a suggestion.
+// own tours, every open stamp counted once in "km offen", planning the rest in Komoot and adopting a suggestion.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,9 +8,8 @@ import {
     pickFile, stats, parseDe, loopGpx, stampByNumber
 } from './helpers/browser.mjs';
 
-const env = setupBrowser();
+setupBrowser();
 await startTourPlan();
-const { setApiKey } = await import('../src/utils/routing.js');
 const openKm = () => parseDe(stats()['km offen']);
 const ownKm = name => parseDe(text($$('.own-card .tour-row').find(r => r.textContent.includes(name)).querySelectorAll('td')[2]));
 
@@ -56,7 +55,7 @@ test('the detail shows what is planned and what is left', async () => {
     const box = text($('#tourDetail .rest-box ul'));
     assert.match(box, /Verplant in „Meine Runde“: 129 Weltwald, 130 Iberger Albert-Turm/);
     assert.match(box, /Rest: 105 Prinzenlaube, 113 Grumbacher Teich · ~/);
-    assert.ok($('#restRoute'));
+    assert.ok($('#restKomoot'));
 });
 
 test('after walking the own tour its stamps are collected, the rest stays', async () => {
@@ -67,25 +66,13 @@ test('after walking the own tour its stamps are collected, the rest stays', asyn
     assert.ok(Math.abs(openKm() - (startKm - a1Km + estimateKm([105, 113]))) <= 1);
 });
 
-test('routing the rest needs an API key', async () => {
-    $('#restRoute').click();
-    await tick();
-    assert.match(text($('#tourDetail .track-warning')), /OpenRouteService-API-Schlüssel/);
-});
-
-test('the routed rest becomes a planned own tour and empties the suggestion', async () => {
-    setApiKey('test');
+test('the rest is planned in Komoot with only the remaining stamps', async () => {
     row('A1').click();
     await tick();
-    $('#restRoute').click();
-    await tick(150);
-
-    const body = env.ors.calls.at(-1).body;
-    assert.equal(body.coordinates.length, 3, 'rest stamps plus the way back');
-    assert.deepEqual(body.coordinates[0], body.coordinates.at(-1));
-    assert.match(text($('#tourDetail h3')), /^A1 – Rest geplant/);
-    assert.match(text($('#tourDetail .track-source')), /Weg von OpenRouteService \(ungeprüft\)/);
-    assert.deepEqual(rowCells('A1'), { km: '–', hours: '–', ascent: '–' });
+    const url = new URL($('#restKomoot').getAttribute('href'));
+    const locs = [0, 1, 2, 3].map(i => url.searchParams.get(`p[${i}][loc]`));
+    const loc = n => `${stampByNumber.get(n).lat.toFixed(6)},${stampByNumber.get(n).lon.toFixed(6)}`;
+    assert.deepEqual(locs, [loc(105), loc(113), loc(105), null]);
 });
 
 test('only suggestions with a track can be adopted', async () => {

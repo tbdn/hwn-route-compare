@@ -95,7 +95,7 @@ test('the review filter shows only flagged rows and, without a selection, an ove
     assert.ok($$('#tourDetail .review-list li').length >= chipCount());
     $(`#tourDetail [data-unit="${target.id}"]`).click();
     await tick();
-    assert.match(text($('#tourDetail h3')), new RegExp(`^Vorschlag ${target.id}`));
+    assert.match(text($('#tourDetail h3')), new RegExp(`^Gruppe ${target.id}`));
 });
 
 test('a finished suggestion is no longer flagged', async () => {

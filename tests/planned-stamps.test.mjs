@@ -40,7 +40,7 @@ await tourplan.loadPlanTracks();
 await tick();
 
 test('the origin of a track is read from its head', () => {
-    assert.equal(tracks.trackOrigin(projectGpx('A1')), 'ors');
+    assert.equal(tracks.trackOrigin(ors(loopGpx([129, 130]))), 'ors');
     assert.equal(tracks.trackOrigin(projectGpx('B7')), 'komoot');
     assert.equal(tracks.trackOrigin(generateGPX(stamps.slice(0, 3))), 'app');
     assert.equal(tracks.trackOrigin('<?xml version="1.0"?><gpx version="1.1" creator="Garmin Connect"><trk/></gpx>'), 'external');
@@ -48,7 +48,7 @@ test('the origin of a track is read from its head', () => {
     assert.equal(tracks.trackOrigin('<gpx creator="x"><metadata><author><link href="https://www.komoot.de"/></author></metadata></gpx>'), 'komoot');
 });
 
-test('Komoot project tracks make their stamps planned, ORS suggestions do not (stamp page first)', () => {
+test('Komoot project tracks make their stamps planned, groups without a track do not (stamp page first)', () => {
     assert.ok(komootProjectStamps.length > 0);
     assert.deepEqual(plannedTiles(), komootProjectStamps);
     assert.deepEqual(planOf(komootProjectStamps[0]), { text: 'verplant', unit: plan.tours.find(t => t.stamps.includes(komootProjectStamps[0])).id, unchecked: false });

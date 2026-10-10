@@ -577,6 +577,10 @@ input:focus, button:focus, .file-btn:focus-within, input[type=range]:focus{
     color:var(--paper);
     border-color:var(--ink);
 }
+a.calc-route-btn{
+    display:inline-block;
+    text-decoration:none;
+}
 .calc-route-btn:disabled{
     opacity:0.6;
     cursor:wait;

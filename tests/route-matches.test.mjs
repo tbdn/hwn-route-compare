@@ -1,5 +1,5 @@
-// Routenabgleich: a route from elsewhere (e.g. Komoot) is checked against the suggestions in the Tourenplan
-// (stamps, length, and the ways when the suggestion has a track).
+// Routenabgleich: a route from elsewhere (e.g. Komoot) is checked against the groups in the Tourenplan
+// (stamps, length, and the ways when the group has a track).
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -32,17 +32,18 @@ test('overlap of two tracks counts length, not points, and finds where they part
     assert.ok(r.offKm > 0.9 && r.offKm < 1);
 });
 
-test('the track of a suggestion fits itself; its part tours are covered by it', async () => {
-    await compare(fs.readFileSync(SRC + 'data/tours/A2.gpx', 'utf8'), 'A2.gpx');
+test('the Komoot track of a group fits itself', async () => {
+    await compare(fs.readFileSync(SRC + 'data/tours/B7.gpx', 'utf8'), 'B7.gpx');
     assert.equal($('#matchSection').hidden, false);
-    assert.equal($('.match').dataset.id, 'A2');
-    assert.equal(verdict('A2'), 'passt');
-    assert.match(text(match('A2')), /Stempel 6\/6/);
-    assert.match(text(match('A2')), /zu 100 % auf deiner Route/);
-    tourById('A2').parts.forEach(p => assert.equal(verdict(p.id), 'Vorschlag + mehr'));
+    assert.equal($('.match').dataset.id, 'B7');
+    assert.equal(verdict('B7'), 'passt');
+    const n = tourById('B7').stamps.length;
+    assert.match(text(match('B7')), new RegExp(`Stempel ${n}/${n}`));
+    assert.match(text(match('B7')), /zu 100 % auf deiner Route/);
+    assert.match(text(match('B7')), /Verglichen mit: Komoot-Track/);
 
     // The best match is drawn dashed on the map
-    assert.ok(match('A2').classList.contains('shown'));
+    assert.ok(match('B7').classList.contains('shown'));
     const dashed = env.drawnLines.filter(l => l.options?.dashArray === '8 10');
     assert.equal(dashed.length, 1);
     assert.ok(dashed[0].points.flat().length > 100);
@@ -57,7 +58,9 @@ test('same stamps on other ways, and a route that reaches only some stamps', asy
     assert.equal(verdict('A1'), 'teilweise');
     assert.match(text(match('A1')), /Stempel 2\/4/);
     assert.match(text(match('A1')), /Nicht auf deiner Route: 105 .*, 113 /);
-    assert.ok(match('A1').classList.contains('shown'));
+    // Without a track there are no ways to compare and nothing to draw
+    assert.match(text(match('A1')), /kein Track zum Vergleich der Wege/);
+    assert.equal(match('A1').querySelector('.match-map'), null);
 });
 
 test('a suggestion with a stamp just off the route is shown as nearby, with the distance', async () => {
@@ -72,17 +75,18 @@ test('a suggestion with a stamp just off the route is shown as nearby, with the 
     assert.match(text(match(tour.id)), /Nicht auf deiner Route: 28 Gasthaus Steinerne Renne \(20\d m daneben\)/);
 });
 
-test('"Auf Karte" toggles the suggestion, "Im Tourenplan" opens it', async () => {
-    await compare(loopGpx([129, 130]), 'Kurz.gpx');
-    match('A1').querySelector('.match-map').click();
-    assert.ok(!match('A1').classList.contains('shown'));
-    match('A1').querySelector('.match-map').click();
-    assert.ok(match('A1').classList.contains('shown'));
+test('"Auf Karte" toggles the group track, "Im Tourenplan" opens it', async () => {
+    await compare(loopGpx(tourById('B7').stamps), 'B7-Luftlinie.gpx');
+    assert.ok(match('B7').classList.contains('shown'));
+    match('B7').querySelector('.match-map').click();
+    assert.ok(!match('B7').classList.contains('shown'));
+    match('B7').querySelector('.match-map').click();
+    assert.ok(match('B7').classList.contains('shown'));
 
-    match('A1').querySelector('.match-tour').click();
+    match('B7').querySelector('.match-tour').click();
     await tick(300);
     assert.equal($('#viewTours').hidden, false);
-    assert.equal($('.tour-row.selected')?.dataset.id, 'A1');
+    assert.equal($('.tour-row.selected')?.dataset.id, 'B7');
 });
 
 test('a route without suggestion stamps says so instead of hiding the section', async () => {
@@ -92,5 +96,5 @@ test('a route without suggestion stamps says so instead of hiding the section', 
     await compare(far, 'Hamburg.gpx');
     assert.equal($('#matchSection').hidden, false);
     assert.equal($$('.match').length, 0);
-    assert.match(text($('#matchList')), /^Kein Tourenvorschlag in der Nähe/);
+    assert.match(text($('#matchList')), /^Keine Gruppe in der Nähe/);
 });

@@ -25,6 +25,12 @@ python -m http.server -d src
 
 Then open http://localhost:3000 (or the port shown).
 
+## Deployment (Portainer)
+
+- `Dockerfile` (`nginx:alpine` + `docker/nginx.conf`) serves `src/`; `.dockerignore` keeps everything else out
+- `scripts/package-portainer.sh` → `dist/hwn-route-compare-<date>.tar` (plain tar, Portainer "Build a new image → Upload"); `docker-compose.yml` is the stack, referencing the local image `hwn-route-compare:latest`. Steps: `docs/deploy-portainer.md`
+- `docker/nginx.conf` must not use a `types {}` block (it would replace nginx's MIME table and serve ES modules as `application/octet-stream`); extra types go in `location` blocks via `default_type`
+
 ## Tests
 
 ```bash
@@ -68,7 +74,7 @@ data/
 
 tests/                      # node --test (npm test), see "Tests"
 ├── helpers/browser.mjs     # linkedom DOM, Leaflet/fetch/ORS stubs, DOM helpers
-└── *.test.mjs              # progress, part tours, own tours, suggestion rest, ORS, Routenabgleich, storage/data
+└── *.test.mjs              # progress, part tours, own tours, group rest, Routenabgleich, storage/data
 
 scripts/
 ├── convert-gpx-to-json.js  # Node.js script to regenerate src/data/stamps.geojson
@@ -170,23 +176,23 @@ Users can select stamps and add them to the route:
 ## Tourenplan (second tab, `#touren`)
 
 - Tours come from `src/data/tours.json`; stamp coordinates/names from `stamps.geojson`
-- Tours in `tours.json` are suggestions ("Vorschlag A1"); ORS-computed tracks are labelled "Routenvorschlag (OpenRouteService, ungeprüft)"
+- Tours in `tours.json` are **groups** ("Gruppe A1"): stamps that fit into one day, in a loop order. They are not routes: without a track the map shows the straight-line loop as a sketch. Routes come only from the user (Komoot): `src/data/tours/` holds Komoot tracks only, the Tourenplan has no OpenRouteService routing. Internal names (`suggestionUnits`, `suggestionMatches`, …) still say "suggestion"
+- "In Komoot planen" (`#komootPlan`, also per part) and "Rest in Komoot planen" (`#restKomoot`) link to the Komoot planner via `komootPlanUrl(stamps)`: `komoot.com/de-de/plan/@lat,lon,13z?sport=hike&p[i][loc]=lat,lon&p[i][name]=…`, closed loop (first stamp repeated). Older ORS uploads in the browser are still labelled "Routenvorschlag (OpenRouteService, ungeprüft)"
 - Collection dates live in `hwn-stamp-dates` (`{number: 'YYYY-MM-DD'}`, local date via `today()`); `collectStamps()` is the only place that collects/removes stamps (new stamps get the date, existing ones keep it). Export v4 adds `stampDates`; walked own tours carry `walkedAt`
 - Progress is stored per stamp in localStorage (`hwn-stamps-collected`); a tour is done when all its stamps are collected. The tour checkbox sets/clears all of its stamps (indeterminate when partial), single stamps are toggled in the detail list. Legacy keys `hwn-tours-done` / `hwn-stamps-extra` are only read once for migration
 - A track (planned or walked) never changes progress
 - Season tags (ganzjährig/Apr–Nov/Mai–Okt) are computed from `tourFigures().maxEle` (`SEASON_TAGS`); `tours.json` `tags` only holds thematic hints
 - Part tours: long tours have `parts` in `tours.json` (ids like `A5a`, own stamp order and estimate). They are "units" like tours (tracks `data/tours/A5a.gpx`, uploads, Komoot links keyed by part id). `defaultVariant: "parts"` in `tours.json` makes the parts the default (marked "empfohlen"); a browser choice (`whole`/`parts`) is stored in localStorage (`hwn-tour-variants`) only when it differs from the default, and exported as `variants`; map, region sums and "km/Hm offen/zurückgelegt" use the chosen variant (`shownUnits()`)
-- `scripts/suggest-tour-parts.js` computes the splits (≥30 Leistungs-km, see thresholds in the script) and with `--write` updates `parts` in `tours.json`; `generate-tour-drafts.js` also writes drafts for parts
+- `scripts/suggest-tour-parts.js` computes the splits (≥30 Leistungs-km, see thresholds in the script) and with `--write` updates `parts` in `tours.json`; existing parts of a tour without a track are kept (they were chosen with the former ORS tracks, the estimate is too short to judge them); `generate-tour-drafts.js` also writes drafts for parts
 - Own tours ("+ Eigene Tour aus GPX"): records `{id: "own-<ts>", name, gpx, fileName, stamps, status: planned|walked, createdAt}` in IndexedDB store `own-tours` (DB version 2). Stamps are detected with `stampsAlongTrack()` (≤ `STAMP_ON_TRACK_METERS`, ordered along the track) and can be edited in the form. They are units with `own: true`, region `own`, listed in their own section; "Gelaufen" collects their stamps. Exported as `ownTours`; their Komoot links live in `hwn-komoot-links` under the own id
 - "km/Hm zurückgelegt" = walked own tours + finished suggestions that share no stamp with a walked own tour
 - Rest of a suggestion (`restStamps()` / `restFigures()`): stamps neither collected nor in a planned own tour (`plannedStampOwners()`), kept in the suggestion's order; unchanged → track/estimate figures, reduced → `estimateLoop()` (straight line × `ROUTE_FACTOR` 1.4), empty → 0. "km/Hm offen" = planned own tours + rest of open suggestions, so every open stamp counts once. List cells are refreshed in `render()` via `fillRowCells()`; reduced suggestions fade on the map with a dotted rest loop (`restLayer`)
-- "Rest auf Wanderwege legen" (`routeRest`) and "Als eigene Tour übernehmen" (`adoptSuggestion`, only with a track) create own tours
+- "Als eigene Tour übernehmen" (`adoptSuggestion`, only with a track) creates an own tour
 - Track origin: `trackOrigin()` in `tracks.js` reads the GPX head (`ors` = OpenRouteService, `app` = straight lines from this app, `komoot`, `external`); `tracks` entries carry `origin`. "Verplant" (`stampPlanningMap()` / exported `stampPlanning()`) = open stamp passed by the Komoot/external track of an open unit (chosen variant or planned own tour); own tours with ORS/app tracks are "eigene Tour, ungeprüft". `ownTourStampOwners()` (rest of suggestions) ignores the origin so nothing counts twice. Project tracks load via `loadPlanTracks()` (tour plan or stamp page); `refreshTracks()` dispatches `hwn:progress-changed`
-- Review hints ("⚠ prüfen", chip "Zu prüfen"): `computeReviews()` in `tourplan.js` judges only OpenRouteService tracks (`isSuggestedTrack`) with `reviewTrack()` from `tracks.js` (detour legs, backtracking share) against `REVIEW_RULES`, plus `review: [text]` notes in `tours.json` and "parts much shorter than the whole". Recomputed whenever tracks change; finished tours and own tours are never flagged
+- Review hints ("⚠ prüfen", chip "Zu prüfen"): `computeReviews()` in `tourplan.js` judges only OpenRouteService tracks (`isSuggestedTrack`, now only older browser uploads) with `reviewTrack()` from `tracks.js` (detour legs, backtracking share) against `REVIEW_RULES`, plus `review: [text]` notes in `tours.json` and "parts much shorter than the whole". Recomputed whenever tracks change; finished tours and own tours are never flagged
 - Chip "Geplant (n)" (`PLANNED_FILTER`, one of the `STATE_FILTERS` next to "Zu prüfen"): `isPlannedUnit()` = open unit of the chosen variant that is a planned own tour or has a Komoot/external track (`hasCheckedTrack`); rows, region cards, map and stamps are filtered, without a selection the detail lists the planned tours
 - Plan for own tours, part tours and next steps: `docs/plan-eigene-touren.md`
 - Plan for stamp dates, badges, backups and planned stamps on "Meine Stempel": `docs/plan-stempel.md`
-- "Auf Wanderwege legen" routes the closed stamp loop via ORS GeoJSON endpoint (`calculateHikingTrack`), converts it with `coordinatesToGPX` and stores it as an uploaded track
 - "Im Routenabgleich prüfen" dispatches `hwn:compare-route` ({gpx, name}) on `document`; `app.js` switches to the compare tab and runs the comparison
 - Difficulty (`tourLevel()`) is computed in the app from `tourFigures()`: Leistungs-km = km + Hm/100; track thresholds 25/32, estimate thresholds 21/26.5 (+ ≥650 m → mittel), ≥850 m → anspruchsvoll. `tours.json` has no `level` field; `levelHtml()` shows the Leistungs-km (`.effort`, "~" when estimated) next to the level badge
 - Komoot links: per tour `komoot: [{url, name}]` in `tours.json`, plus browser-added links in localStorage (`hwn-komoot-links`); both are shown
